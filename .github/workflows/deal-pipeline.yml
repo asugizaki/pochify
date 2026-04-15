@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deals sitemap.xml data/cache.json data/pending-telegram.json
+          git add docs/deals docs/sitemap.xml data/cache.json data/pending-telegram.json
           git commit -m "update generated deal pages and pipeline state" || exit 0
           git push
 
