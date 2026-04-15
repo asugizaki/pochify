@@ -90,7 +90,7 @@ export async function fetchDynamicDeals() {
 
   const edges = data?.data?.posts?.edges || [];
 
-  const deals = edges
+  return edges
     .map(({ node }) => {
       const topics = (node.topics?.edges || [])
         .map((e) => e.node?.name)
@@ -117,6 +117,4 @@ export async function fetchDynamicDeals() {
     })
     .filter((d) => !!d.url)
     .sort((a, b) => b.score - a.score);
-
-  return deals;
 }
