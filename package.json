@@ -1,0 +1,9 @@
+{
+  "name": "pochify",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "pipeline": "node src/processDeals.js",
+    "send:telegram": "node src/sendTelegramDeals.js"
+  }
+}
