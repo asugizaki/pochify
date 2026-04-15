@@ -39,12 +39,12 @@ function detectChannel(deal) {
   return "general";
 }
 
-// Replace this later with your real sourcing pipeline
+// Replace this with your real sourcing pipeline later
 function getDeals() {
   return [
     {
       name: "Notion AI",
-      description: "AI writing assistant inside Notion for drafting, summarizing, and faster document workflows.",
+      description: "AI writing assistant inside Notion",
       url: "https://www.notion.so/product/ai",
       affiliateLink: null,
       audience: "Founders, students, operators, and knowledge workers",
@@ -58,7 +58,7 @@ function getDeals() {
     },
     {
       name: "Jasper AI",
-      description: "AI content generation tool built for marketing teams that need faster copy production.",
+      description: "AI content generation tool for marketing teams",
       url: "https://www.jasper.ai",
       affiliateLink: null,
       audience: "Marketing teams, freelancers, and content-heavy businesses",
