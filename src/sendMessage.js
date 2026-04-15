@@ -23,7 +23,7 @@ ${deal.description}
 💡 <b>Why this is worth checking:</b>
 • We broke down what it does and who it is best for
 • Easier to judge quickly before clicking out
-• Useful if you want a clearer overview first
+• Worth reviewing if this category is relevant to you
 
 👉 <a href="${pageUrl}">Read the full breakdown</a>
 `.trim();
