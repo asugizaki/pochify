@@ -7,45 +7,85 @@ function normalizeWhitespace(text = "") {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function decodeHtmlEntities(text = "") {
+  return text
+    .replace(/&#39;|&#x27;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#x2F;/gi, "/")
+    .replace(/&#47;/gi, "/")
+    .replace(/&nbsp;/gi, " ");
+}
+
+function cleanText(text = "") {
+  return normalizeWhitespace(decodeHtmlEntities(text));
+}
+
 function extractTitle(html = "") {
-  return normalizeWhitespace(getMatch(html, /<title[^>]*>(.*?)<\/title>/is));
+  return cleanText(getMatch(html, /<title[^>]*>(.*?)<\/title>/is));
 }
 
 function extractMetaDescription(html = "") {
-  return normalizeWhitespace(
+  return cleanText(
     getMatch(
       html,
-      /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i
+      /<meta[^>]+name=["']description["'][^>]+content=["']([^"]*?)["'][^>]*>/i
     ) ||
       getMatch(
         html,
-        /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i
+        /<meta[^>]+content=["']([^"]*?)["'][^>]+name=["']description["'][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+name=['"]description['"][^>]+content=['"]([^']*?)['"][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+content=['"]([^']*?)['"][^>]+name=['"]description['"][^>]*>/i
       )
   );
 }
 
 function extractOgImage(html = "") {
-  return normalizeWhitespace(
+  return cleanText(
     getMatch(
       html,
-      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i
+      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"]*?)["'][^>]*>/i
     ) ||
       getMatch(
         html,
-        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i
+        /<meta[^>]+content=["']([^"]*?)["'][^>]+property=["']og:image["'][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+property=['"]og:image['"][^>]+content=['"]([^']*?)['"][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+content=['"]([^']*?)['"][^>]+property=['"]og:image['"][^>]*>/i
       )
   );
 }
 
 function extractOgDescription(html = "") {
-  return normalizeWhitespace(
+  return cleanText(
     getMatch(
       html,
-      /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i
+      /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"]*?)["'][^>]*>/i
     ) ||
       getMatch(
         html,
-        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["'][^>]*>/i
+        /<meta[^>]+content=["']([^"]*?)["'][^>]+property=["']og:description["'][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+property=['"]og:description['"][^>]+content=['"]([^']*?)['"][^>]*>/i
+      ) ||
+      getMatch(
+        html,
+        /<meta[^>]+content=['"]([^']*?)['"][^>]+property=['"]og:description['"][^>]*>/i
       )
   );
 }
