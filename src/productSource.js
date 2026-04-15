@@ -96,25 +96,20 @@ export async function fetchDynamicDeals() {
         .map((e) => e.node?.name)
         .filter(Boolean);
 
+      const slug = slugify(node.name);
+
       const deal = {
         name: node.name,
-        slug: slugify(node.name),
+        slug,
         brand_key: normalizeBrandKey(node.name),
         description: node.tagline || "",
         url: node.website || node.url,
         affiliateLink: null,
-        page_url: `https://pochify.com/deals/${slugify(node.name)}.html`,
+        page_url: `https://pochify.com/deals/${slug}.html`,
         source: "producthunt",
         channel: detectChannel(node.name, node.tagline || "", topics),
         votes_count: node.votesCount || 0,
-        audience: "Founders, builders, creators, and early adopters",
-        benefits: [
-          "Useful if this category is relevant to your workflow",
-          "Worth reviewing before the space gets crowded",
-          "Good early-adoption candidate if it fits your stack"
-        ],
-        whyNow:
-          "This is currently trending on Product Hunt and is worth a closer look if this category matters to you."
+        topics
       };
 
       deal.score = scoreDeal(deal);
