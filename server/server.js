@@ -11,6 +11,9 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -30,9 +33,8 @@ function daysSince(dateString) {
 function guessNetwork(name = "", description = "") {
   const text = `${name} ${description}`.toLowerCase();
 
-  if (text.includes("saas") || text.includes("software")) return "impact";
   if (text.includes("design") || text.includes("ecommerce")) return "cj";
-  if (text.includes("b2b")) return "impact";
+  if (text.includes("b2b") || text.includes("saas") || text.includes("software")) return "impact";
   return "unknown";
 }
 
@@ -54,6 +56,25 @@ function resolveTargetUrl(deal, program) {
   if (program?.tracking_url) return program.tracking_url;
   if (deal.affiliate_link) return deal.affiliate_link;
   return deal.url;
+}
+
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || "";
+  if (!header.startsWith("Basic ")) {
+    res.set("WWW-Authenticate", 'Basic realm="Pochify Admin"');
+    return res.status(401).send("Authentication required");
+  }
+
+  const encoded = header.split(" ")[1];
+  const decoded = Buffer.from(encoded, "base64").toString("utf8");
+  const [username, password] = decoded.split(":");
+
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    res.set("WWW-Authenticate", 'Basic realm="Pochify Admin"');
+    return res.status(401).send("Invalid credentials");
+  }
+
+  next();
 }
 
 app.get("/", (req, res) => {
@@ -80,6 +101,14 @@ app.post("/api/deals/ingest", async (req, res) => {
     channel: d.channel || "general",
     votes_count: d.votes_count || 0,
     score: d.score || 0,
+    meta_title: d.meta_title || "",
+    meta_description: d.meta_description || "",
+    og_image: d.og_image || "",
+    hook: d.hook || "",
+    audience: d.audience || "",
+    why_now: d.why_now || "",
+    caution: d.caution || "",
+    benefits: d.benefits || [],
     updated_at: new Date().toISOString()
   }));
 
@@ -211,18 +240,264 @@ app.get("/go/:slug", async (req, res) => {
 
   await supabase
     .from("deals")
-    .upsert({
-      slug: deal.slug,
-      click_count: (deal.click_count || 0) + 1,
-      last_clicked_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }, { onConflict: "slug" });
+    .upsert(
+      {
+        slug: deal.slug,
+        click_count: (deal.click_count || 0) + 1,
+        last_clicked_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "slug" }
+    );
 
   console.log(`✅ Redirect: ${slug} → ${targetUrl}`);
 
   return res.redirect(targetUrl || "https://pochify.com");
 });
 
+app.get("/api/admin/stats", requireAdmin, async (req, res) => {
+  const [{ count: dealsCount }, { count: oppCount }, { count: affCount }, { count: clickCount }] =
+    await Promise.all([
+      supabase.from("deals").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_opportunities").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_programs").select("*", { count: "exact", head: true }),
+      supabase.from("click_events").select("*", { count: "exact", head: true })
+    ]);
+
+  const { data: topDeals } = await supabase
+    .from("deals")
+    .select("name, slug, click_count, post_count, score")
+    .order("click_count", { ascending: false })
+    .limit(10);
+
+  const { data: latestOpps } = await supabase
+    .from("affiliate_opportunities")
+    .select("*")
+    .order("last_seen_at", { ascending: false })
+    .limit(10);
+
+  res.json({
+    summary: {
+      deals: dealsCount || 0,
+      opportunities: oppCount || 0,
+      affiliates: affCount || 0,
+      clicks: clickCount || 0
+    },
+    topDeals: topDeals || [],
+    latestOpportunities: latestOpps || []
+  });
+});
+
+app.get("/api/admin/opportunities", requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from("affiliate_opportunities")
+    .select(`
+      brand_key,
+      display_name,
+      source_url,
+      network_guess,
+      status,
+      last_seen_at
+    `)
+    .order("last_seen_at", { ascending: false })
+    .limit(25);
+
+  if (error) {
+    return res.status(500).json({ error });
+  }
+
+  const items = [];
+  for (const row of data || []) {
+    const { data: deal } = await supabase
+      .from("deals")
+      .select("click_count")
+      .eq("brand_key", row.brand_key)
+      .order("click_count", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    items.push({
+      ...row,
+      click_count: deal?.click_count || 0
+    });
+  }
+
+  res.json({ items });
+});
+
+app.get("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from("affiliate_programs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error });
+  }
+
+  res.json({ items: data || [] });
+});
+
+app.post("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
+  const payload = req.body;
+
+  const row = {
+    brand_key: payload.brand_key,
+    display_name: payload.display_name || payload.brand_key,
+    network: payload.network,
+    tracking_url: payload.tracking_url || null,
+    deeplink_template: payload.deeplink_template || null,
+    deeplink_supported: !!payload.deeplink_supported,
+    status: payload.status || "active",
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase
+    .from("affiliate_programs")
+    .upsert(row, { onConflict: "brand_key" });
+
+  if (error) {
+    return res.status(500).json({ error });
+  }
+
+  res.json({ success: true });
+});
+
+app.get("/admin", requireAdmin, (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Pochify Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0b1220; color:#e5e7eb; margin:0; padding:24px; }
+    .wrap { max-width:1100px; margin:0 auto; }
+    .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius:14px; padding:18px; margin-bottom:18px; }
+    input, select, textarea, button {
+      width:100%; padding:10px; margin-top:8px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb;
+    }
+    button { background:#22c55e; color:#04130a; font-weight:bold; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #1f2937; }
+    h1,h2 { margin-top:0; }
+    canvas { background:#fff; border-radius:12px; padding:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Pochify Admin</h1>
+
+    <div class="grid" id="summary"></div>
+
+    <div class="card">
+      <h2>Top Clicked Deals</h2>
+      <canvas id="topDealsChart"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Add / Update Affiliate Program</h2>
+      <form id="affiliateForm">
+        <input name="brand_key" placeholder="brand_key e.g. notion" required />
+        <input name="display_name" placeholder="Display name" />
+        <input name="network" placeholder="impact / cj / partnerstack" required />
+        <input name="tracking_url" placeholder="Tracking URL" />
+        <input name="deeplink_template" placeholder="Deep link template (optional)" />
+        <select name="deeplink_supported">
+          <option value="false">Deep link supported: No</option>
+          <option value="true">Deep link supported: Yes</option>
+        </select>
+        <select name="status">
+          <option value="active">active</option>
+          <option value="inactive">inactive</option>
+        </select>
+        <button type="submit">Save Affiliate Program</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Latest Affiliate Opportunities</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Brand</th>
+            <th>Guess</th>
+            <th>Clicks</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="oppRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+async function loadStats() {
+  const res = await fetch('/api/admin/stats');
+  const data = await res.json();
+
+  const summary = data.summary;
+  document.getElementById('summary').innerHTML = \`
+    <div class="card"><h2>\${summary.deals}</h2><div>Deals</div></div>
+    <div class="card"><h2>\${summary.opportunities}</h2><div>Opportunities</div></div>
+    <div class="card"><h2>\${summary.affiliates}</h2><div>Affiliates</div></div>
+    <div class="card"><h2>\${summary.clicks}</h2><div>Clicks</div></div>
+  \`;
+
+  const labels = (data.topDeals || []).map(d => d.name);
+  const values = (data.topDeals || []).map(d => d.click_count || 0);
+
+  new Chart(document.getElementById('topDealsChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Clicks', data: values }]
+    },
+    options: { responsive: true }
+  });
+
+  const oppRows = (data.latestOpportunities || []).map(o => \`
+    <tr>
+      <td>\${o.display_name || o.brand_key}</td>
+      <td>\${o.network_guess || ''}</td>
+      <td>-</td>
+      <td>\${o.status || ''}</td>
+    </tr>
+  \`).join('');
+
+  document.getElementById('oppRows').innerHTML = oppRows;
+}
+
+document.getElementById('affiliateForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const payload = Object.fromEntries(form.entries());
+  payload.deeplink_supported = payload.deeplink_supported === 'true';
+
+  const res = await fetch('/api/admin/affiliate-programs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    alert('Saved');
+    e.target.reset();
+  } else {
+    alert('Failed');
+    console.error(data);
+  }
+});
+
+loadStats();
+</script>
+</body>
+</html>`);
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(\`🚀 Server running on port \${PORT}\`);
 });
