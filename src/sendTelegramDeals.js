@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import { sendMessage } from "./sendMessage.js";
 
-const CACHE_PATH = path.join("data", "cache.json");
 const PENDING_PATH = path.join("data", "pending-telegram.json");
+const MARK_POSTED_URL = "https://go.pochify.com/api/deals/mark-posted";
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -33,13 +33,26 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function markPosted(slugs) {
+  const res = await fetch(MARK_POSTED_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ slugs })
+  });
+
+  const data = await res.json();
+  console.log("📝 Mark posted response:", data);
+}
+
 async function run() {
   console.log("🚀 Sending Telegram deals...");
 
-  const cache = loadJson(CACHE_PATH, { sentSlugs: [] });
   const pending = loadJson(PENDING_PATH, []);
-
   console.log(`📨 Loaded pending deals: ${pending.length}`);
+
+  const successfulSlugs = [];
 
   for (const deal of pending) {
     const chatId = getChatId(deal.channel);
@@ -54,18 +67,18 @@ async function run() {
     const sent = await sendMessage(chatId, deal);
 
     if (sent) {
-      cache.sentSlugs.push(deal.slug);
+      successfulSlugs.push(deal.slug);
       console.log("✅ Sent:", deal.name);
     } else {
       console.log("❌ Failed:", deal.name);
     }
 
-    await sleep(1200);
+    await sleep(1500);
   }
 
-  saveJson(CACHE_PATH, {
-    sentSlugs: [...new Set(cache.sentSlugs)]
-  });
+  if (successfulSlugs.length > 0) {
+    await markPosted(successfulSlugs);
+  }
 
   saveJson(PENDING_PATH, []);
   console.log("🏁 Telegram send complete");
