@@ -23,25 +23,16 @@ function getDealPagePath(slug) {
 
 function buildDealHtml(deal) {
   const title = escapeHtml(deal.name);
-  const description = escapeHtml(
-    deal.description || "A useful tool worth checking out."
-  );
-  const audience = escapeHtml(
-    deal.audience || "Founders, creators, teams, and professionals"
-  );
-
-  const benefits = (deal.benefits || [
-    "Helps you move faster",
-    "Easy to get started with",
-    "Can improve productivity quickly"
-  ]).slice(0, 3);
-
-  const whyNow = escapeHtml(
-    deal.whyNow || "This is getting attention right now and is worth a closer look."
-  );
-
-  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const description = escapeHtml(deal.description || "A useful tool worth checking out.");
+  const audience = escapeHtml(deal.audience || "Founders, creators, teams, and professionals");
+  const whyNow = escapeHtml(deal.why_now || "This is worth a closer look right now.");
+  const caution = escapeHtml(deal.caution || "It is usually worth testing fit before fully adopting a new tool.");
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
+  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const benefits = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 3) : [];
+  const imageHtml = deal.og_image
+    ? `<img src="${escapeHtml(deal.og_image)}" alt="${title}" style="max-width:100%;border-radius:14px;margin:16px 0 8px;" />`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -55,15 +46,16 @@ function buildDealHtml(deal) {
   <meta property="og:description" content="${description}" />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="${pageUrl}" />
+  ${deal.og_image ? `<meta property="og:image" content="${escapeHtml(deal.og_image)}" />` : ""}
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: #0b1220; color: #e5e7eb; line-height: 1.6; }
-    .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #0b1220; color: #e5e7eb; line-height: 1.7; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
     .eyebrow { color: #22c55e; font-weight: bold; letter-spacing: 0.08em; font-size: 12px; text-transform: uppercase; }
     h1 { font-size: 40px; margin: 10px 0 12px; }
     .sub { color: #94a3b8; font-size: 18px; margin-bottom: 28px; }
     .card { background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px; margin: 20px 0; }
     .cta { display: inline-block; background: #22c55e; color: #04130a; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: bold; margin-top: 8px; }
-    ul { padding-left: 20px; }
+    ul { padding-left: 22px; }
     .muted { color: #94a3b8; }
   </style>
 </head>
@@ -72,31 +64,35 @@ function buildDealHtml(deal) {
     <div class="eyebrow">Pochify Pick</div>
     <h1>${title}</h1>
     <div class="sub">${description}</div>
+    ${imageHtml}
 
     <div class="card">
-      <h2>Why this tool stands out</h2>
-      <p>${whyNow}</p>
+      <h2>What this product is</h2>
+      <p>${description}</p>
+      <p>${escapeHtml(deal.hook || "")}</p>
       <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Try ${title}</a>
     </div>
 
     <div class="card">
-      <h2>Best for</h2>
+      <h2>Who this looks best for</h2>
       <p>${audience}</p>
     </div>
 
     <div class="card">
-      <h2>What people may like</h2>
+      <h2>Why someone might use it</h2>
       <ul>
-        <li>${escapeHtml(benefits[0] || "")}</li>
-        <li>${escapeHtml(benefits[1] || "")}</li>
-        <li>${escapeHtml(benefits[2] || "")}</li>
+        ${benefits.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}
       </ul>
     </div>
 
     <div class="card">
-      <p class="muted">
-        We curate tools and offers we think are worth checking out. Some links may be tracked so we can support Pochify.
-      </p>
+      <h2>Why it may be worth checking now</h2>
+      <p>${whyNow}</p>
+    </div>
+
+    <div class="card">
+      <h2>One thing to keep in mind</h2>
+      <p class="muted">${caution}</p>
       <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Go to ${title}</a>
     </div>
   </div>
