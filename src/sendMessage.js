@@ -14,16 +14,16 @@ export async function sendMessage(chatId, deal) {
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const bullets = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 2) : [];
 
   const message = `
 🔥 <b>${deal.name}</b>
 
-${deal.description}
+${deal.hook || deal.description}
 
-💡 <b>Why this is worth checking:</b>
-• We broke down what it does and who it is best for
-• Easier to judge quickly before clicking out
-• Worth reviewing if this category is relevant to you
+💡 <b>Why people may care:</b>
+• ${bullets[0] || "Worth checking if this category is relevant to you"}
+• ${bullets[1] || "We broke down who it looks best for"}
 
 👉 <a href="${pageUrl}">Read the full breakdown</a>
 `.trim();
