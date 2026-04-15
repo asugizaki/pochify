@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "name": "Notion AI",
+    "slug": "notion-ai",
+    "description": "AI writing assistant inside Notion",
+    "url": "https://www.notion.so/product/ai",
+    "affiliateLink": null,
+    "audience": "Founders, students, operators, and knowledge workers",
+    "benefits": [
+      "Speeds up writing and summarization",
+      "Fits naturally into existing Notion workflows",
+      "Useful for notes, docs, and knowledge management"
+    ],
+    "whyNow": "If you already use Notion, this is one of the easiest ways to add AI into work you are already doing.",
+    "channel": "ai"
+  },
+  {
+    "name": "Jasper AI",
+    "slug": "jasper-ai",
+    "description": "AI content generation tool for marketing teams",
+    "url": "https://www.jasper.ai",
+    "affiliateLink": null,
+    "audience": "Marketing teams, freelancers, and content-heavy businesses",
+    "benefits": [
+      "Can speed up campaign copy production",
+      "Helps generate first drafts quickly",
+      "Popular with teams testing AI writing workflows"
+    ],
+    "whyNow": "This is the kind of tool people often test when they want faster content output without building a full internal system.",
+    "channel": "ai"
+  }
+]
