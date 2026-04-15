@@ -1,0 +1,49 @@
+name: Deal Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Generate pages and sync backend
+        run: node src/processDeals.js
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_AI: ${{ secrets.TELEGRAM_AI }}
+          TELEGRAM_SAAS: ${{ secrets.TELEGRAM_SAAS }}
+          TELEGRAM_GENERAL: ${{ secrets.TELEGRAM_GENERAL }}
+
+      - name: Commit generated content
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deals sitemap.xml data/cache.json data/pending-telegram.json
+          git commit -m "update generated deal pages and pipeline state" || exit 0
+          git push
+
+      - name: Wait for GitHub Pages to update
+        run: sleep 30
+
+      - name: Send Telegram messages
+        run: node src/sendTelegramDeals.js
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_AI: ${{ secrets.TELEGRAM_AI }}
+          TELEGRAM_SAAS: ${{ secrets.TELEGRAM_SAAS }}
+          TELEGRAM_GENERAL: ${{ secrets.TELEGRAM_GENERAL }}
