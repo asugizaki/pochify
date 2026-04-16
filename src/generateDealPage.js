@@ -37,10 +37,6 @@ function getDealPagePath(slug) {
   return path.join("docs", "deals", `${slug}.html`);
 }
 
-function buildSectionTitle(text) {
-  return `<h2>${escapeHtml(text)}</h2>`;
-}
-
 function buildBenefitsHtml(benefits = []) {
   const safeBenefits = Array.isArray(benefits) ? benefits.filter(Boolean).slice(0, 4) : [];
 
@@ -103,6 +99,7 @@ function buildDealHtml(deal) {
 
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const benefits = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 4) : [];
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -129,9 +126,7 @@ function buildDealHtml(deal) {
       --link: #93c5fd;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -174,9 +169,7 @@ function buildDealHtml(deal) {
       margin-bottom: 24px;
     }
 
-    .hero-image-wrap {
-      margin: 0 0 24px;
-    }
+    .hero-image-wrap { margin: 0 0 24px; }
 
     .hero-image {
       display: block;
@@ -221,18 +214,14 @@ function buildDealHtml(deal) {
       border: 1px solid #334155;
     }
 
-    .muted {
-      color: var(--muted);
-    }
+    .muted { color: var(--muted); }
 
     ul {
       padding-left: 22px;
       margin-bottom: 0;
     }
 
-    li + li {
-      margin-top: 8px;
-    }
+    li + li { margin-top: 8px; }
 
     .footer {
       margin-top: 48px;
@@ -256,7 +245,7 @@ function buildDealHtml(deal) {
     ${buildImageHtml(deal)}
 
     <div class="card">
-      ${buildSectionTitle("What this product is")}
+      <h2>What this product is</h2>
       <p>${description}</p>
       <p>${hook}</p>
 
@@ -267,27 +256,27 @@ function buildDealHtml(deal) {
     </div>
 
     <div class="card">
-      ${buildSectionTitle("Why someone might use it")}
-      ${buildBenefitsHtml(deal.benefits)}
+      <h2>Why someone might use it</h2>
+      ${buildBenefitsHtml(benefits)}
     </div>
 
     <div class="card">
-      ${buildSectionTitle("Who this looks best for")}
+      <h2>Who this looks best for</h2>
       <p>${audience}</p>
     </div>
 
     <div class="card">
-      ${buildSectionTitle("What’s the value here")}
+      <h2>What’s the value here</h2>
       <p>${valueHook}</p>
     </div>
 
     <div class="card">
-      ${buildSectionTitle("Why it may be worth checking now")}
+      <h2>Why it may be worth checking now</h2>
       <p>${whyNow}</p>
     </div>
 
     <div class="card">
-      ${buildSectionTitle("One thing to keep in mind")}
+      <h2>One thing to keep in mind</h2>
       <p class="muted">${caution}</p>
 
       <div class="cta-row">
@@ -305,10 +294,142 @@ function buildDealHtml(deal) {
 </html>`;
 }
 
+function buildDealsIndexHtml(deals) {
+  const items = deals
+    .map((deal) => {
+      const imageHtml = deal.og_image
+        ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />`
+        : "";
+
+      const summary = escapeHtml(deal.hook || deal.description || "Read the full breakdown.");
+
+      return `
+        <div class="card deal-card">
+          ${imageHtml}
+          <h2>${escapeHtml(deal.name)}</h2>
+          <p>${summary}</p>
+          <a class="cta" href="/deals/${deal.slug}.html">Read full breakdown</a>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Browse Deals | Pochify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Browse Pochify’s latest AI tools, SaaS products, and useful software picks." />
+  <link rel="canonical" href="${SITE_URL}/deals/" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #04130a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 50px 20px 80px;
+    }
+
+    h1 {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 18px;
+      margin-bottom: 32px;
+      max-width: 760px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #243041;
+      background: #0f172a;
+    }
+
+    .deal-card h2 {
+      font-size: 24px;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .deal-card p {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-dark);
+      text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Browse Deals</h1>
+    <div class="sub">
+      Explore Pochify’s latest AI tools, SaaS products, and software picks with full breakdowns.
+    </div>
+
+    <div class="grid">
+      ${items || `<div class="card">No deals yet.</div>`}
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export function generateDealPage(deal) {
   ensureDir(path.join("docs", "deals"));
   const filePath = getDealPagePath(deal.slug);
   fs.writeFileSync(filePath, buildDealHtml(deal), "utf8");
+  return filePath;
+}
+
+export function generateDealsIndex(deals) {
+  ensureDir(path.join("docs", "deals"));
+  const filePath = path.join("docs", "deals", "index.html");
+  fs.writeFileSync(filePath, buildDealsIndexHtml(deals), "utf8");
   return filePath;
 }
 
@@ -317,6 +438,7 @@ export function generateSitemap(deals) {
 
   const urls = [
     `${SITE_URL}/`,
+    `${SITE_URL}/deals/`,
     ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
   ];
 
