@@ -81,6 +81,39 @@ app.get("/", (req, res) => {
   res.send("Pochify backend running 🚀");
 });
 
+app.get("/api/public/latest-deals", async (req, res) => {
+  const { data, error } = await supabase
+    .from("deals")
+    .select(`
+      name,
+      slug,
+      description,
+      hook,
+      audience,
+      why_now,
+      caution,
+      benefits,
+      og_image,
+      page_url,
+      click_count,
+      votes_count,
+      score,
+      created_at
+    `)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  if (error) {
+    console.error("❌ latest deals error:", error);
+    return res.status(500).json({ error: "Failed to load latest deals" });
+  }
+
+  res.json({
+    items: data || []
+  });
+});
+
 app.post("/api/deals/ingest", async (req, res) => {
   const deals = req.body?.deals || [];
   const maxToSend = req.body?.maxToSend || 2;
@@ -499,5 +532,5 @@ loadStats();
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(\`🚀 Server running on port \${PORT}\`);
 });
