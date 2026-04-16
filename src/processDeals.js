@@ -4,6 +4,7 @@ import { generateDealPage, generateSitemap } from "./generateDealPage.js";
 import { fetchDynamicDeals } from "./productSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
+import { enrichWithValue } from "./dealValueDetector.js";
 
 const BACKEND_URL = "https://go.pochify.com/api/deals/ingest";
 const PENDING_PATH = path.join("data", "pending-telegram.json");
@@ -53,7 +54,7 @@ async function run() {
   const enrichedDeals = [];
   for (const deal of selectedForEnrichment) {
     const enriched = await enrichProduct(deal);
-    const improved = enhanceCopy(enriched);
+    const improved = enrichWithValue(enhanceCopy(enriched));
     enrichedDeals.push(improved);
   }
 
