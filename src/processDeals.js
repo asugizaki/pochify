@@ -1,10 +1,9 @@
 import fs from "fs";
 import path from "path";
-import { generateDealPage, generateSitemap } from "./generateDealPage.js";
+import { generateDealPage, generateDealsIndex, generateSitemap } from "./generateDealPage.js";
 import { fetchDynamicDeals } from "./productSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
-import { enrichWithValue } from "./dealValueDetector.js";
 
 const BACKEND_URL = "https://go.pochify.com/api/deals/ingest";
 const PENDING_PATH = path.join("data", "pending-telegram.json");
@@ -54,7 +53,7 @@ async function run() {
   const enrichedDeals = [];
   for (const deal of selectedForEnrichment) {
     const enriched = await enrichProduct(deal);
-    const improved = enrichWithValue(enhanceCopy(enriched));
+    const improved = enhanceCopy(enriched);
     enrichedDeals.push(improved);
   }
 
@@ -62,6 +61,9 @@ async function run() {
     const filePath = generateDealPage(deal);
     console.log("📝 Generated page:", filePath);
   }
+
+  const indexPath = generateDealsIndex(enrichedDeals);
+  console.log("🗂️ Generated deals index:", indexPath);
 
   generateSitemap(enrichedDeals);
   console.log("🗺️ Generated sitemap");
