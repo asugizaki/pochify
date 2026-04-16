@@ -74,6 +74,11 @@ function buildDealHtml(deal) {
     </div>
 
     <div class="card">
+      <h2>What’s the deal here</h2>
+      <p>${deal.value_hook || "There may not be a direct discount, but this could still be valuable depending on your workflow."}</p>
+    </div>
+
+    <div class="card">
       <h2>Who this looks best for</h2>
       <p>${audience}</p>
     </div>
