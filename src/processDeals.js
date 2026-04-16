@@ -1,6 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { generateDealPage, generateDealsIndex, generateSitemap } from "./generateDealPage.js";
+import {
+  generateDealPage,
+  generateDealsIndex,
+  generateCategoryPages,
+  generateRobotsTxt,
+  generateSitemap
+} from "./generateDealPage.js";
 import { fetchDynamicDeals } from "./productSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
@@ -58,12 +64,18 @@ async function run() {
   }
 
   for (const deal of enrichedDeals) {
-    const filePath = generateDealPage(deal);
+    const filePath = generateDealPage(deal, enrichedDeals);
     console.log("📝 Generated page:", filePath);
   }
 
   const indexPath = generateDealsIndex(enrichedDeals);
   console.log("🗂️ Generated deals index:", indexPath);
+
+  const categoryPaths = generateCategoryPages(enrichedDeals);
+  console.log("🧭 Generated category pages:", categoryPaths);
+
+  generateRobotsTxt();
+  console.log("🤖 Generated robots.txt");
 
   generateSitemap(enrichedDeals);
   console.log("🗺️ Generated sitemap");
