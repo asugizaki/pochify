@@ -16,18 +16,27 @@ export async function sendMessage(chatId, deal) {
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
   const bullets = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 2) : [];
 
-  const message = `
-    🔥 <b>${deal.name}</b>
-    
-    ${deal.hook}
-    
-    💰 <b>${deal.value_hook}</b>
-    
-    👉 <a href="${pageUrl}">See full breakdown</a>
-    `.trim();
+  const line1 =
+    bullets[0] || "Worth checking if this category is relevant to you";
+  const line2 =
+    bullets[1] || "We broke down who it looks best for";
 
-👉 <a href="${pageUrl}">Read the full breakdown</a>
-`.trim();
+  const intro = deal.hook || deal.description || "Worth a closer look.";
+  const valueHook = deal.value_hook || "See why this may be useful.";
+
+  const message = [
+    `🔥 <b>${deal.name}</b>`,
+    "",
+    intro,
+    "",
+    `💰 <b>${valueHook}</b>`,
+    "",
+    "💡 <b>Why people may care:</b>",
+    `• ${line1}`,
+    `• ${line2}`,
+    "",
+    `👉 <a href="${pageUrl}">Read the full breakdown</a>`
+  ].join("\n");
 
   try {
     const res = await fetch(url, {
