@@ -37,6 +37,271 @@ function getDealPagePath(slug) {
   return path.join("docs", "deals", `${slug}.html`);
 }
 
+function getCategoryPagePath(category) {
+  return path.join("docs", "categories", `${category}.html`);
+}
+
+function navHtml() {
+  return `
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/">Pochify</a>
+        <nav class="nav-links">
+          <a href="/">Home</a>
+          <a href="/deals/">Browse Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  `;
+}
+
+function globalStyles() {
+  return `
+    <style>
+      :root {
+        --bg: #0b1220;
+        --card: #111827;
+        --card-border: #1f2937;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #22c55e;
+        --accent-dark: #04130a;
+        --link: #93c5fd;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(11, 18, 32, 0.92);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #1e293b;
+      }
+
+      .nav-wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 22px;
+      }
+
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 15px;
+      }
+
+      .nav-links a:hover,
+      .brand:hover {
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 36px 20px 80px;
+      }
+
+      .narrow {
+        max-width: 920px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        font-size: 12px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      h1 {
+        font-size: 42px;
+        line-height: 1.15;
+        margin: 0 0 14px;
+      }
+
+      h2 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-size: 24px;
+      }
+
+      .sub {
+        color: var(--muted);
+        font-size: 19px;
+        margin-bottom: 24px;
+      }
+
+      .breadcrumbs {
+        margin-bottom: 18px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .breadcrumbs a {
+        color: var(--link);
+        text-decoration: none;
+      }
+
+      .hero-image-wrap {
+        margin: 0 0 24px;
+      }
+
+      .hero-image {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        border-radius: 16px;
+        border: 1px solid var(--card-border);
+        background: #0f172a;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 20px 0;
+      }
+
+      .cta-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+      }
+
+      .cta {
+        display: inline-block;
+        background: var(--accent);
+        color: var(--accent-dark);
+        text-decoration: none;
+        padding: 14px 22px;
+        border-radius: 12px;
+        font-weight: bold;
+      }
+
+      .secondary {
+        display: inline-block;
+        color: var(--text);
+        text-decoration: none;
+        padding: 14px 22px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+      }
+
+      .muted { color: var(--muted); }
+
+      ul {
+        padding-left: 22px;
+        margin-bottom: 0;
+      }
+
+      li + li { margin-top: 8px; }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .deal-card img {
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 14px;
+        border: 1px solid #243041;
+        background: #0f172a;
+      }
+
+      .deal-card h3,
+      .deal-card h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+
+      .deal-card p {
+        color: var(--muted);
+      }
+
+      .deal-card a.inline-link {
+        display: inline-block;
+        margin-top: 12px;
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      .share-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .share-btn {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        border: 1px solid #334155;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .footer {
+        margin-top: 48px;
+        color: #64748b;
+        font-size: 14px;
+      }
+
+      .footer a {
+        color: var(--link);
+        text-decoration: none;
+      }
+
+      @media (max-width: 700px) {
+        .nav-wrap {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+      }
+    </style>
+  `;
+}
+
 function buildBenefitsHtml(benefits = []) {
   const safeBenefits = Array.isArray(benefits) ? benefits.filter(Boolean).slice(0, 4) : [];
 
@@ -72,7 +337,80 @@ function buildImageHtml(deal) {
   `;
 }
 
-function buildDealHtml(deal) {
+function getRelatedDeals(allDeals, currentDeal) {
+  return allDeals
+    .filter((d) => d.slug !== currentDeal.slug)
+    .sort((a, b) => {
+      const aSameChannel = a.channel === currentDeal.channel ? 1 : 0;
+      const bSameChannel = b.channel === currentDeal.channel ? 1 : 0;
+      if (aSameChannel !== bSameChannel) return bSameChannel - aSameChannel;
+      return (b.score || 0) - (a.score || 0);
+    })
+    .slice(0, 3);
+}
+
+function buildRelatedDealsHtml(relatedDeals = []) {
+  if (!relatedDeals.length) return "";
+
+  return `
+    <div class="card">
+      <h2>Related tools worth browsing</h2>
+      <div class="grid">
+        ${relatedDeals.map((deal) => `
+          <div class="deal-card">
+            ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
+            <h3>${escapeHtml(deal.name)}</h3>
+            <p>${escapeHtml(deal.hook || deal.description || "Read the full breakdown.")}</p>
+            <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function buildShareHtml(deal) {
+  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const encodedUrl = encodeURIComponent(pageUrl);
+  const encodedText = encodeURIComponent(`${deal.name} — ${deal.hook || deal.description || "Worth a look"}`);
+
+  return `
+    <div class="card">
+      <h2>Share this pick</h2>
+      <div class="share-row">
+        <a class="share-btn" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">Share on X</a>
+        <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">Share on LinkedIn</a>
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">Share on Facebook</a>
+        <button class="share-btn" onclick="navigator.clipboard.writeText('${pageUrl}').then(() => alert('Link copied'))">Copy link</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildStructuredData(deal) {
+  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: deal.name,
+    description: deal.meta_description || deal.description || "",
+    mainEntityOfPage: pageUrl,
+    url: pageUrl,
+    image: deal.og_image ? [deal.og_image] : [],
+    author: {
+      "@type": "Organization",
+      name: "Pochify"
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Pochify"
+    }
+  };
+
+  return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+}
+
+function buildDealHtml(deal, allDeals) {
   const title = escapeHtml(deal.name || "Untitled Product");
   const description = escapeHtml(
     deal.description || "A useful product worth checking out."
@@ -100,6 +438,7 @@ function buildDealHtml(deal) {
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
   const benefits = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 4) : [];
+  const relatedDeals = getRelatedDeals(allDeals, deal);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -114,131 +453,18 @@ function buildDealHtml(deal) {
   <meta property="og:type" content="article" />
   <meta property="og:url" content="${pageUrl}" />
   ${deal.og_image ? `<meta property="og:image" content="${escapeHtml(deal.og_image)}" />` : ""}
-  <style>
-    :root {
-      --bg: #0b1220;
-      --card: #111827;
-      --card-border: #1f2937;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22c55e;
-      --accent-dark: #04130a;
-      --link: #93c5fd;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-    }
-
-    .container {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 40px 20px 80px;
-    }
-
-    .eyebrow {
-      color: var(--accent);
-      font-weight: bold;
-      letter-spacing: 0.08em;
-      font-size: 12px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      font-size: 40px;
-      line-height: 1.15;
-      margin: 0 0 14px;
-    }
-
-    h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 24px;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 19px;
-      margin-bottom: 24px;
-    }
-
-    .hero-image-wrap { margin: 0 0 24px; }
-
-    .hero-image {
-      display: block;
-      width: 100%;
-      max-width: 100%;
-      border-radius: 16px;
-      border: 1px solid var(--card-border);
-      background: #0f172a;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
-      margin: 20px 0;
-    }
-
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
-    .cta {
-      display: inline-block;
-      background: var(--accent);
-      color: var(--accent-dark);
-      text-decoration: none;
-      padding: 14px 22px;
-      border-radius: 12px;
-      font-weight: bold;
-    }
-
-    .secondary {
-      display: inline-block;
-      color: var(--text);
-      text-decoration: none;
-      padding: 14px 22px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-    }
-
-    .muted { color: var(--muted); }
-
-    ul {
-      padding-left: 22px;
-      margin-bottom: 0;
-    }
-
-    li + li { margin-top: 8px; }
-
-    .footer {
-      margin-top: 48px;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .footer a {
-      color: var(--link);
-      text-decoration: none;
-    }
-  </style>
+  <meta name="twitter:card" content="summary_large_image" />
+  ${globalStyles()}
+  ${buildStructuredData(deal)}
 </head>
 <body>
-  <div class="container">
-    <div class="eyebrow">Pochify Pick</div>
+  ${navHtml()}
+  <div class="container narrow">
+    <div class="breadcrumbs">
+      <a href="/">Home</a> / <a href="/deals/">Deals</a> / <a href="/categories/${escapeHtml(deal.channel || "general")}.html">${escapeHtml(deal.channel || "general")}</a> / ${title}
+    </div>
 
+    <div class="eyebrow">Pochify Pick</div>
     <h1>${title}</h1>
     <div class="sub">${description}</div>
 
@@ -251,7 +477,7 @@ function buildDealHtml(deal) {
 
       <div class="cta-row">
         <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Try ${title}</a>
-        <a class="secondary" href="https://t.me/pochify" target="_blank" rel="noopener">Join Telegram</a>
+        <a class="secondary" href="/deals/">Browse more deals</a>
       </div>
     </div>
 
@@ -284,6 +510,9 @@ function buildDealHtml(deal) {
       </div>
     </div>
 
+    ${buildRelatedDealsHtml(relatedDeals)}
+    ${buildShareHtml(deal)}
+
     <div class="footer">
       <p>
         <a href="${SITE_URL}">Pochify</a> curates AI tools, SaaS products, and useful software finds.
@@ -308,7 +537,7 @@ function buildDealsIndexHtml(deals) {
           ${imageHtml}
           <h2>${escapeHtml(deal.name)}</h2>
           <p>${summary}</p>
-          <a class="cta" href="/deals/${deal.slug}.html">Read full breakdown</a>
+          <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
         </div>
       `;
     })
@@ -322,90 +551,16 @@ function buildDealsIndexHtml(deals) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Browse Pochify’s latest AI tools, SaaS products, and useful software picks." />
   <link rel="canonical" href="${SITE_URL}/deals/" />
-  <style>
-    :root {
-      --bg: #0b1220;
-      --card: #111827;
-      --border: #1f2937;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22c55e;
-      --accent-dark: #04130a;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 50px 20px 80px;
-    }
-
-    h1 {
-      font-size: 42px;
-      margin-bottom: 12px;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 18px;
-      margin-bottom: 32px;
-      max-width: 760px;
-    }
-
-    .grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-    }
-
-    .deal-card img {
-      width: 100%;
-      border-radius: 12px;
-      margin-bottom: 14px;
-      border: 1px solid #243041;
-      background: #0f172a;
-    }
-
-    .deal-card h2 {
-      font-size: 24px;
-      margin-top: 0;
-      margin-bottom: 10px;
-    }
-
-    .deal-card p {
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    .cta {
-      display: inline-block;
-      background: var(--accent);
-      color: var(--accent-dark);
-      text-decoration: none;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-weight: bold;
-    }
-  </style>
+  <meta name="robots" content="index,follow" />
+  ${globalStyles()}
 </head>
 <body>
+  ${navHtml()}
   <div class="container">
+    <div class="breadcrumbs">
+      <a href="/">Home</a> / Deals
+    </div>
+
     <h1>Browse Deals</h1>
     <div class="sub">
       Explore Pochify’s latest AI tools, SaaS products, and software picks with full breakdowns.
@@ -419,10 +574,53 @@ function buildDealsIndexHtml(deals) {
 </html>`;
 }
 
-export function generateDealPage(deal) {
+function buildCategoryPageHtml(category, deals) {
+  const pretty = category === "ai" ? "AI" : category === "saas" ? "SaaS" : "General";
+
+  const items = deals.map((deal) => `
+    <div class="card deal-card">
+      ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
+      <h2>${escapeHtml(deal.name)}</h2>
+      <p>${escapeHtml(deal.hook || deal.description || "Read the full breakdown.")}</p>
+      <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
+    </div>
+  `).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${pretty} Tools | Pochify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Browse ${pretty} tools and picks curated by Pochify." />
+  <link rel="canonical" href="${SITE_URL}/categories/${category}.html" />
+  <meta name="robots" content="index,follow" />
+  ${globalStyles()}
+</head>
+<body>
+  ${navHtml()}
+  <div class="container">
+    <div class="breadcrumbs">
+      <a href="/">Home</a> / <a href="/deals/">Deals</a> / ${pretty}
+    </div>
+
+    <h1>${pretty} Tools</h1>
+    <div class="sub">
+      Browse curated ${pretty} products and breakdowns from Pochify.
+    </div>
+
+    <div class="grid">
+      ${items || `<div class="card">No ${pretty} deals yet.</div>`}
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export function generateDealPage(deal, allDeals) {
   ensureDir(path.join("docs", "deals"));
   const filePath = getDealPagePath(deal.slug);
-  fs.writeFileSync(filePath, buildDealHtml(deal), "utf8");
+  fs.writeFileSync(filePath, buildDealHtml(deal, allDeals), "utf8");
   return filePath;
 }
 
@@ -433,12 +631,48 @@ export function generateDealsIndex(deals) {
   return filePath;
 }
 
+export function generateCategoryPages(deals) {
+  ensureDir(path.join("docs", "categories"));
+  const categories = ["ai", "saas", "general"];
+
+  const generated = [];
+
+  for (const category of categories) {
+    const filtered = deals.filter((d) => (d.channel || "general") === category);
+    const filePath = getCategoryPagePath(category);
+    fs.writeFileSync(filePath, buildCategoryPageHtml(category, filtered), "utf8");
+    generated.push(filePath);
+  }
+
+  return generated;
+}
+
+export function generateRobotsTxt() {
+  ensureDir("docs");
+  fs.writeFileSync(
+    path.join("docs", "robots.txt"),
+    `User-agent: *
+Allow: /
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`,
+    "utf8"
+  );
+}
+
 export function generateSitemap(deals) {
   ensureDir("docs");
+
+  const categoryUrls = [
+    `${SITE_URL}/categories/ai.html`,
+    `${SITE_URL}/categories/saas.html`,
+    `${SITE_URL}/categories/general.html`
+  ];
 
   const urls = [
     `${SITE_URL}/`,
     `${SITE_URL}/deals/`,
+    ...categoryUrls,
     ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
   ];
 
