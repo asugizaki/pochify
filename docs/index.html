@@ -1,242 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Pochify — AI Deals & SaaS Discounts</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Pochify — Find tools worth your time (and money)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise." />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #04130a;
+    }
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
 
-<style>
-body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: radial-gradient(circle at top, #1e293b, #020617);
-  color: #e2e8f0;
-}
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 20px;
+    }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 60px 20px;
-}
+    .hero {
+      text-align: center;
+    }
 
-/* HERO */
-.hero {
-  text-align: center;
-}
+    h1 {
+      font-size: 44px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
 
-.hero h1 {
-  font-size: 56px;
-  background: linear-gradient(90deg, #22c55e, #4ade80);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 15px;
-}
+    .sub {
+      font-size: 20px;
+      color: var(--muted);
+      max-width: 760px;
+      margin: 0 auto 32px;
+    }
 
-.subtitle {
-  color: #94a3b8;
-  font-size: 20px;
-  margin-bottom: 30px;
-}
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-dark);
+      padding: 14px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 10px;
+    }
 
-.cta {
-  background: linear-gradient(135deg, #22c55e, #4ade80);
-  color: black;
-  padding: 16px 32px;
-  border-radius: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-block;
-  box-shadow: 0 10px 30px rgba(34,197,94,0.3);
-  transition: 0.2s;
-}
+    .secondary {
+      display: inline-block;
+      border: 1px solid #334155;
+      padding: 14px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      margin: 10px;
+    }
 
-.cta:hover {
-  transform: translateY(-2px);
-}
+    .section {
+      margin-top: 80px;
+    }
 
-/* MOCK PREVIEW */
-.mock {
-  margin-top: 50px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-}
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
 
-.deal {
-  background: #020617;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
 
-.deal-title {
-  font-weight: 600;
-}
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #243041;
+      background: #0f172a;
+    }
 
-.badge {
-  font-size: 12px;
-  color: #22c55e;
-}
+    .deal-card h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
 
-/* SECTION */
-.section {
-  margin-top: 70px;
-  text-align: center;
-}
+    .deal-card p {
+      color: var(--muted);
+    }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 30px;
-}
+    .deal-card a {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
 
-.card {
-  background: rgba(255,255,255,0.05);
-  padding: 25px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  text-align: left;
-}
+    h2 {
+      margin-bottom: 12px;
+    }
 
-/* SOCIAL PROOF */
-.social-proof {
-  margin-top: 60px;
-  text-align: center;
-  color: #64748b;
-}
+    .muted {
+      color: var(--muted);
+    }
 
-/* FOOTER */
-.footer {
-  margin-top: 80px;
-  text-align: center;
-  font-size: 13px;
-  color: #64748b;
-}
-
-/* MOBILE */
-@media (max-width: 900px) {
-  .cards {
-    grid-template-columns: 1fr;
-  }
-
-  .hero h1 {
-    font-size: 40px;
-  }
-}
-</style>
+    .footer {
+      margin-top: 80px;
+      color: #64748b;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
 </head>
-
 <body>
+  <div class="container">
+    <div class="hero">
+      <h1>Find tools actually worth using</h1>
+      <div class="sub">
+        We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+      </div>
 
-<div class="container">
-
-  <!-- HERO -->
-  <div class="hero">
-    <h1>🚀 Pochify</h1>
-
-    <div class="subtitle">
-      The fastest way to discover AI tools, SaaS deals & hidden gems.
+      <a href="https://t.me/pochify" class="cta">Join Telegram</a>
+      <a href="/deals/" class="secondary">Browse Deal Pages</a>
     </div>
 
-    <a class="cta" href="https://t.me/pochify" target="_blank">
-      🔥 Join Telegram Deals
-    </a>
-
-    <!-- MOCK UI -->
-    <div class="mock">
-      <div class="deal">
-        <div class="deal-title">🔥 Notion AI — 40% OFF</div>
-        <div class="badge">AI Writing Tool</div>
-      </div>
-
-      <div class="deal">
-        <div class="deal-title">🔥 Midjourney — 33% OFF</div>
-        <div class="badge">AI Image Generator</div>
-      </div>
-
-      <div class="deal">
-        <div class="deal-title">🔥 Copy.ai — Lifetime Deal</div>
-        <div class="badge">Marketing AI</div>
+    <div class="section">
+      <h2>What you’ll get</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>💰 Real value</h3>
+          <p class="muted">Free tiers, trials, discounts, and tools that can replace paid ones.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ Early advantage</h3>
+          <p class="muted">Discover tools before they get expensive or saturated.</p>
+        </div>
+        <div class="card">
+          <h3>🧠 Clear breakdowns</h3>
+          <p class="muted">We explain what the product actually does and who it’s for.</p>
+        </div>
+        <div class="card">
+          <h3>🚫 No fluff</h3>
+          <p class="muted">No fake discounts, no spam — only products that pass a usefulness filter.</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- FEATURES -->
-  <div class="section">
-    <h2>⚡ Why Use Pochify?</h2>
+    <div class="section">
+      <h2>Latest picks</h2>
+      <div id="latestDeals" class="grid"></div>
+    </div>
 
-    <div class="cards">
-
-      <div class="card">
-        <h3>🧠 Smart Curation</h3>
-        <p>
-          We filter hundreds of tools daily to bring you only high-value deals.
-        </p>
-      </div>
-
-      <div class="card">
-        <h3>⚡ Real-Time Alerts</h3>
-        <p>
-          Deals are sent instantly via Telegram so you never miss out.
-        </p>
-      </div>
-
-      <div class="card">
-        <h3>💰 Save Money</h3>
-        <p>
-          Get discounts, trials, and lifetime deals before everyone else.
-        </p>
-      </div>
-
+    <div class="footer">
+      Pochify — tools that help you move faster, spend less, or stay ahead.
     </div>
   </div>
 
-  <!-- HOW IT WORKS -->
-  <div class="section">
-    <h2>🧩 How It Works</h2>
+  <script>
+    async function loadLatestDeals() {
+      try {
+        const res = await fetch("https://go.pochify.com/api/public/latest-deals");
+        const data = await res.json();
 
-    <div class="cards">
+        const container = document.getElementById("latestDeals");
+        const items = data.items || [];
 
-      <div class="card">
-        <h3>1. Scan</h3>
-        <p>We scan Product Hunt, affiliate networks & deal platforms.</p>
-      </div>
+        if (items.length === 0) {
+          container.innerHTML = '<div class="card">No deals yet. Check back soon.</div>';
+          return;
+        }
 
-      <div class="card">
-        <h3>2. Filter</h3>
-        <p>AI scoring selects only high-quality opportunities.</p>
-      </div>
+        container.innerHTML = items.map(item => {
+          const imageHtml = item.og_image
+            ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />'
+            : '';
 
-      <div class="card">
-        <h3>3. Deliver</h3>
-        <p>You get the best deals instantly on Telegram.</p>
-      </div>
+          return `
+            <div class="card deal-card">
+              ${imageHtml}
+              <h3>${item.name}</h3>
+              <p>${item.hook || item.description || ""}</p>
+              <a href="/deals/${item.slug}.html">Read full breakdown</a>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        console.error("Failed to load latest deals", err);
+      }
+    }
 
-    </div>
-  </div>
-
-  <!-- SOCIAL PROOF -->
-  <div class="social-proof">
-    Trusted by early adopters, builders, and AI enthusiasts 🚀
-  </div>
-
-  <!-- FINAL CTA -->
-  <div class="section">
-    <a class="cta" href="https://t.me/pochify" target="_blank">
-      🚀 Get Daily AI Deals
-    </a>
-  </div>
-
-  <div class="footer">
-    © 2026 Pochify — AI & SaaS Discovery Platform
-  </div>
-
-</div>
-
+    loadLatestDeals();
+  </script>
 </body>
 </html>
