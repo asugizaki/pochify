@@ -41,20 +41,57 @@ function getCategoryPagePath(category) {
   return path.join("docs", "categories", `${category}.html`);
 }
 
+function iconX() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22H16.9l-4.94-6.94L5.88 22H2.76l7.24-8.28L.8 2h6.46l4.46 6.3L18.9 2zm-1.1 18h1.74L6.22 3.9H4.36L17.8 20z"/></svg>`;
+}
+
+function iconLinkedIn() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 1 0 5.3 6.94 1.97 1.97 0 0 0 5.25 3zM20.44 12.77c0-3.43-1.83-5.02-4.27-5.02-1.97 0-2.85 1.08-3.34 1.84V8.5H9.45c.04.72 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.38 1.91-1.38 1.35 0 1.89 1.03 1.89 2.54V20h3.38v-7.23z"/></svg>`;
+}
+
+function iconFacebook() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.25c-1.23 0-1.61.76-1.61 1.55V12h2.74l-.44 2.89h-2.3v6.99A10 10 0 0 0 22 12z"/></svg>`;
+}
+
+function iconInstagram() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2.2A2.8 2.8 0 0 0 4.2 7v10A2.8 2.8 0 0 0 7 19.8h10a2.8 2.8 0 0 0 2.8-2.8V7A2.8 2.8 0 0 0 17 4.2H7zm5 3.3A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5zm0 2.2A2.3 2.3 0 1 0 14.3 12 2.3 2.3 0 0 0 12 9.7zm4.8-3.5a1.05 1.05 0 1 1-1.05 1.05A1.05 1.05 0 0 1 16.8 6.2z"/></svg>`;
+}
+
+function iconLink() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l5-5a3 3 0 0 0-4.24-4.24l-1.88 1.88a1 1 0 1 0 1.41 1.41l1.88-1.88a1 1 0 1 1 1.41 1.41l-5 5z"/><path fill="currentColor" d="M13.41 10.59a1 1 0 0 0-1.41-1.41l-5 5a3 3 0 0 0 4.24 4.24l1.88-1.88a1 1 0 1 0-1.41-1.41l-1.88 1.88a1 1 0 1 1-1.41-1.41l5-5z"/></svg>`;
+}
+
 function navHtml() {
   return `
     <header class="site-header">
       <div class="nav-wrap">
         <a class="brand" href="/">Pochify</a>
-        <nav class="nav-links">
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
           <a href="/">Home</a>
-          <a href="/deals/">Browse Deals</a>
+          <a href="/deals/">Deals</a>
           <a href="/categories/ai.html">AI</a>
           <a href="/categories/saas.html">SaaS</a>
+          <a href="/categories/general.html">General</a>
           <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
         </nav>
       </div>
     </header>
+  `;
+}
+
+function footerHtml() {
+  return `
+    <div class="footer">
+      <p>
+        <a href="${SITE_URL}">Pochify</a> curates AI tools, SaaS products, and useful software finds.
+      </p>
+      <p class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </p>
+    </div>
   `;
 }
 
@@ -70,6 +107,7 @@ function globalStyles() {
         --accent: #22c55e;
         --accent-dark: #04130a;
         --link: #93c5fd;
+        --btn-dark: #0f172a;
       }
 
       * { box-sizing: border-box; }
@@ -106,6 +144,17 @@ function globalStyles() {
         text-decoration: none;
         font-weight: bold;
         font-size: 22px;
+      }
+
+      .menu-toggle {
+        display: none;
+        background: transparent;
+        border: 1px solid #334155;
+        color: var(--text);
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 20px;
+        cursor: pointer;
       }
 
       .nav-links {
@@ -150,10 +199,9 @@ function globalStyles() {
         margin: 0 0 14px;
       }
 
-      h2 {
+      h2, h3 {
         margin-top: 0;
         margin-bottom: 12px;
-        font-size: 24px;
       }
 
       .sub {
@@ -243,12 +291,6 @@ function globalStyles() {
         background: #0f172a;
       }
 
-      .deal-card h3,
-      .deal-card h2 {
-        margin-top: 0;
-        margin-bottom: 10px;
-      }
-
       .deal-card p {
         color: var(--muted);
       }
@@ -267,14 +309,26 @@ function globalStyles() {
         flex-wrap: wrap;
       }
 
-      .share-btn {
-        display: inline-block;
+      .share-btn,
+      .share-btn-copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         padding: 10px 14px;
         border-radius: 10px;
         text-decoration: none;
         border: 1px solid #334155;
         color: var(--text);
+        background: var(--btn-dark);
         font-size: 14px;
+        cursor: pointer;
+      }
+
+      .share-btn svg,
+      .share-btn-copy svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
       }
 
       .footer {
@@ -288,10 +342,30 @@ function globalStyles() {
         text-decoration: none;
       }
 
-      @media (max-width: 700px) {
-        .nav-wrap {
+      .footer-links {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 760px) {
+        .menu-toggle {
+          display: inline-block;
+        }
+
+        .nav-links {
+          display: none;
+          width: 100%;
           flex-direction: column;
-          align-items: flex-start;
+          padding-top: 10px;
+        }
+
+        .nav-links.open {
+          display: flex;
+        }
+
+        .nav-wrap {
+          flex-wrap: wrap;
         }
 
         h1 {
@@ -302,10 +376,30 @@ function globalStyles() {
   `;
 }
 
+function navScript() {
+  return `
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById('siteNav');
+        if (nav) nav.classList.toggle('open');
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || 'Link copied');
+        } catch (e) {
+          alert('Could not copy link');
+        }
+      }
+    </script>
+  `;
+}
+
 function buildBenefitsHtml(benefits = []) {
   const safeBenefits = Array.isArray(benefits) ? benefits.filter(Boolean).slice(0, 4) : [];
 
-  if (safeBenefits.length === 0) {
+  if (!safeBenefits.length) {
     return `
       <ul>
         <li>Could be useful if this category is relevant to your workflow</li>
@@ -349,44 +443,6 @@ function getRelatedDeals(allDeals, currentDeal) {
     .slice(0, 3);
 }
 
-function buildRelatedDealsHtml(relatedDeals = []) {
-  if (!relatedDeals.length) return "";
-
-  return `
-    <div class="card">
-      <h2>Related tools worth browsing</h2>
-      <div class="grid">
-        ${relatedDeals.map((deal) => `
-          <div class="deal-card">
-            ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
-            <h3>${escapeHtml(deal.name)}</h3>
-            <p>${escapeHtml(deal.hook || deal.description || "Read the full breakdown.")}</p>
-            <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function buildShareHtml(deal) {
-  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
-  const encodedUrl = encodeURIComponent(pageUrl);
-  const encodedText = encodeURIComponent(`${deal.name} — ${deal.hook || deal.description || "Worth a look"}`);
-
-  return `
-    <div class="card">
-      <h2>Share this pick</h2>
-      <div class="share-row">
-        <a class="share-btn" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">Share on X</a>
-        <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">Share on LinkedIn</a>
-        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">Share on Facebook</a>
-        <button class="share-btn" onclick="navigator.clipboard.writeText('${pageUrl}').then(() => alert('Link copied'))">Copy link</button>
-      </div>
-    </div>
-  `;
-}
-
 function buildStructuredData(deal) {
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
   const data = {
@@ -408,6 +464,89 @@ function buildStructuredData(deal) {
   };
 
   return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+}
+
+function buildShareHtml(deal) {
+  const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
+  const encodedUrl = encodeURIComponent(pageUrl);
+  const encodedText = encodeURIComponent(`${deal.name} — ${deal.hook || deal.description || "Worth a look"}`);
+
+  return `
+    <div class="card">
+      <h2>Share this pick</h2>
+      <div class="share-row">
+        <a class="share-btn" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">${iconX()}<span>X</span></a>
+        <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">${iconLinkedIn()}<span>LinkedIn</span></a>
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">${iconFacebook()}<span>Facebook</span></a>
+        <button class="share-btn-copy" onclick="copyText('${pageUrl}', 'Link copied for Instagram sharing')">${iconInstagram()}<span>Instagram</span></button>
+        <button class="share-btn-copy" onclick="copyText('${pageUrl}', 'Link copied')">${iconLink()}<span>Copy link</span></button>
+      </div>
+    </div>
+  `;
+}
+
+function buildRelatedDealsHtmlStatic(relatedDeals = []) {
+  if (!relatedDeals.length) return "";
+
+  return `
+    <div class="card">
+      <h2>Related tools worth browsing</h2>
+      <div class="grid">
+        ${relatedDeals.map((deal) => `
+          <div class="deal-card">
+            ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
+            <h3>${escapeHtml(deal.name)}</h3>
+            <p>${escapeHtml(deal.hook || deal.description || "Read the full breakdown.")}</p>
+            <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function buildRelatedDealsDynamic(deal) {
+  return `
+    <div class="card">
+      <h2>Related tools worth browsing</h2>
+      <div id="relatedDeals" class="grid">
+        <div class="muted">Loading related tools…</div>
+      </div>
+    </div>
+
+    <script>
+      async function loadRelatedDeals() {
+        const container = document.getElementById("relatedDeals");
+        if (!container) return;
+
+        try {
+          const res = await fetch("https://go.pochify.com/api/public/related-deals?slug=${encodeURIComponent(deal.slug)}");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const items = data.items || [];
+
+          if (items.length === 0) {
+            container.innerHTML = '<div class="muted">No related tools found yet.</div>';
+            return;
+          }
+
+          container.innerHTML = items.map(item => \`
+            <div class="deal-card">
+              \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
+              <h3>\${item.name}</h3>
+              <p>\${item.hook || item.description || 'Read the full breakdown.'}</p>
+              <a class="inline-link" href="/deals/\${item.slug}.html">Read full breakdown</a>
+            </div>
+          \`).join("");
+        } catch (err) {
+          console.error("Failed to load related deals", err);
+          container.innerHTML = '<div class="muted">Related tools are temporarily unavailable.</div>';
+        }
+      }
+
+      loadRelatedDeals();
+    </script>
+  `;
 }
 
 function buildDealHtml(deal, allDeals) {
@@ -477,7 +616,7 @@ function buildDealHtml(deal, allDeals) {
 
       <div class="cta-row">
         <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Try ${title}</a>
-        <a class="secondary" href="/deals/">Browse more deals</a>
+        <a class="secondary" href="/deals/">More deals</a>
       </div>
     </div>
 
@@ -510,15 +649,13 @@ function buildDealHtml(deal, allDeals) {
       </div>
     </div>
 
-    ${buildRelatedDealsHtml(relatedDeals)}
+    ${buildRelatedDealsDynamic(deal)}
+    ${buildRelatedDealsHtmlStatic(relatedDeals)}
     ${buildShareHtml(deal)}
 
-    <div class="footer">
-      <p>
-        <a href="${SITE_URL}">Pochify</a> curates AI tools, SaaS products, and useful software finds.
-      </p>
-    </div>
+    ${footerHtml()}
   </div>
+  ${navScript()}
 </body>
 </html>`;
 }
@@ -547,7 +684,7 @@ function buildDealsIndexHtml(deals) {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Browse Deals | Pochify</title>
+  <title>Deals | Pochify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Browse Pochify’s latest AI tools, SaaS products, and useful software picks." />
   <link rel="canonical" href="${SITE_URL}/deals/" />
@@ -561,7 +698,7 @@ function buildDealsIndexHtml(deals) {
       <a href="/">Home</a> / Deals
     </div>
 
-    <h1>Browse Deals</h1>
+    <h1>Deals</h1>
     <div class="sub">
       Explore Pochify’s latest AI tools, SaaS products, and software picks with full breakdowns.
     </div>
@@ -569,7 +706,10 @@ function buildDealsIndexHtml(deals) {
     <div class="grid">
       ${items || `<div class="card">No deals yet.</div>`}
     </div>
+
+    ${footerHtml()}
   </div>
+  ${navScript()}
 </body>
 </html>`;
 }
@@ -612,7 +752,10 @@ function buildCategoryPageHtml(category, deals) {
     <div class="grid">
       ${items || `<div class="card">No ${pretty} deals yet.</div>`}
     </div>
+
+    ${footerHtml()}
   </div>
+  ${navScript()}
 </body>
 </html>`;
 }
@@ -672,6 +815,9 @@ export function generateSitemap(deals) {
   const urls = [
     `${SITE_URL}/`,
     `${SITE_URL}/deals/`,
+    `${SITE_URL}/faq.html`,
+    `${SITE_URL}/privacy.html`,
+    `${SITE_URL}/terms.html`,
     ...categoryUrls,
     ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
   ];
