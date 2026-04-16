@@ -5,7 +5,6 @@
   <title>Pochify — Find tools worth your time (and money)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise." />
-
   <style>
     :root {
       --bg: #0b1220;
@@ -26,9 +25,12 @@
     }
 
     .container {
-      max-width: 960px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 60px 20px;
+    }
+
+    .hero {
       text-align: center;
     }
 
@@ -41,7 +43,7 @@
     .sub {
       font-size: 20px;
       color: var(--muted);
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto 32px;
     }
 
@@ -68,7 +70,6 @@
 
     .section {
       margin-top: 80px;
-      text-align: left;
     }
 
     .grid {
@@ -84,6 +85,31 @@
       padding: 20px;
     }
 
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #243041;
+      background: #0f172a;
+    }
+
+    .deal-card h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .deal-card p {
+      color: var(--muted);
+    }
+
+    .deal-card a {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
     h2 {
       margin-bottom: 12px;
     }
@@ -96,94 +122,88 @@
       margin-top: 80px;
       color: #64748b;
       font-size: 14px;
-    }
-
-    a {
-      color: inherit;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Find tools actually worth using</h1>
+    <div class="hero">
+      <h1>Find tools actually worth using</h1>
+      <div class="sub">
+        We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+      </div>
 
-    <div class="sub">
-      We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+      <a href="https://t.me/pochify" class="cta">Join Telegram</a>
+      <a href="/deals/" class="secondary">Browse Deal Pages</a>
     </div>
 
-    <a href="https://t.me/pochify" class="cta">Join Telegram</a>
-    <a href="/deals/" class="secondary">Browse Deals</a>
-
-    <!-- VALUE SECTION -->
     <div class="section">
       <h2>What you’ll get</h2>
       <div class="grid">
         <div class="card">
           <h3>💰 Real value</h3>
-          <p class="muted">
-            Free tiers, trials, discounts, and tools that can replace paid ones.
-          </p>
+          <p class="muted">Free tiers, trials, discounts, and tools that can replace paid ones.</p>
         </div>
-
         <div class="card">
           <h3>⚡ Early advantage</h3>
-          <p class="muted">
-            Discover tools before they get expensive or saturated.
-          </p>
+          <p class="muted">Discover tools before they get expensive or saturated.</p>
         </div>
-
         <div class="card">
           <h3>🧠 Clear breakdowns</h3>
-          <p class="muted">
-            We explain what the product actually does and who it’s for.
-          </p>
+          <p class="muted">We explain what the product actually does and who it’s for.</p>
         </div>
-
         <div class="card">
           <h3>🚫 No fluff</h3>
-          <p class="muted">
-            No fake discounts, no spam — only tools that pass a usefulness filter.
-          </p>
+          <p class="muted">No fake discounts, no spam — only products that pass a usefulness filter.</p>
         </div>
       </div>
     </div>
 
-    <!-- HOW IT WORKS -->
     <div class="section">
-      <h2>How it works</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>1. We scan</h3>
-          <p class="muted">
-            We monitor new product launches and trending tools.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>2. We filter</h3>
-          <p class="muted">
-            Only tools with real utility or leverage make it through.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>3. We explain</h3>
-          <p class="muted">
-            Each tool gets a breakdown so you know if it’s worth your time.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- RECENT DEALS LINK -->
-    <div class="section" style="text-align:center;">
-      <h2>Start exploring</h2>
-      <a href="/deals/" class="cta">View Latest Deals</a>
+      <h2>Latest picks</h2>
+      <div id="latestDeals" class="grid"></div>
     </div>
 
     <div class="footer">
       Pochify — tools that help you move faster, spend less, or stay ahead.
     </div>
   </div>
+
+  <script>
+    async function loadLatestDeals() {
+      try {
+        const res = await fetch("https://go.pochify.com/api/public/latest-deals");
+        const data = await res.json();
+
+        const container = document.getElementById("latestDeals");
+        const items = data.items || [];
+
+        if (items.length === 0) {
+          container.innerHTML = '<div class="card">No deals yet. Check back soon.</div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => {
+          const imageHtml = item.og_image
+            ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />'
+            : '';
+
+          return `
+            <div class="card deal-card">
+              ${imageHtml}
+              <h3>${item.name}</h3>
+              <p>${item.hook || item.description || ""}</p>
+              <a href="/deals/${item.slug}.html">Read full breakdown</a>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        console.error("Failed to load latest deals", err);
+      }
+    }
+
+    loadLatestDeals();
+  </script>
 </body>
 </html>
