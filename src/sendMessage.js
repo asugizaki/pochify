@@ -17,13 +17,14 @@ export async function sendMessage(chatId, deal) {
   const bullets = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 2) : [];
 
   const message = `
-🔥 <b>${deal.name}</b>
-
-${deal.hook || deal.description}
-
-💡 <b>Why people may care:</b>
-• ${bullets[0] || "Worth checking if this category is relevant to you"}
-• ${bullets[1] || "We broke down who it looks best for"}
+    🔥 <b>${deal.name}</b>
+    
+    ${deal.hook}
+    
+    💰 <b>${deal.value_hook}</b>
+    
+    👉 <a href="${pageUrl}">See full breakdown</a>
+    `.trim();
 
 👉 <a href="${pageUrl}">Read the full breakdown</a>
 `.trim();
