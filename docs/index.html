@@ -5,6 +5,8 @@
   <title>Pochify — Find tools worth your time (and money)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/" />
   <style>
     :root {
       --bg: #0b1220;
@@ -14,7 +16,10 @@
       --muted: #94a3b8;
       --accent: #22c55e;
       --accent-dark: #04130a;
+      --btn-dark: #0f172a;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -22,6 +27,60 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .nav-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .nav-links a:hover,
+    .brand:hover {
+      color: var(--text);
     }
 
     .container {
@@ -110,12 +169,9 @@
       font-weight: bold;
     }
 
-    h2 {
-      margin-bottom: 12px;
-    }
-
-    .muted {
+    .empty {
       color: var(--muted);
+      padding: 10px 0;
     }
 
     .footer {
@@ -125,13 +181,60 @@
       text-align: center;
     }
 
-    .empty {
-      color: var(--muted);
-      padding: 10px 0;
+    .footer-links {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    @media (max-width: 760px) {
+      .menu-toggle {
+        display: inline-block;
+      }
+
+      .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        padding-top: 10px;
+      }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-wrap {
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
     }
   </style>
 </head>
 <body>
+  <header class="site-header">
+    <div class="nav-wrap">
+      <a class="brand" href="/">Pochify</a>
+      <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+      <nav class="nav-links" id="siteNav">
+        <a href="/deals/">Deals</a>
+        <a href="/categories/ai.html">AI</a>
+        <a href="/categories/saas.html">SaaS</a>
+        <a href="/categories/general.html">General</a>
+        <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+      </nav>
+    </div>
+  </header>
+
   <div class="container">
     <div class="hero">
       <h1>Find tools actually worth using</h1>
@@ -140,7 +243,7 @@
       </div>
 
       <a href="https://t.me/pochify" class="cta">Join Telegram</a>
-      <a href="/deals/" class="secondary">Browse Deal Pages</a>
+      <a href="/deals/" class="secondary">Browse all deals</a>
     </div>
 
     <div class="section">
@@ -166,31 +269,67 @@
     </div>
 
     <div class="section">
+      <h2>Browse by category</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>AI</h3>
+          <p class="muted">Products focused on AI workflows, assistants, generation, and automation.</p>
+          <a href="/categories/ai.html">Explore AI</a>
+        </div>
+        <div class="card">
+          <h3>SaaS</h3>
+          <p class="muted">Software products built for productivity, teams, and recurring workflows.</p>
+          <a href="/categories/saas.html">Explore SaaS</a>
+        </div>
+        <div class="card">
+          <h3>General</h3>
+          <p class="muted">Other useful tools that still look worth reviewing.</p>
+          <a href="/categories/general.html">Explore General</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <h2>Latest picks</h2>
       <div id="latestDeals" class="grid">
         <div class="card empty">Loading latest picks…</div>
       </div>
     </div>
 
+    <div class="section">
+      <h2>Top clicked this week</h2>
+      <div id="topClickedDeals" class="grid">
+        <div class="card empty">Loading top clicked picks…</div>
+      </div>
+    </div>
+
     <div class="footer">
       Pochify — tools that help you move faster, spend less, or stay ahead.
+      <div class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </div>
     </div>
   </div>
 
   <script>
+    function toggleMenu() {
+      const nav = document.getElementById("siteNav");
+      if (nav) nav.classList.toggle("open");
+    }
+
     async function loadLatestDeals() {
       const container = document.getElementById("latestDeals");
 
       try {
         const res = await fetch("https://go.pochify.com/api/public/latest-deals");
-        if (!res.ok) {
-          throw new Error("HTTP " + res.status);
-        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
 
         const data = await res.json();
         const items = data.items || [];
 
-        if (items.length === 0) {
+        if (!items.length) {
           container.innerHTML = '<div class="card empty">No picks yet. Check back soon.</div>';
           return;
         }
@@ -217,7 +356,45 @@
       }
     }
 
+    async function loadTopClickedDeals() {
+      const container = document.getElementById("topClickedDeals");
+
+      try {
+        const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const data = await res.json();
+        const items = data.items || [];
+
+        if (!items.length) {
+          container.innerHTML = '<div class="card empty">No top clicked data yet.</div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => {
+          const imageHtml = item.og_image
+            ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />'
+            : '';
+
+          const body = item.hook || item.description || "Read the full breakdown.";
+
+          return `
+            <div class="card deal-card">
+              ${imageHtml}
+              <h3>${item.name}</h3>
+              <p>${body}</p>
+              <a href="/deals/${item.slug}.html">Read full breakdown</a>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        console.error("Failed to load top clicked deals", err);
+        container.innerHTML = '<div class="card empty">Top clicked picks are temporarily unavailable.</div>';
+      }
+    }
+
     loadLatestDeals();
+    loadTopClickedDeals();
   </script>
 </body>
 </html>
