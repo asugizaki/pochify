@@ -34,7 +34,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/deals docs/categories docs/sitemap.xml docs/robots.txt
+          git add docs/deals docs/categories docs/sitemap.xml docs/robots.txt docs/index.html docs/faq.html docs/privacy.html docs/terms.html
           git commit -m "update generated site pages" || exit 0
           git push
 
