@@ -352,7 +352,6 @@ export function navHtml() {
           <a href="/deals/">Deals</a>
           <a href="/categories/ai.html">AI</a>
           <a href="/categories/saas.html">SaaS</a>
-          <a href="/categories/general.html">General</a>
           <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
         </nav>
       </div>
@@ -404,7 +403,7 @@ export function layout({
   extraHead = "",
   bodyContent = "",
   includeNav = true,
-  includeFooter = true,
+  includeFooterScripts = true,
   siteUrl = "https://pochify.com"
 }) {
   return `<!DOCTYPE html>
@@ -428,7 +427,7 @@ export function layout({
 <body class="${bodyClass}">
   ${includeNav ? navHtml() : ""}
   ${bodyContent}
-  ${includeFooter ? sharedScripts() : ""}
+  ${includeFooterScripts ? sharedScripts() : ""}
 </body>
 </html>`;
 }
@@ -497,9 +496,7 @@ export function paginationHtml({ basePath, currentPage, totalPages }) {
 
   for (let i = 1; i <= totalPages; i += 1) {
     const href = i === 1 ? `${basePath}/` : `${basePath}/page/${i}/`;
-    links.push(
-      `<a class="page-link ${i === currentPage ? "current" : ""}" href="${href}">${i}</a>`
-    );
+    links.push(`<a class="page-link ${i === currentPage ? "current" : ""}" href="${href}">${i}</a>`);
   }
 
   return `<div class="pagination">${links.join("")}</div>`;
