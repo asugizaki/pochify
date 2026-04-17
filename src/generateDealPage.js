@@ -33,24 +33,23 @@ function getDealsIndexPagePath(pageNumber) {
   return path.join("docs", "deals", "page", String(pageNumber), "index.html");
 }
 
-function buildBenefitsHtml(benefits = []) {
-  const safeBenefits = Array.isArray(benefits) ? benefits.filter(Boolean).slice(0, 4) : [];
+function listHtml(items = []) {
+  if (!Array.isArray(items) || !items.length) return "";
+  return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+}
 
-  if (!safeBenefits.length) {
-    return `
-      <ul>
-        <li>Could be useful if this category is relevant to your workflow</li>
-        <li>Worth testing before committing to a long-term tool</li>
-        <li>May help save time depending on your use case</li>
-      </ul>
-    `;
-  }
-
-  return `
-    <ul>
-      ${safeBenefits.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}
-    </ul>
-  `;
+function faqHtml(faq = []) {
+  if (!Array.isArray(faq) || !faq.length) return "";
+  return faq
+    .map(
+      (item) => `
+        <div style="margin-bottom:16px;">
+          <strong>${escapeHtml(item.q)}</strong>
+          <p>${escapeHtml(item.a)}</p>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function buildImageHtml(deal) {
@@ -114,6 +113,21 @@ function buildRelatedDealsDynamic(deal) {
   `;
 }
 
+function buildPriceBox(deal) {
+  if (!deal.current_price && !deal.original_price && !deal.discount_percent && !deal.offer_type) {
+    return "";
+  }
+
+  return `
+    <div class="price-box">
+      ${deal.current_price ? `<span class="price-current">$${escapeHtml(String(deal.current_price))}</span>` : ""}
+      ${deal.original_price ? `<span class="price-old">$${escapeHtml(String(deal.original_price))}</span>` : ""}
+      ${deal.discount_percent ? `<span class="badge badge-sale">${escapeHtml(String(deal.discount_percent))}% off</span>` : ""}
+      ${deal.offer_type === "lifetime" ? `<span class="badge">Lifetime deal</span>` : ""}
+    </div>
+  `;
+}
+
 function buildDealHtml(deal, allDeals) {
   const title = deal.name || "Untitled Product";
   const description = deal.description || "A useful product worth checking out.";
@@ -128,12 +142,72 @@ function buildDealHtml(deal, allDeals) {
   const metaDescription = deal.meta_description || deal.description || "Pochify breakdown and review";
   const pageUrl = `${SITE_URL}/deals/${deal.slug}.html`;
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
-  const benefits = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 4) : [];
   const relatedDeals = getRelatedDeals(allDeals, deal);
+
+  const overviewParagraphs = Array.isArray(deal.overview_paragraphs)
+    ? deal.overview_paragraphs
+    : [];
+  const useCases = Array.isArray(deal.use_cases) ? deal.use_cases : [];
+  const featureHighlights = Array.isArray(deal.feature_highlights)
+    ? deal.feature_highlights
+    : [];
+  const faq = Array.isArray(deal.faq) ? deal.faq : [];
+
+  const pricingBlock =
+    deal.current_price || deal.original_price || deal.discount_percent
+      ? `
+        <div class="card">
+          <h2>Deal snapshot</h2>
+          ${buildPriceBox(deal)}
+          <p style="margin-top:16px;">${escapeHtml(
+            deal.deal_summary ||
+              `${title} is currently listed as a discounted offer worth checking.`
+          )}</p>
+          <ul>
+            ${
+              deal.current_price
+                ? `<li>Current listed price: $${escapeHtml(String(deal.current_price))}</li>`
+                : ""
+            }
+            ${
+              deal.original_price
+                ? `<li>Original listed price: $${escapeHtml(String(deal.original_price))}</li>`
+                : ""
+            }
+            ${
+              deal.discount_percent
+                ? `<li>Visible discount: ${escapeHtml(String(deal.discount_percent))}% off</li>`
+                : ""
+            }
+            ${
+              deal.offer_type
+                ? `<li>Offer type: ${escapeHtml(String(deal.offer_type))}</li>`
+                : ""
+            }
+          </ul>
+        </div>
+      `
+      : "";
+
+  const sourceBlock =
+    deal.source === "stacksocial" && deal.stacksocial_url
+      ? `
+        <div class="card">
+          <h2>Get the deal</h2>
+          <p>This page summarizes the offer, but the purchase happens on StackSocial.</p>
+          <div class="cta-row">
+            <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Go to StackSocial deal</a>
+            <a class="secondary" href="${escapeHtml(deal.stacksocial_url)}" target="_blank" rel="noopener sponsored">View original deal page</a>
+          </div>
+        </div>
+      `
+      : "";
 
   const channelBreadcrumb =
     deal.channel === "ai" || deal.channel === "saas"
-      ? `/ <a href="/categories/${escapeHtml(deal.channel)}.html">${escapeHtml(deal.channel.toUpperCase())}</a>`
+      ? `/ <a href="/categories/${escapeHtml(deal.channel)}.html">${escapeHtml(
+          deal.channel.toUpperCase()
+        )}</a>`
       : "";
 
   const bodyContent = `
@@ -147,26 +221,60 @@ function buildDealHtml(deal, allDeals) {
       <div class="sub">${escapeHtml(description)}</div>
 
       ${buildImageHtml(deal)}
+      ${buildPriceBox(deal)}
 
       <div class="card">
         <h2>What this product is</h2>
         <p>${escapeHtml(description)}</p>
         <p>${escapeHtml(hook)}</p>
+        ${overviewParagraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
 
         <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Try ${escapeHtml(title)}</a>
+          <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Open deal on StackSocial</a>
           <a class="secondary" href="/deals/">More deals</a>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Why someone might use it</h2>
-        ${buildBenefitsHtml(benefits)}
-      </div>
+      ${pricingBlock}
 
       <div class="card">
         <h2>Who this looks best for</h2>
         <p>${escapeHtml(audience)}</p>
+      </div>
+
+      ${
+        featureHighlights.length
+          ? `
+          <div class="card">
+            <h2>Feature highlights</h2>
+            ${listHtml(featureHighlights)}
+          </div>
+        `
+          : ""
+      }
+
+      ${
+        useCases.length
+          ? `
+          <div class="card">
+            <h2>Where it may fit</h2>
+            ${listHtml(useCases)}
+          </div>
+        `
+          : ""
+      }
+
+      <div class="card">
+        <h2>Why someone might use it</h2>
+        ${listHtml(
+          Array.isArray(deal.benefits) && deal.benefits.length
+            ? deal.benefits
+            : [
+                "Could be useful if this category is relevant to your workflow",
+                "Worth testing before committing long term",
+                "May help save time depending on how you work"
+              ]
+        )}
       </div>
 
       <div class="card">
@@ -182,11 +290,20 @@ function buildDealHtml(deal, allDeals) {
       <div class="card">
         <h2>One thing to keep in mind</h2>
         <p class="muted">${escapeHtml(caution)}</p>
-
-        <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Go to ${escapeHtml(title)}</a>
-        </div>
       </div>
+
+      ${sourceBlock}
+
+      ${
+        faq.length
+          ? `
+          <div class="card">
+            <h2>FAQ</h2>
+            ${faqHtml(faq)}
+          </div>
+        `
+          : ""
+      }
 
       ${buildRelatedDealsDynamic(deal)}
 
@@ -218,8 +335,7 @@ function buildDealHtml(deal, allDeals) {
       url: pageUrl,
       image: deal.og_image || ""
     }),
-    bodyContent,
-    siteUrl: SITE_URL
+    bodyContent
   });
 }
 
@@ -234,7 +350,7 @@ function buildDealsIndexHtml(deals, currentPage, totalPages) {
 
       <h1>Deals</h1>
       <div class="sub">
-        Explore Pochify’s latest AI tools, SaaS products, and software picks with full breakdowns.
+        Explore Pochify’s latest AI tools, SaaS products, and discounted software picks.
       </div>
 
       <div class="grid">
@@ -258,10 +374,9 @@ function buildDealsIndexHtml(deals, currentPage, totalPages) {
 
   return layout({
     title: currentPage === 1 ? "Deals | Pochify" : `Deals - Page ${currentPage} | Pochify`,
-    description: "Browse Pochify’s latest AI tools, SaaS products, and useful software picks.",
+    description: "Browse Pochify’s latest AI tools, SaaS products, and useful software deals.",
     canonicalUrl,
-    bodyContent,
-    siteUrl: SITE_URL
+    bodyContent
   });
 }
 
@@ -277,7 +392,7 @@ function buildCategoryPageHtml(category, deals) {
 
       <h1>${pretty} Tools</h1>
       <div class="sub">
-        Browse curated ${pretty} products and breakdowns from Pochify.
+        Browse curated ${pretty} products and discounted software picks from Pochify.
       </div>
 
       <div class="grid">
@@ -290,10 +405,9 @@ function buildCategoryPageHtml(category, deals) {
 
   return layout({
     title: `${pretty} Tools | Pochify`,
-    description: `Browse ${pretty} tools and picks curated by Pochify.`,
+    description: `Browse ${pretty} tools and discounted picks curated by Pochify.`,
     canonicalUrl: `${SITE_URL}/categories/${category}.html`,
-    bodyContent,
-    siteUrl: SITE_URL
+    bodyContent
   });
 }
 
@@ -301,9 +415,9 @@ function buildHomePageHtml() {
   const bodyContent = `
     <div class="container">
       <div class="hero" style="text-align:center;">
-        <h1>Find tools actually worth using</h1>
+        <h1>Find software deals actually worth checking</h1>
         <div class="sub">
-          We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+          We surface AI tools and SaaS products with visible discounts, lifetime offers, and useful pricing opportunities.
         </div>
 
         <a href="https://t.me/pochify" class="cta">Join Telegram</a>
@@ -314,20 +428,20 @@ function buildHomePageHtml() {
         <h2>What you’ll get</h2>
         <div class="grid">
           <div>
-            <h3>💰 Real value</h3>
-            <p class="muted">Free tiers, trials, discounts, and tools that can replace paid ones.</p>
+            <h3>💰 Real discounts</h3>
+            <p class="muted">Original price, current price, and percent-off visibility where available.</p>
           </div>
           <div>
-            <h3>⚡ Early advantage</h3>
-            <p class="muted">Discover tools before they get expensive or saturated.</p>
+            <h3>⚡ Fast discovery</h3>
+            <p class="muted">Useful AI and SaaS offers without digging through marketplaces yourself.</p>
           </div>
           <div>
             <h3>🧠 Clear breakdowns</h3>
-            <p class="muted">We explain what the product actually does and who it’s for.</p>
+            <p class="muted">We explain what the product does and who it looks best for.</p>
           </div>
           <div>
             <h3>🚫 No fluff</h3>
-            <p class="muted">No fake discounts, no spam — only products that pass a usefulness filter.</p>
+            <p class="muted">We are prioritizing high-quality deal pages over volume.</p>
           </div>
         </div>
       </div>
@@ -382,9 +496,15 @@ function buildHomePageHtml() {
           }
 
           container.innerHTML = items.map(item => \`
-            <div class="deal-card">
+            <div class="card deal-card">
               \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
               <h3>\${item.name}</h3>
+              <div class="card-price-row">
+                \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+              </div>
               <p>\${item.hook || item.description || 'Read the full breakdown.'}</p>
               <a class="inline-link" href="/deals/\${item.slug}.html">Read full breakdown</a>
             </div>
@@ -411,9 +531,15 @@ function buildHomePageHtml() {
           }
 
           container.innerHTML = items.map(item => \`
-            <div class="deal-card">
+            <div class="card deal-card">
               \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
               <h3>\${item.name}</h3>
+              <div class="card-price-row">
+                \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+              </div>
               <p>\${item.hook || item.description || 'Read the full breakdown.'}</p>
               <a class="inline-link" href="/deals/\${item.slug}.html">Read full breakdown</a>
             </div>
@@ -430,11 +556,10 @@ function buildHomePageHtml() {
   `;
 
   return layout({
-    title: "Pochify — Find tools worth your time (and money)",
-    description: "Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise.",
+    title: "Pochify — Find software deals worth your time",
+    description: "Discover discounted AI tools, SaaS products, and useful software deals with pricing context and clean breakdowns.",
     canonicalUrl: `${SITE_URL}/`,
-    bodyContent,
-    siteUrl: SITE_URL
+    bodyContent
   });
 }
 
@@ -459,8 +584,7 @@ function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
     title: `${title} | Pochify`,
     description,
     canonicalUrl: `${SITE_URL}${canonicalPath}`,
-    bodyContent,
-    siteUrl: SITE_URL
+    bodyContent
   });
 }
 
@@ -533,19 +657,16 @@ export function generateStaticPages() {
       canonicalPath: "/faq.html",
       contentHtml: `
         <h2>What is Pochify?</h2>
-        <p>Pochify curates AI tools, SaaS products, and useful software picks. We focus on products that may help people save time, save money, or get ahead early.</p>
+        <p>Pochify curates discounted AI tools, SaaS products, and useful software picks.</p>
 
-        <h2>Are all listings discounts?</h2>
-        <p>No. Some picks may have discounts, free trials, or free tiers. Others may simply be strong tools that look valuable based on their use case and early traction.</p>
+        <h2>Do I buy through Pochify?</h2>
+        <p>No. Pochify summarizes the deal and links you to the original product or marketplace offer page.</p>
 
-        <h2>How do you choose what to feature?</h2>
-        <p>We monitor product launches and other signals, then filter for products that appear useful, relevant, and worth a closer look.</p>
-
-        <h2>Do you use affiliate links?</h2>
-        <p>Yes, some links may be tracked affiliate links. That helps support Pochify at no extra cost to the user in most cases.</p>
+        <h2>Are all listings affiliate links?</h2>
+        <p>No. During this phase, many links may go directly to the source deal page while we focus on traffic and high-quality content.</p>
 
         <h2>How often is the site updated?</h2>
-        <p>We update regularly as new products are discovered and reviewed.</p>
+        <p>We update regularly as new software deals are discovered and reviewed.</p>
       `
     }),
     "utf8"
@@ -558,10 +679,10 @@ export function generateStaticPages() {
       description: "Privacy Policy for Pochify.",
       canonicalPath: "/privacy.html",
       contentHtml: `
-        <p>Pochify may collect limited technical information such as click activity, user-agent data, and referring pages in order to understand which pages and links perform best.</p>
-        <p>Pochify may use affiliate links, which can involve third-party tracking by affiliate networks or product providers.</p>
+        <p>Pochify may collect limited technical information such as page views, click activity, user-agent data, and referring pages in order to understand which pages and links perform best.</p>
+        <p>Pochify may use analytics services such as Google Analytics to measure site usage.</p>
+        <p>Pochify may include outbound links to third-party marketplaces and product websites.</p>
         <p>Pochify does not sell personal information. If email capture or additional data collection is added later, this policy should be updated accordingly.</p>
-        <p>By using the site, you agree to the collection and processing of limited usage data for analytics, site improvement, and affiliate attribution purposes.</p>
       `
     }),
     "utf8"
@@ -574,8 +695,7 @@ export function generateStaticPages() {
       description: "Terms and Conditions for Pochify.",
       canonicalPath: "/terms.html",
       contentHtml: `
-        <p>Pochify provides informational content about software products, tools, and offers. Content is provided for general informational purposes only and should not be considered professional, financial, legal, or technical advice.</p>
-        <p>Pochify may include affiliate links. Clicking those links may result in commissions being earned by Pochify.</p>
+        <p>Pochify provides informational content about software products, tools, and offers. Content is provided for general informational purposes only.</p>
         <p>Pochify does not guarantee that products, pricing, trials, discounts, or offers will remain available or unchanged.</p>
         <p>Use of the site is at your own risk. Pochify is not responsible for third-party services, websites, products, or outcomes resulting from their use.</p>
       `
