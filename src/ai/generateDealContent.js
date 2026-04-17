@@ -95,6 +95,11 @@ function fallbackContent(deal) {
 }
 
 export async function generateDealContent(deal) {
+  console.log(
+    `🤖 OpenAI content generation for ${deal.name}:`,
+    process.env.OPENAI_API_KEY ? "ENABLED" : "DISABLED"
+  );
+  
   if (!process.env.OPENAI_API_KEY) {
     return fallbackContent(deal);
   }
