@@ -5,301 +5,319 @@
   <title>Resend CLI 2.0 | Pochify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal." />
+  <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://pochify.com/deals/resend-cli-2-0.html" />
   <meta property="og:title" content="Resend CLI 2.0 | Pochify" />
   <meta property="og:description" content="Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal." />
-  <meta property="og:type" content="article" />
+  <meta property="og:type" content="website" />
   <meta property="og:url" content="https://pochify.com/deals/resend-cli-2-0.html" />
   <meta property="og:image" content="https://cdn.resend.com/posts/resend-cli-cover.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   
-    <style>
-      :root {
-        --bg: #0b1220;
-        --card: #111827;
-        --card-border: #1f2937;
-        --text: #e5e7eb;
-        --muted: #94a3b8;
-        --accent: #22c55e;
-        --accent-dark: #04130a;
-        --link: #93c5fd;
-        --btn-dark: #0f172a;
-      }
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --card-border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #04130a;
+      --link: #93c5fd;
+      --btn-dark: #0f172a;
+    }
 
-      * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        line-height: 1.7;
-      }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
 
-      .site-header {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: rgba(11, 18, 32, 0.92);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid #1e293b;
-      }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e293b;
+    }
 
-      .nav-wrap {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 16px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
+    .nav-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-      .brand {
-        color: var(--text);
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 22px;
-      }
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 22px;
+    }
 
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .nav-links a:hover,
+    .brand:hover {
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 20px 80px;
+    }
+
+    .narrow {
+      max-width: 920px;
+    }
+
+    h1 {
+      font-size: 42px;
+      line-height: 1.15;
+      margin: 0 0 14px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 19px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .breadcrumbs a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      margin-bottom: 24px;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-dark);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .secondary {
+      display: inline-block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #243041;
+      background: #0f172a;
+    }
+
+    .deal-card p,
+    .muted {
+      color: var(--muted);
+    }
+
+    .inline-link {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .share-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .share-btn,
+    .share-btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid #334155;
+      color: var(--text);
+      background: var(--btn-dark);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .share-btn svg,
+    .share-btn-copy svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .page-link {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .page-link.current {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 10px 0;
+    }
+
+    @media (max-width: 760px) {
       .menu-toggle {
-        display: none;
-        background: transparent;
-        border: 1px solid #334155;
-        color: var(--text);
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-size: 20px;
-        cursor: pointer;
+        display: inline-block;
       }
 
       .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        padding-top: 10px;
+      }
+
+      .nav-links.open {
         display: flex;
+      }
+
+      .nav-wrap {
         flex-wrap: wrap;
-        gap: 14px;
-      }
-
-      .nav-links a {
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 15px;
-      }
-
-      .nav-links a:hover,
-      .brand:hover {
-        color: var(--text);
-      }
-
-      .container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 36px 20px 80px;
-      }
-
-      .narrow {
-        max-width: 920px;
-      }
-
-      .eyebrow {
-        color: var(--accent);
-        font-weight: bold;
-        letter-spacing: 0.08em;
-        font-size: 12px;
-        text-transform: uppercase;
-        margin-bottom: 10px;
       }
 
       h1 {
-        font-size: 42px;
-        line-height: 1.15;
-        margin: 0 0 14px;
+        font-size: 34px;
       }
-
-      h2, h3 {
-        margin-top: 0;
-        margin-bottom: 12px;
-      }
-
-      .sub {
-        color: var(--muted);
-        font-size: 19px;
-        margin-bottom: 24px;
-      }
-
-      .breadcrumbs {
-        margin-bottom: 18px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .breadcrumbs a {
-        color: var(--link);
-        text-decoration: none;
-      }
-
-      .hero-image-wrap {
-        margin: 0 0 24px;
-      }
-
-      .hero-image {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        border-radius: 16px;
-        border: 1px solid var(--card-border);
-        background: #0f172a;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        padding: 24px;
-        margin: 20px 0;
-      }
-
-      .cta-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 18px;
-      }
-
-      .cta {
-        display: inline-block;
-        background: var(--accent);
-        color: var(--accent-dark);
-        text-decoration: none;
-        padding: 14px 22px;
-        border-radius: 12px;
-        font-weight: bold;
-      }
-
-      .secondary {
-        display: inline-block;
-        color: var(--text);
-        text-decoration: none;
-        padding: 14px 22px;
-        border-radius: 12px;
-        border: 1px solid #334155;
-      }
-
-      .muted { color: var(--muted); }
-
-      ul {
-        padding-left: 22px;
-        margin-bottom: 0;
-      }
-
-      li + li { margin-top: 8px; }
-
-      .grid {
-        display: grid;
-        gap: 20px;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      }
-
-      .deal-card img {
-        width: 100%;
-        border-radius: 12px;
-        margin-bottom: 14px;
-        border: 1px solid #243041;
-        background: #0f172a;
-      }
-
-      .deal-card p {
-        color: var(--muted);
-      }
-
-      .deal-card a.inline-link {
-        display: inline-block;
-        margin-top: 12px;
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: bold;
-      }
-
-      .share-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .share-btn,
-      .share-btn-copy {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        text-decoration: none;
-        border: 1px solid #334155;
-        color: var(--text);
-        background: var(--btn-dark);
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      .share-btn svg,
-      .share-btn-copy svg {
-        width: 16px;
-        height: 16px;
-        flex: 0 0 16px;
-      }
-
-      .footer {
-        margin-top: 48px;
-        color: #64748b;
-        font-size: 14px;
-      }
-
-      .footer a {
-        color: var(--link);
-        text-decoration: none;
-      }
-
-      .footer-links {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-
-      @media (max-width: 760px) {
-        .menu-toggle {
-          display: inline-block;
-        }
-
-        .nav-links {
-          display: none;
-          width: 100%;
-          flex-direction: column;
-          padding-top: 10px;
-        }
-
-        .nav-links.open {
-          display: flex;
-        }
-
-        .nav-wrap {
-          flex-wrap: wrap;
-        }
-
-        h1 {
-          font-size: 34px;
-        }
-      }
-    </style>
+    }
+  </style>
   
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Resend CLI 2.0","description":"Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal.","mainEntityOfPage":"https://pochify.com/deals/resend-cli-2-0.html","url":"https://pochify.com/deals/resend-cli-2-0.html","image":["https://cdn.resend.com/posts/resend-cli-cover.jpg"],"author":{"@type":"Organization","name":"Pochify"},"publisher":{"@type":"Organization","name":"Pochify"}}</script>
 </head>
-<body>
+<body class="">
   
     <header class="site-header">
       <div class="nav-wrap">
         <a class="brand" href="/">Pochify</a>
         <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
         <nav class="nav-links" id="siteNav">
-          <a href="/">Home</a>
           <a href="/deals/">Deals</a>
           <a href="/categories/ai.html">AI</a>
           <a href="/categories/saas.html">SaaS</a>
@@ -309,71 +327,63 @@
       </div>
     </header>
   
-  <div class="container narrow">
-    <div class="breadcrumbs">
-      <a href="/">Home</a> / <a href="/deals/">Deals</a> / <a href="/categories/ai.html">ai</a> / Resend CLI 2.0
-    </div>
-
-    <div class="eyebrow">Pochify Pick</div>
-    <h1>Resend CLI 2.0</h1>
-    <div class="sub">Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal.</div>
-
-    
-    <div class="hero-image-wrap">
-      <img
-        class="hero-image"
-        src="https://cdn.resend.com/posts/resend-cli-cover.jpg"
-        alt="Resend CLI 2.0"
-        loading="lazy"
-      />
-    </div>
   
-
-    <div class="card">
-      <h2>What this product is</h2>
-      <p>Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal.</p>
-      <p>Resend CLI 2.0 stands out if you are trying to reduce workflow friction and move faster.</p>
-
-      <div class="cta-row">
-        <a class="cta" href="https://go.pochify.com/go/resend-cli-2-0" rel="nofollow sponsored">Try Resend CLI 2.0</a>
-        <a class="secondary" href="/deals/">More deals</a>
+    <div class="container narrow">
+      <div class="breadcrumbs">
+        <a href="/">Home</a> / <a href="/deals/">Deals</a> / <a href="/categories/ai.html">ai</a> / Resend CLI 2.0
       </div>
-    </div>
 
-    <div class="card">
-      <h2>Why someone might use it</h2>
-      
+      <div class="eyebrow">Pochify Pick</div>
+      <h1>Resend CLI 2.0</h1>
+      <div class="sub">Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal.</div>
+
+      <img class="hero-image" src="https://cdn.resend.com/posts/resend-cli-cover.jpg" alt="Resend CLI 2.0" loading="lazy" />
+
+      <div class="card">
+        <h2>What this product is</h2>
+        <p>Skills for AI agents, React Email support, Automations, and Webhook listening. All from the terminal.</p>
+        <p>Resend CLI 2.0 stands out if you are trying to reduce workflow friction and move faster.</p>
+
+        <div class="cta-row">
+          <a class="cta" href="https://go.pochify.com/go/resend-cli-2-0" rel="nofollow sponsored">Try Resend CLI 2.0</a>
+          <a class="secondary" href="/deals/">More deals</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Why someone might use it</h2>
+        
     <ul>
       <li>May reduce repetitive workflow steps</li><li>Useful for teams trying to move faster with less manual work</li><li>Worth checking if process bottlenecks slow you down</li>
     </ul>
   
-    </div>
-
-    <div class="card">
-      <h2>Who this looks best for</h2>
-      <p>Operators, founders, and workflow-heavy teams</p>
-    </div>
-
-    <div class="card">
-      <h2>What’s the value here</h2>
-      <p>There may not be a direct discount, but it may still offer meaningful value if it fits your workflow.</p>
-    </div>
-
-    <div class="card">
-      <h2>Why it may be worth checking now</h2>
-      <p>This is getting attention early, which makes it a good time to evaluate whether it fits your workflow.</p>
-    </div>
-
-    <div class="card">
-      <h2>One thing to keep in mind</h2>
-      <p class="muted">As with most AI tools, the real value will depend on how well it fits your existing workflow.</p>
-
-      <div class="cta-row">
-        <a class="cta" href="https://go.pochify.com/go/resend-cli-2-0" rel="nofollow sponsored">Go to Resend CLI 2.0</a>
       </div>
-    </div>
 
-    
+      <div class="card">
+        <h2>Who this looks best for</h2>
+        <p>Operators, founders, and workflow-heavy teams</p>
+      </div>
+
+      <div class="card">
+        <h2>What’s the value here</h2>
+        <p>There may not be a direct discount, but it may still offer meaningful value if it fits your workflow.</p>
+      </div>
+
+      <div class="card">
+        <h2>Why it may be worth checking now</h2>
+        <p>This already has strong traction, which usually makes it worth reviewing before the category gets even noisier.</p>
+      </div>
+
+      <div class="card">
+        <h2>One thing to keep in mind</h2>
+        <p class="muted">As with most AI tools, the real value will depend on how well it fits your existing workflow.</p>
+
+        <div class="cta-row">
+          <a class="cta" href="https://go.pochify.com/go/resend-cli-2-0" rel="nofollow sponsored">Go to Resend CLI 2.0</a>
+        </div>
+      </div>
+
+      
     <div class="card">
       <h2>Related tools worth browsing</h2>
       <div id="relatedDeals" class="grid">
@@ -392,7 +402,7 @@
           const data = await res.json();
           const items = data.items || [];
 
-          if (items.length === 0) {
+          if (!items.length) {
             container.innerHTML = '<div class="muted">No related tools found yet.</div>';
             return;
           }
@@ -414,36 +424,36 @@
       loadRelatedDeals();
     </script>
   
-    
-    <div class="card">
-      <h2>Related tools worth browsing</h2>
-      <div class="grid">
-        
-          <div class="deal-card">
-            <img src="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/68c469d23594abeb9ab6ee48_70ed020ecf8fa028b9bc95fa819720b6_og_claude-generic.jpg" alt="Claude Code Desktop App Redesigned" loading="lazy" />
-            <h3>Claude Code Desktop App Redesigned</h3>
-            <p>Claude Code Desktop App Redesigned may be interesting if you want to speed up technical work without changing your whole stack.</p>
-            <a class="inline-link" href="/deals/claude-code-desktop-app-redesigned.html">Read full breakdown</a>
-          </div>
-        
-          <div class="deal-card">
-            <img src="https://www.x-pilot.ai/assets/resource/x-pilot-logo.png" alt="X-Pilot" loading="lazy" />
-            <h3>X-Pilot</h3>
-            <p>If you spend a lot of time writing or organizing ideas, X-Pilot looks worth a closer look.</p>
-            <a class="inline-link" href="/deals/x-pilot.html">Read full breakdown</a>
-          </div>
-        
-          <div class="deal-card">
-            <img src="https://storage.googleapis.com/gweb-uniblog-publish-prod/images/GoogleChrome_RR_Skills_KeywordHeader-Thumbnai.width-1300.png" alt="Google Chrome Skills" loading="lazy" />
-            <h3>Google Chrome Skills</h3>
-            <p>Google Chrome Skills stands out if you are trying to reduce workflow friction and move faster.</p>
-            <a class="inline-link" href="/deals/google-chrome-skills.html">Read full breakdown</a>
-          </div>
-        
-      </div>
+
+      <div class="card">
+        <h2>More picks from this batch</h2>
+        <div class="grid">
+          
+    <div class="card deal-card">
+      <img src="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/68c469d23594abeb9ab6ee48_70ed020ecf8fa028b9bc95fa819720b6_og_claude-generic.jpg" alt="Claude Code Desktop App Redesigned" loading="lazy" />
+      <h3>Claude Code Desktop App Redesigned</h3>
+      <p>Claude Code Desktop App Redesigned may be interesting if you want to speed up technical work without changing your whole stack.</p>
+      <a class="inline-link" href="/deals/claude-code-desktop-app-redesigned.html">Read full breakdown</a>
     </div>
   
-    
+    <div class="card deal-card">
+      <img src="https://www.x-pilot.ai/assets/resource/x-pilot-logo.png" alt="X-Pilot" loading="lazy" />
+      <h3>X-Pilot</h3>
+      <p>If you spend a lot of time writing or organizing ideas, X-Pilot looks worth a closer look.</p>
+      <a class="inline-link" href="/deals/x-pilot.html">Read full breakdown</a>
+    </div>
+  
+    <div class="card deal-card">
+      <img src="https://storage.googleapis.com/gweb-uniblog-publish-prod/images/GoogleChrome_RR_Skills_KeywordHeader-Thumbnai.width-1300.png" alt="Google Chrome Skills" loading="lazy" />
+      <h3>Google Chrome Skills</h3>
+      <p>Google Chrome Skills stands out if you are trying to reduce workflow friction and move faster.</p>
+      <a class="inline-link" href="/deals/google-chrome-skills.html">Read full breakdown</a>
+    </div>
+  
+        </div>
+      </div>
+
+      
     <div class="card">
       <h2>Share this pick</h2>
       <div class="share-row">
@@ -456,7 +466,7 @@
     </div>
   
 
-    
+      
     <div class="footer">
       <p>
         <a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.
@@ -468,20 +478,21 @@
       </p>
     </div>
   
-  </div>
+    </div>
+  
   
     <script>
       function toggleMenu() {
-        const nav = document.getElementById('siteNav');
-        if (nav) nav.classList.toggle('open');
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
       }
 
       async function copyText(text, label) {
         try {
           await navigator.clipboard.writeText(text);
-          alert(label || 'Link copied');
+          alert(label || "Link copied");
         } catch (e) {
-          alert('Could not copy link');
+          alert("Could not copy link");
         }
       }
     </script>

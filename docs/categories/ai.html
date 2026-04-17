@@ -5,295 +5,319 @@
   <title>AI Tools | Pochify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Browse AI tools and picks curated by Pochify." />
-  <link rel="canonical" href="https://pochify.com/categories/ai.html" />
   <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/categories/ai.html" />
+  <meta property="og:title" content="AI Tools | Pochify" />
+  <meta property="og:description" content="Browse AI tools and picks curated by Pochify." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/categories/ai.html" />
   
-    <style>
-      :root {
-        --bg: #0b1220;
-        --card: #111827;
-        --card-border: #1f2937;
-        --text: #e5e7eb;
-        --muted: #94a3b8;
-        --accent: #22c55e;
-        --accent-dark: #04130a;
-        --link: #93c5fd;
-        --btn-dark: #0f172a;
-      }
+  <meta name="twitter:card" content="summary_large_image" />
+  
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --card-border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #04130a;
+      --link: #93c5fd;
+      --btn-dark: #0f172a;
+    }
 
-      * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        line-height: 1.7;
-      }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
 
-      .site-header {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: rgba(11, 18, 32, 0.92);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid #1e293b;
-      }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e293b;
+    }
 
-      .nav-wrap {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 16px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
+    .nav-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-      .brand {
-        color: var(--text);
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 22px;
-      }
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 22px;
+    }
 
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .nav-links a:hover,
+    .brand:hover {
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 20px 80px;
+    }
+
+    .narrow {
+      max-width: 920px;
+    }
+
+    h1 {
+      font-size: 42px;
+      line-height: 1.15;
+      margin: 0 0 14px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 19px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .breadcrumbs a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      margin-bottom: 24px;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-dark);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .secondary {
+      display: inline-block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #243041;
+      background: #0f172a;
+    }
+
+    .deal-card p,
+    .muted {
+      color: var(--muted);
+    }
+
+    .inline-link {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .share-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .share-btn,
+    .share-btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid #334155;
+      color: var(--text);
+      background: var(--btn-dark);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .share-btn svg,
+    .share-btn-copy svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .page-link {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .page-link.current {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 10px 0;
+    }
+
+    @media (max-width: 760px) {
       .menu-toggle {
-        display: none;
-        background: transparent;
-        border: 1px solid #334155;
-        color: var(--text);
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-size: 20px;
-        cursor: pointer;
+        display: inline-block;
       }
 
       .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        padding-top: 10px;
+      }
+
+      .nav-links.open {
         display: flex;
+      }
+
+      .nav-wrap {
         flex-wrap: wrap;
-        gap: 14px;
-      }
-
-      .nav-links a {
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 15px;
-      }
-
-      .nav-links a:hover,
-      .brand:hover {
-        color: var(--text);
-      }
-
-      .container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 36px 20px 80px;
-      }
-
-      .narrow {
-        max-width: 920px;
-      }
-
-      .eyebrow {
-        color: var(--accent);
-        font-weight: bold;
-        letter-spacing: 0.08em;
-        font-size: 12px;
-        text-transform: uppercase;
-        margin-bottom: 10px;
       }
 
       h1 {
-        font-size: 42px;
-        line-height: 1.15;
-        margin: 0 0 14px;
+        font-size: 34px;
       }
-
-      h2, h3 {
-        margin-top: 0;
-        margin-bottom: 12px;
-      }
-
-      .sub {
-        color: var(--muted);
-        font-size: 19px;
-        margin-bottom: 24px;
-      }
-
-      .breadcrumbs {
-        margin-bottom: 18px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .breadcrumbs a {
-        color: var(--link);
-        text-decoration: none;
-      }
-
-      .hero-image-wrap {
-        margin: 0 0 24px;
-      }
-
-      .hero-image {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        border-radius: 16px;
-        border: 1px solid var(--card-border);
-        background: #0f172a;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        padding: 24px;
-        margin: 20px 0;
-      }
-
-      .cta-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 18px;
-      }
-
-      .cta {
-        display: inline-block;
-        background: var(--accent);
-        color: var(--accent-dark);
-        text-decoration: none;
-        padding: 14px 22px;
-        border-radius: 12px;
-        font-weight: bold;
-      }
-
-      .secondary {
-        display: inline-block;
-        color: var(--text);
-        text-decoration: none;
-        padding: 14px 22px;
-        border-radius: 12px;
-        border: 1px solid #334155;
-      }
-
-      .muted { color: var(--muted); }
-
-      ul {
-        padding-left: 22px;
-        margin-bottom: 0;
-      }
-
-      li + li { margin-top: 8px; }
-
-      .grid {
-        display: grid;
-        gap: 20px;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      }
-
-      .deal-card img {
-        width: 100%;
-        border-radius: 12px;
-        margin-bottom: 14px;
-        border: 1px solid #243041;
-        background: #0f172a;
-      }
-
-      .deal-card p {
-        color: var(--muted);
-      }
-
-      .deal-card a.inline-link {
-        display: inline-block;
-        margin-top: 12px;
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: bold;
-      }
-
-      .share-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .share-btn,
-      .share-btn-copy {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        text-decoration: none;
-        border: 1px solid #334155;
-        color: var(--text);
-        background: var(--btn-dark);
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      .share-btn svg,
-      .share-btn-copy svg {
-        width: 16px;
-        height: 16px;
-        flex: 0 0 16px;
-      }
-
-      .footer {
-        margin-top: 48px;
-        color: #64748b;
-        font-size: 14px;
-      }
-
-      .footer a {
-        color: var(--link);
-        text-decoration: none;
-      }
-
-      .footer-links {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-
-      @media (max-width: 760px) {
-        .menu-toggle {
-          display: inline-block;
-        }
-
-        .nav-links {
-          display: none;
-          width: 100%;
-          flex-direction: column;
-          padding-top: 10px;
-        }
-
-        .nav-links.open {
-          display: flex;
-        }
-
-        .nav-wrap {
-          flex-wrap: wrap;
-        }
-
-        h1 {
-          font-size: 34px;
-        }
-      }
-    </style>
+    }
+  </style>
+  
   
 </head>
-<body>
+<body class="">
   
     <header class="site-header">
       <div class="nav-wrap">
         <a class="brand" href="/">Pochify</a>
         <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
         <nav class="nav-links" id="siteNav">
-          <a href="/">Home</a>
           <a href="/deals/">Deals</a>
           <a href="/categories/ai.html">AI</a>
           <a href="/categories/saas.html">SaaS</a>
@@ -303,70 +327,99 @@
       </div>
     </header>
   
-  <div class="container">
-    <div class="breadcrumbs">
-      <a href="/">Home</a> / <a href="/deals/">Deals</a> / AI
-    </div>
-
-    <h1>AI Tools</h1>
-    <div class="sub">
-      Browse curated AI products and breakdowns from Pochify.
-    </div>
-
-    <div class="grid">
-      
-    <div class="card deal-card">
-      <img src="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/68c469d23594abeb9ab6ee48_70ed020ecf8fa028b9bc95fa819720b6_og_claude-generic.jpg" alt="Claude Code Desktop App Redesigned" loading="lazy" />
-      <h2>Claude Code Desktop App Redesigned</h2>
-      <p>Claude Code Desktop App Redesigned may be interesting if you want to speed up technical work without changing your whole stack.</p>
-      <a class="inline-link" href="/deals/claude-code-desktop-app-redesigned.html">Read full breakdown</a>
-    </div>
   
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="/">Home</a> / <a href="/deals/">Deals</a> / AI
+      </div>
+
+      <h1>AI Tools</h1>
+      <div class="sub">
+        Browse curated AI products and breakdowns from Pochify.
+      </div>
+
+      <div class="grid">
+        
     <div class="card deal-card">
       <img src="https://cdn.resend.com/posts/resend-cli-cover.jpg" alt="Resend CLI 2.0" loading="lazy" />
-      <h2>Resend CLI 2.0</h2>
+      <h3>Resend CLI 2.0</h3>
       <p>Resend CLI 2.0 stands out if you are trying to reduce workflow friction and move faster.</p>
       <a class="inline-link" href="/deals/resend-cli-2-0.html">Read full breakdown</a>
     </div>
   
     <div class="card deal-card">
+      <img src="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/68c469d23594abeb9ab6ee48_70ed020ecf8fa028b9bc95fa819720b6_og_claude-generic.jpg" alt="Claude Code Desktop App Redesigned" loading="lazy" />
+      <h3>Claude Code Desktop App Redesigned</h3>
+      <p>Claude Code Desktop App Redesigned may be interesting if you want to speed up technical work without changing your whole stack.</p>
+      <a class="inline-link" href="/deals/claude-code-desktop-app-redesigned.html">Read full breakdown</a>
+    </div>
+  
+    <div class="card deal-card">
       <img src="https://www.x-pilot.ai/assets/resource/x-pilot-logo.png" alt="X-Pilot" loading="lazy" />
-      <h2>X-Pilot</h2>
+      <h3>X-Pilot</h3>
       <p>If you spend a lot of time writing or organizing ideas, X-Pilot looks worth a closer look.</p>
       <a class="inline-link" href="/deals/x-pilot.html">Read full breakdown</a>
     </div>
   
     <div class="card deal-card">
       <img src="https://storage.googleapis.com/gweb-uniblog-publish-prod/images/GoogleChrome_RR_Skills_KeywordHeader-Thumbnai.width-1300.png" alt="Google Chrome Skills" loading="lazy" />
-      <h2>Google Chrome Skills</h2>
+      <h3>Google Chrome Skills</h3>
       <p>Google Chrome Skills stands out if you are trying to reduce workflow friction and move faster.</p>
       <a class="inline-link" href="/deals/google-chrome-skills.html">Read full breakdown</a>
     </div>
   
     <div class="card deal-card">
       <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/2b/8c/ac/2b8cacb5-1236-bfff-a3e1-d1faa0a0c732/Placeholder.mill/1200x630wa.jpg" alt="Fellow for iOS" loading="lazy" />
-      <h2>Fellow for iOS</h2>
+      <h3>Fellow for iOS</h3>
       <p>If you spend a lot of time writing or organizing ideas, Fellow for iOS looks worth a closer look.</p>
       <a class="inline-link" href="/deals/fellow-for-ios.html">Read full breakdown</a>
     </div>
   
     <div class="card deal-card">
       <img src="https://www.clayhog.com/og-image.png" alt="ClayHog" loading="lazy" />
-      <h2>ClayHog</h2>
+      <h3>ClayHog</h3>
       <p>ClayHog looks worth a closer look if this category is relevant to the way you work.</p>
       <a class="inline-link" href="/deals/clayhog.html">Read full breakdown</a>
     </div>
   
     <div class="card deal-card">
-      
-      <h2>OpenAI Agents SDK</h2>
-      <p>OpenAI Agents SDK looks worth a closer look if this category is relevant to the way you work.</p>
+      <img src="https://images.ctfassets.net/kftzwdyauwt9/41RxFM3sjs7BInenm8rsOt/f65ac2f0bce5b701dc61051ca7e58453/Agents_SDK__SEO_Card.png?w=1600&amp;h=900&amp;fit=fill" alt="OpenAI Agents SDK" loading="lazy" />
+      <h3>OpenAI Agents SDK</h3>
+      <p>OpenAI Agents SDK may be interesting if you want to speed up technical work without changing your whole stack.</p>
       <a class="inline-link" href="/deals/openai-agents-sdk.html">Read full breakdown</a>
     </div>
   
+    <div class="card deal-card">
+      <img src="https://www.agentcard.sh/og.png" alt="Agent Card" loading="lazy" />
+      <h3>Agent Card</h3>
+      <p>Agent Card looks worth a closer look if this category is relevant to the way you work.</p>
+      <a class="inline-link" href="/deals/agent-card.html">Read full breakdown</a>
     </div>
+  
+    <div class="card deal-card">
+      <img src="https://astropad.com/wp-content/uploads/2025/07/Poppy-Claude-Preview.webp" alt="Astropad Workbench" loading="lazy" />
+      <h3>Astropad Workbench</h3>
+      <p>Astropad Workbench looks worth a closer look if this category is relevant to the way you work.</p>
+      <a class="inline-link" href="/deals/astropad-workbench.html">Read full breakdown</a>
+    </div>
+  
+    <div class="card deal-card">
+      <img src="https://avec.ai/opengraph-image.png?opengraph-image.0ay3plpa9dvqc.png" alt="Avec" loading="lazy" />
+      <h3>Avec</h3>
+      <p>Avec looks worth a closer look if this category is relevant to the way you work.</p>
+      <a class="inline-link" href="/deals/avec.html">Read full breakdown</a>
+    </div>
+  
+    <div class="card deal-card">
+      
+      <h3>HackerEarth OnScreen</h3>
+      <p>HackerEarth OnScreen looks worth a closer look if this category is relevant to the way you work.</p>
+      <a class="inline-link" href="/deals/hackerearth-onscreen.html">Read full breakdown</a>
+    </div>
+  
+      </div>
 
-    
+      
     <div class="footer">
       <p>
         <a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.
@@ -378,20 +431,21 @@
       </p>
     </div>
   
-  </div>
+    </div>
+  
   
     <script>
       function toggleMenu() {
-        const nav = document.getElementById('siteNav');
-        if (nav) nav.classList.toggle('open');
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
       }
 
       async function copyText(text, label) {
         try {
           await navigator.clipboard.writeText(text);
-          alert(label || 'Link copied');
+          alert(label || "Link copied");
         } catch (e) {
-          alert('Could not copy link');
+          alert("Could not copy link");
         }
       }
     </script>

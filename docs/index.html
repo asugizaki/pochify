@@ -7,15 +7,23 @@
   <meta name="description" content="Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://pochify.com/" />
+  <meta property="og:title" content="Pochify — Find tools worth your time (and money)" />
+  <meta property="og:description" content="Discover AI tools, SaaS products, and software that actually bring value — including free tiers, trials, and early opportunities before prices rise." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  
   <style>
     :root {
       --bg: #0b1220;
       --card: #111827;
-      --border: #1f2937;
+      --card-border: #1f2937;
       --text: #e5e7eb;
       --muted: #94a3b8;
       --accent: #22c55e;
       --accent-dark: #04130a;
+      --link: #93c5fd;
       --btn-dark: #0f172a;
     }
 
@@ -26,7 +34,7 @@
       font-family: Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     .site-header {
@@ -86,49 +94,92 @@
     .container {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 60px 20px;
+      padding: 36px 20px 80px;
     }
 
-    .hero {
-      text-align: center;
+    .narrow {
+      max-width: 920px;
     }
 
     h1 {
-      font-size: 44px;
-      line-height: 1.2;
-      margin-bottom: 16px;
+      font-size: 42px;
+      line-height: 1.15;
+      margin: 0 0 14px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
     .sub {
-      font-size: 20px;
       color: var(--muted);
-      max-width: 760px;
-      margin: 0 auto 32px;
+      font-size: 19px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .breadcrumbs a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      margin-bottom: 24px;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
     }
 
     .cta {
       display: inline-block;
       background: var(--accent);
       color: var(--accent-dark);
-      padding: 14px 24px;
-      border-radius: 12px;
       text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
       font-weight: bold;
-      margin: 10px;
     }
 
     .secondary {
       display: inline-block;
-      border: 1px solid #334155;
-      padding: 14px 24px;
-      border-radius: 12px;
-      text-decoration: none;
       color: var(--text);
-      margin: 10px;
-    }
-
-    .section {
-      margin-top: 80px;
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 1px solid #334155;
     }
 
     .grid {
@@ -137,31 +188,20 @@
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-    }
-
     .deal-card img {
       width: 100%;
       border-radius: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       border: 1px solid #243041;
       background: #0f172a;
     }
 
-    .deal-card h3 {
-      margin-top: 0;
-      margin-bottom: 10px;
-    }
-
-    .deal-card p {
+    .deal-card p,
+    .muted {
       color: var(--muted);
     }
 
-    .deal-card a {
+    .inline-link {
       display: inline-block;
       margin-top: 12px;
       color: var(--accent);
@@ -169,29 +209,78 @@
       font-weight: bold;
     }
 
-    .empty {
-      color: var(--muted);
-      padding: 10px 0;
-    }
-
-    .footer {
-      margin-top: 80px;
-      color: #64748b;
-      font-size: 14px;
-      text-align: center;
-    }
-
-    .footer-links {
-      margin-top: 12px;
+    .share-row {
       display: flex;
-      justify-content: center;
-      gap: 18px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
-    .footer-links a {
-      color: #93c5fd;
+    .share-btn,
+    .share-btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
       text-decoration: none;
+      border: 1px solid #334155;
+      color: var(--text);
+      background: var(--btn-dark);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .share-btn svg,
+    .share-btn-copy svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .page-link {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .page-link.current {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 10px 0;
     }
 
     @media (max-width: 760px) {
@@ -215,186 +304,191 @@
       }
 
       h1 {
-        font-size: 36px;
+        font-size: 34px;
       }
     }
   </style>
+  
+  
 </head>
-<body>
-  <header class="site-header">
-    <div class="nav-wrap">
-      <a class="brand" href="/">Pochify</a>
-      <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
-      <nav class="nav-links" id="siteNav">
-        <a href="/deals/">Deals</a>
-        <a href="/categories/ai.html">AI</a>
-        <a href="/categories/saas.html">SaaS</a>
-        <a href="/categories/general.html">General</a>
-        <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
-      </nav>
-    </div>
-  </header>
+<body class="">
+  
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/">Pochify</a>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
+          <a href="/deals/">Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="/categories/general.html">General</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  
+  
+    <div class="container">
+      <div class="hero" style="text-align:center;">
+        <h1>Find tools actually worth using</h1>
+        <div class="sub">
+          We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+        </div>
 
-  <div class="container">
-    <div class="hero">
-      <h1>Find tools actually worth using</h1>
-      <div class="sub">
-        We surface AI tools and SaaS products that help you save time, save money, or get ahead early — not just random launches.
+        <a href="https://t.me/pochify" class="cta">Join Telegram</a>
+        <a href="/deals/" class="secondary">Browse all deals</a>
       </div>
 
-      <a href="https://t.me/pochify" class="cta">Join Telegram</a>
-      <a href="/deals/" class="secondary">Browse all deals</a>
-    </div>
-
-    <div class="section">
-      <h2>What you’ll get</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>💰 Real value</h3>
-          <p class="muted">Free tiers, trials, discounts, and tools that can replace paid ones.</p>
-        </div>
-        <div class="card">
-          <h3>⚡ Early advantage</h3>
-          <p class="muted">Discover tools before they get expensive or saturated.</p>
-        </div>
-        <div class="card">
-          <h3>🧠 Clear breakdowns</h3>
-          <p class="muted">We explain what the product actually does and who it’s for.</p>
-        </div>
-        <div class="card">
-          <h3>🚫 No fluff</h3>
-          <p class="muted">No fake discounts, no spam — only products that pass a usefulness filter.</p>
+      <div class="card" style="margin-top:80px;">
+        <h2>What you’ll get</h2>
+        <div class="grid">
+          <div>
+            <h3>💰 Real value</h3>
+            <p class="muted">Free tiers, trials, discounts, and tools that can replace paid ones.</p>
+          </div>
+          <div>
+            <h3>⚡ Early advantage</h3>
+            <p class="muted">Discover tools before they get expensive or saturated.</p>
+          </div>
+          <div>
+            <h3>🧠 Clear breakdowns</h3>
+            <p class="muted">We explain what the product actually does and who it’s for.</p>
+          </div>
+          <div>
+            <h3>🚫 No fluff</h3>
+            <p class="muted">No fake discounts, no spam — only products that pass a usefulness filter.</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <h2>Browse by category</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>AI</h3>
-          <p class="muted">Products focused on AI workflows, assistants, generation, and automation.</p>
-          <a href="/categories/ai.html">Explore AI</a>
-        </div>
-        <div class="card">
-          <h3>SaaS</h3>
-          <p class="muted">Software products built for productivity, teams, and recurring workflows.</p>
-          <a href="/categories/saas.html">Explore SaaS</a>
-        </div>
-        <div class="card">
-          <h3>General</h3>
-          <p class="muted">Other useful tools that still look worth reviewing.</p>
-          <a href="/categories/general.html">Explore General</a>
+      <div class="card" style="margin-top:40px;">
+        <h2>Browse by category</h2>
+        <div class="grid">
+          <div>
+            <h3>AI</h3>
+            <p class="muted">Products focused on AI workflows, assistants, generation, and automation.</p>
+            <a class="inline-link" href="/categories/ai.html">Explore AI</a>
+          </div>
+          <div>
+            <h3>SaaS</h3>
+            <p class="muted">Software products built for productivity, teams, and recurring workflows.</p>
+            <a class="inline-link" href="/categories/saas.html">Explore SaaS</a>
+          </div>
+          <div>
+            <h3>General</h3>
+            <p class="muted">Other useful tools that still look worth reviewing.</p>
+            <a class="inline-link" href="/categories/general.html">Explore General</a>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <h2>Latest picks</h2>
-      <div id="latestDeals" class="grid">
-        <div class="card empty">Loading latest picks…</div>
+      <div class="card" style="margin-top:40px;">
+        <h2>Latest picks</h2>
+        <div id="latestDeals" class="grid">
+          <div class="empty">Loading latest picks…</div>
+        </div>
       </div>
-    </div>
 
-    <div class="section">
-      <h2>Top clicked this week</h2>
-      <div id="topClickedDeals" class="grid">
-        <div class="card empty">Loading top clicked picks…</div>
+      <div class="card" style="margin-top:40px;">
+        <h2>Top clicked this week</h2>
+        <div id="topClickedDeals" class="grid">
+          <div class="empty">Loading top clicked picks…</div>
+        </div>
       </div>
-    </div>
 
+      
     <div class="footer">
-      Pochify — tools that help you move faster, spend less, or stay ahead.
-      <div class="footer-links">
+      <p>
+        <a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.
+      </p>
+      <p class="footer-links">
         <a href="/faq.html">FAQ</a>
         <a href="/privacy.html">Privacy Policy</a>
         <a href="/terms.html">Terms & Conditions</a>
-      </div>
+      </p>
     </div>
-  </div>
+  
+    </div>
 
-  <script>
-    function toggleMenu() {
-      const nav = document.getElementById("siteNav");
-      if (nav) nav.classList.toggle("open");
-    }
+    <script>
+      async function loadLatestDeals() {
+        const container = document.getElementById("latestDeals");
 
-    async function loadLatestDeals() {
-      const container = document.getElementById("latestDeals");
+        try {
+          const res = await fetch("https://go.pochify.com/api/public/latest-deals");
+          if (!res.ok) throw new Error("HTTP " + res.status);
 
-      try {
-        const res = await fetch("https://go.pochify.com/api/public/latest-deals");
-        if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const items = data.items || [];
 
-        const data = await res.json();
-        const items = data.items || [];
+          if (!items.length) {
+            container.innerHTML = '<div class="empty">No picks yet. Check back soon.</div>';
+            return;
+          }
 
-        if (!items.length) {
-          container.innerHTML = '<div class="card empty">No picks yet. Check back soon.</div>';
-          return;
-        }
-
-        container.innerHTML = items.map(item => {
-          const imageHtml = item.og_image
-            ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />'
-            : '';
-
-          const body = item.hook || item.description || "Read the full breakdown.";
-
-          return `
-            <div class="card deal-card">
-              ${imageHtml}
+          container.innerHTML = items.map(item => `
+            <div class="deal-card">
+              ${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
               <h3>${item.name}</h3>
-              <p>${body}</p>
-              <a href="/deals/${item.slug}.html">Read full breakdown</a>
+              <p>${item.hook || item.description || 'Read the full breakdown.'}</p>
+              <a class="inline-link" href="/deals/${item.slug}.html">Read full breakdown</a>
             </div>
-          `;
-        }).join("");
-      } catch (err) {
-        console.error("Failed to load latest deals", err);
-        container.innerHTML = '<div class="card empty">Latest picks are temporarily unavailable.</div>';
-      }
-    }
-
-    async function loadTopClickedDeals() {
-      const container = document.getElementById("topClickedDeals");
-
-      try {
-        const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7");
-        if (!res.ok) throw new Error("HTTP " + res.status);
-
-        const data = await res.json();
-        const items = data.items || [];
-
-        if (!items.length) {
-          container.innerHTML = '<div class="card empty">No top clicked data yet.</div>';
-          return;
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load latest deals", err);
+          container.innerHTML = '<div class="empty">Latest picks are temporarily unavailable.</div>';
         }
-
-        container.innerHTML = items.map(item => {
-          const imageHtml = item.og_image
-            ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />'
-            : '';
-
-          const body = item.hook || item.description || "Read the full breakdown.";
-
-          return `
-            <div class="card deal-card">
-              ${imageHtml}
-              <h3>${item.name}</h3>
-              <p>${body}</p>
-              <a href="/deals/${item.slug}.html">Read full breakdown</a>
-            </div>
-          `;
-        }).join("");
-      } catch (err) {
-        console.error("Failed to load top clicked deals", err);
-        container.innerHTML = '<div class="card empty">Top clicked picks are temporarily unavailable.</div>';
       }
-    }
 
-    loadLatestDeals();
-    loadTopClickedDeals();
-  </script>
+      async function loadTopClickedDeals() {
+        const container = document.getElementById("topClickedDeals");
+
+        try {
+          const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          const data = await res.json();
+          const items = data.items || [];
+
+          if (!items.length) {
+            container.innerHTML = '<div class="empty">No top clicked data yet.</div>';
+            return;
+          }
+
+          container.innerHTML = items.map(item => `
+            <div class="deal-card">
+              ${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
+              <h3>${item.name}</h3>
+              <p>${item.hook || item.description || 'Read the full breakdown.'}</p>
+              <a class="inline-link" href="/deals/${item.slug}.html">Read full breakdown</a>
+            </div>
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load top clicked deals", err);
+          container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
+        }
+      }
+
+      loadLatestDeals();
+      loadTopClickedDeals();
+    </script>
+  
+  
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || "Link copied");
+        } catch (e) {
+          alert("Could not copy link");
+        }
+      }
+    </script>
+  
 </body>
 </html>
