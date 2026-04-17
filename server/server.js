@@ -45,13 +45,20 @@ function daysSince(dateString) {
 function guessNetwork(name = "", description = "") {
   const text = `${name} ${description}`.toLowerCase();
 
-  if (text.includes("design") || text.includes("ecommerce")) return "cj";
-  if (text.includes("b2b") || text.includes("saas") || text.includes("software")) return "impact";
+  if (text.includes("partnerstack")) return "partnerstack";
+  if (text.includes("design") || text.includes("ecommerce") || text.includes("cj")) return "cj";
+  if (text.includes("b2b") || text.includes("saas") || text.includes("software") || text.includes("impact")) return "impact";
   return "unknown";
 }
 
 function isEligibleToSend(deal) {
-  if (!deal.last_posted_at) return true;
+  if (["awaiting_link", "discovered", "rejected"].includes(deal.status || "")) {
+    return false;
+  }
+
+  if (!deal.last_posted_at) {
+    return deal.status === "ready_to_post";
+  }
 
   const enoughDays = daysSince(deal.last_posted_at) >= REPOST_DAYS;
   const enoughClicks = (deal.click_count || 0) >= MIN_REPOST_CLICKS;
@@ -142,7 +149,7 @@ app.get("/api/public/related-deals", async (req, res) => {
     return res.status(404).json({ error: "Deal not found" });
   }
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("deals")
     .select(`
       name,
@@ -155,11 +162,15 @@ app.get("/api/public/related-deals", async (req, res) => {
       channel
     `)
     .eq("status", "active")
-    .eq("channel", currentDeal.channel)
     .neq("slug", slug)
     .order("click_count", { ascending: false })
     .order("score", { ascending: false })
     .limit(3);
+
+  const { data, error } =
+    currentDeal.channel === "ai" || currentDeal.channel === "saas"
+      ? await query.eq("channel", currentDeal.channel)
+      : await query;
 
   if (error) {
     console.error("❌ related deals error:", error);
@@ -233,28 +244,76 @@ app.post("/api/deals/ingest", async (req, res) => {
     return res.status(400).json({ error: "Expected deals array" });
   }
 
-  const formattedDeals = deals.map((d) => ({
-    name: d.name,
-    slug: d.slug,
-    brand_key: d.brand_key,
-    description: d.description || "",
-    url: d.url || "",
-    affiliate_link: d.affiliateLink || null,
-    page_url: d.page_url || `https://pochify.com/deals/${d.slug}.html`,
-    source: d.source || "unknown",
-    channel: d.channel || "general",
-    votes_count: d.votes_count || 0,
-    score: d.score || 0,
-    meta_title: d.meta_title || "",
-    meta_description: d.meta_description || "",
-    og_image: d.og_image || "",
-    hook: d.hook || "",
-    audience: d.audience || "",
-    why_now: d.why_now || "",
-    caution: d.caution || "",
-    benefits: d.benefits || [],
-    updated_at: new Date().toISOString()
-  }));
+  const slugs = deals.map((d) => d.slug);
+
+  const { data: existingDeals, error: existingDealsError } = await supabase
+    .from("deals")
+    .select("slug, status, brand_key")
+    .in("slug", slugs);
+
+  if (existingDealsError) {
+    return res.status(500).json({ error: existingDealsError });
+  }
+
+  const existingDealMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
+
+  const brandKeys = [...new Set(deals.map((d) => d.brand_key).filter(Boolean))];
+
+  const { data: activePrograms, error: activeProgramsError } = await supabase
+    .from("affiliate_programs")
+    .select("brand_key")
+    .in("brand_key", brandKeys)
+    .eq("status", "active");
+
+  if (activeProgramsError) {
+    return res.status(500).json({ error: activeProgramsError });
+  }
+
+  const activeBrandKeys = new Set((activePrograms || []).map((p) => p.brand_key));
+
+  const formattedDeals = deals.map((d) => {
+    const existing = existingDealMap.get(d.slug);
+    let status = existing?.status || "discovered";
+
+    if (activeBrandKeys.has(d.brand_key)) {
+      if (!["posted", "rejected"].includes(status)) {
+        status = "ready_to_post";
+      }
+    } else if (d.affiliate_detected && d.affiliate_url) {
+      if (!["posted", "rejected"].includes(status)) {
+        status = "awaiting_link";
+      }
+    } else if (!existing?.status) {
+      status = "discovered";
+    }
+
+    return {
+      name: d.name,
+      slug: d.slug,
+      brand_key: d.brand_key,
+      description: d.description || "",
+      url: d.url || "",
+      affiliate_link: d.affiliateLink || null,
+      affiliate_url: d.affiliate_url || null,
+      affiliate_detected: !!d.affiliate_detected,
+      network_guess: d.network_guess || guessNetwork(d.name, d.description),
+      page_url: d.page_url || `https://pochify.com/deals/${d.slug}.html`,
+      source: d.source || "unknown",
+      channel: d.channel || "general",
+      votes_count: d.votes_count || 0,
+      score: d.score || 0,
+      meta_title: d.meta_title || "",
+      meta_description: d.meta_description || "",
+      og_image: d.og_image || "",
+      hook: d.hook || "",
+      audience: d.audience || "",
+      why_now: d.why_now || "",
+      caution: d.caution || "",
+      benefits: d.benefits || [],
+      status,
+      updated_at: new Date().toISOString()
+    };
+  });
 
   const { error: upsertError } = await supabase
     .from("deals")
@@ -265,33 +324,29 @@ app.post("/api/deals/ingest", async (req, res) => {
     return res.status(500).json({ error: upsertError });
   }
 
-  const brandKeys = [...new Set(formattedDeals.map((d) => d.brand_key))];
-
-  const { data: activePrograms } = await supabase
-    .from("affiliate_programs")
-    .select("brand_key")
-    .in("brand_key", brandKeys)
-    .eq("status", "active");
-
-  const activeBrandKeys = new Set((activePrograms || []).map((p) => p.brand_key));
-
   const opportunityRows = formattedDeals
-    .filter((d) => !activeBrandKeys.has(d.brand_key))
+    .filter((d) => !activeBrandKeys.has(d.brand_key) && d.affiliate_detected && d.affiliate_url)
     .map((d) => ({
       brand_key: d.brand_key,
       display_name: d.name,
+      product_url: d.url,
       source_url: d.url,
-      network_guess: guessNetwork(d.name, d.description),
+      affiliate_url: d.affiliate_url,
+      network_guess: d.network_guess || guessNetwork(d.name, d.description),
+      status: "awaiting_signup",
       last_seen_at: new Date().toISOString()
     }));
 
   if (opportunityRows.length > 0) {
-    await supabase
+    const { error: oppError } = await supabase
       .from("affiliate_opportunities")
       .upsert(opportunityRows, { onConflict: "brand_key" });
-  }
 
-  const slugs = formattedDeals.map((d) => d.slug);
+    if (oppError) {
+      console.error("❌ affiliate opportunities upsert error:", oppError);
+      return res.status(500).json({ error: oppError });
+    }
+  }
 
   const { data: storedDeals, error: storedError } = await supabase
     .from("deals")
@@ -307,9 +362,6 @@ app.post("/api/deals/ingest", async (req, res) => {
     .filter(isEligibleToSend)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, maxToSend);
-
-  console.log(`💾 Saved deals: ${formattedDeals.length}`);
-  console.log(`📨 Send candidates: ${sendCandidates.length}`);
 
   res.json({
     success: true,
@@ -337,6 +389,7 @@ app.post("/api/deals/mark-posted", async (req, res) => {
     slug: d.slug,
     post_count: (d.post_count || 0) + 1,
     last_posted_at: new Date().toISOString(),
+    status: "posted",
     updated_at: new Date().toISOString()
   }));
 
@@ -361,7 +414,6 @@ app.get("/go/:slug", async (req, res) => {
     .single();
 
   if (dealError || !deal) {
-    console.log("❌ Deal not found:", slug);
     return res.redirect("https://pochify.com");
   }
 
@@ -394,8 +446,6 @@ app.get("/go/:slug", async (req, res) => {
       { onConflict: "slug" }
     );
 
-  console.log(`✅ Redirect: ${slug} → ${targetUrl}`);
-
   return res.redirect(targetUrl || "https://pochify.com");
 });
 
@@ -410,7 +460,7 @@ app.get("/api/admin/stats", requireAdmin, async (req, res) => {
 
   const { data: topDeals } = await supabase
     .from("deals")
-    .select("name, slug, click_count, post_count, score")
+    .select("name, slug, click_count, post_count, score, status")
     .order("click_count", { ascending: false })
     .limit(10);
 
@@ -438,13 +488,15 @@ app.get("/api/admin/opportunities", requireAdmin, async (req, res) => {
     .select(`
       brand_key,
       display_name,
+      product_url,
       source_url,
+      affiliate_url,
       network_guess,
       status,
       last_seen_at
     `)
     .order("last_seen_at", { ascending: false })
-    .limit(25);
+    .limit(50);
 
   if (error) {
     return res.status(500).json({ error });
@@ -454,7 +506,7 @@ app.get("/api/admin/opportunities", requireAdmin, async (req, res) => {
   for (const row of data || []) {
     const { data: deal } = await supabase
       .from("deals")
-      .select("click_count")
+      .select("click_count, status")
       .eq("brand_key", row.brand_key)
       .order("click_count", { ascending: false })
       .limit(1)
@@ -462,7 +514,8 @@ app.get("/api/admin/opportunities", requireAdmin, async (req, res) => {
 
     items.push({
       ...row,
-      click_count: deal?.click_count || 0
+      click_count: deal?.click_count || 0,
+      deal_status: deal?.status || ""
     });
   }
 
@@ -504,6 +557,27 @@ app.post("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
     return res.status(500).json({ error });
   }
 
+  await supabase
+    .from("affiliate_opportunities")
+    .upsert(
+      {
+        brand_key: payload.brand_key,
+        display_name: payload.display_name || payload.brand_key,
+        status: "approved",
+        last_seen_at: new Date().toISOString()
+      },
+      { onConflict: "brand_key" }
+    );
+
+  await supabase
+    .from("deals")
+    .update({
+      status: "ready_to_post",
+      updated_at: new Date().toISOString()
+    })
+    .eq("brand_key", payload.brand_key)
+    .in("status", ["awaiting_link", "discovered"]);
+
   res.json({ success: true });
 });
 
@@ -517,7 +591,7 @@ app.get("/admin", requireAdmin, (req, res) => {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background:#0b1220; color:#e5e7eb; margin:0; padding:24px; }
-    .wrap { max-width:1100px; margin:0 auto; }
+    .wrap { max-width:1200px; margin:0 auto; }
     .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
     .card { background:#111827; border:1px solid #1f2937; border-radius:14px; padding:18px; margin-bottom:18px; }
     input, select, textarea, button {
@@ -525,9 +599,10 @@ app.get("/admin", requireAdmin, (req, res) => {
     }
     button { background:#22c55e; color:#04130a; font-weight:bold; cursor:pointer; }
     table { width:100%; border-collapse:collapse; }
-    th, td { text-align:left; padding:8px; border-bottom:1px solid #1f2937; }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #1f2937; vertical-align:top; }
     h1,h2 { margin-top:0; }
     canvas { background:#fff; border-radius:12px; padding:8px; }
+    a { color:#93c5fd; }
   </style>
 </head>
 <body>
@@ -543,10 +618,11 @@ app.get("/admin", requireAdmin, (req, res) => {
 
     <div class="card">
       <h2>Add / Update Affiliate Program</h2>
+      <p>Saving an affiliate program will automatically move matching deals toward ready-to-post.</p>
       <form id="affiliateForm">
-        <input name="brand_key" placeholder="brand_key e.g. notion" required />
+        <input name="brand_key" placeholder="brand_key e.g. pyxaai" required />
         <input name="display_name" placeholder="Display name" />
-        <input name="network" placeholder="impact / cj / partnerstack" required />
+        <input name="network" placeholder="impact / cj / partnerstack / rewardful" required />
         <input name="tracking_url" placeholder="Tracking URL" />
         <input name="deeplink_template" placeholder="Deep link template (optional)" />
         <select name="deeplink_supported">
@@ -562,14 +638,16 @@ app.get("/admin", requireAdmin, (req, res) => {
     </div>
 
     <div class="card">
-      <h2>Latest Affiliate Opportunities</h2>
+      <h2>Affiliate Opportunities</h2>
       <table>
         <thead>
           <tr>
             <th>Brand</th>
-            <th>Guess</th>
+            <th>Network</th>
+            <th>Affiliate Page</th>
             <th>Clicks</th>
             <th>Status</th>
+            <th>Deal Status</th>
           </tr>
         </thead>
         <tbody id="oppRows"></tbody>
@@ -601,17 +679,27 @@ async function loadStats() {
     },
     options: { responsive: true }
   });
+}
 
-  const oppRows = (data.latestOpportunities || []).map(o => \`
+async function loadOpportunities() {
+  const res = await fetch('/api/admin/opportunities');
+  const data = await res.json();
+
+  const rows = (data.items || []).map(o => \`
     <tr>
-      <td>\${o.display_name || o.brand_key}</td>
+      <td>
+        <strong>\${o.display_name || o.brand_key}</strong><br/>
+        <small>\${o.brand_key}</small>
+      </td>
       <td>\${o.network_guess || ''}</td>
-      <td>-</td>
+      <td>\${o.affiliate_url ? '<a href="' + o.affiliate_url + '" target="_blank" rel="noopener">Open</a>' : '-'}</td>
+      <td>\${o.click_count || 0}</td>
       <td>\${o.status || ''}</td>
+      <td>\${o.deal_status || ''}</td>
     </tr>
   \`).join('');
 
-  document.getElementById('oppRows').innerHTML = oppRows;
+  document.getElementById('oppRows').innerHTML = rows;
 }
 
 document.getElementById('affiliateForm').addEventListener('submit', async (e) => {
@@ -630,6 +718,8 @@ document.getElementById('affiliateForm').addEventListener('submit', async (e) =>
   if (data.success) {
     alert('Saved');
     e.target.reset();
+    loadOpportunities();
+    loadStats();
   } else {
     alert('Failed');
     console.error(data);
@@ -637,11 +727,12 @@ document.getElementById('affiliateForm').addEventListener('submit', async (e) =>
 });
 
 loadStats();
+loadOpportunities();
 </script>
 </body>
 </html>`);
 });
 
 app.listen(PORT, () => {
-  console.log("Server running");
+  console.log("🚀 Server runnin");
 });
