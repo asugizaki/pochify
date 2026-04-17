@@ -43,6 +43,21 @@ function iconLink() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l5-5a3 3 0 0 0-4.24-4.24l-1.88 1.88a1 1 0 1 0 1.41 1.41l1.88-1.88a1 1 0 1 1 1.41 1.41l-5 5z"/><path fill="currentColor" d="M13.41 10.59a1 1 0 0 0-1.41-1.41l-5 5a3 3 0 0 0 4.24 4.24l1.88-1.88a1 1 0 1 0-1.41-1.41l-1.88 1.88a1 1 0 1 1-1.41-1.41l5-5z"/></svg>`;
 }
 
+export function googleAnalyticsTag() {
+  const measurementId = process.env.GA_MEASUREMENT_ID || "";
+  if (!measurementId) return "";
+
+  return `
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${escapeHtml(measurementId)}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${escapeHtml(measurementId)}');
+    </script>
+  `;
+}
+
 export function sharedStyles() {
   return `
   <style>
@@ -56,6 +71,12 @@ export function sharedStyles() {
       --accent-dark: #04130a;
       --link: #93c5fd;
       --btn-dark: #0f172a;
+      --price: #f8fafc;
+      --old-price: #94a3b8;
+      --badge-bg: #052e16;
+      --badge-text: #86efac;
+      --sale-bg: #3f0d12;
+      --sale-text: #fda4af;
     }
 
     * { box-sizing: border-box; }
@@ -185,6 +206,43 @@ export function sharedStyles() {
       border: 1px solid var(--card-border);
       background: #0f172a;
       margin-bottom: 24px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .price-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      margin: 12px 0 0;
+    }
+
+    .price-current {
+      font-size: 34px;
+      font-weight: bold;
+      color: var(--price);
+    }
+
+    .price-old {
+      font-size: 18px;
+      color: var(--old-price);
+      text-decoration: line-through;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: bold;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+    }
+
+    .badge-sale {
+      background: var(--sale-bg);
+      color: var(--sale-text);
     }
 
     .cta-row {
@@ -219,12 +277,39 @@ export function sharedStyles() {
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
 
+    .deal-card {
+      position: relative;
+    }
+
     .deal-card img {
       width: 100%;
       border-radius: 12px;
       margin-bottom: 14px;
       border: 1px solid #243041;
       background: #0f172a;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .card-price-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-price-current {
+      font-weight: bold;
+      font-size: 20px;
+      color: var(--price);
+    }
+
+    .card-price-old {
+      color: var(--old-price);
+      text-decoration: line-through;
+      font-size: 14px;
     }
 
     .deal-card p,
@@ -337,6 +422,10 @@ export function sharedStyles() {
       h1 {
         font-size: 34px;
       }
+
+      .price-current {
+        font-size: 28px;
+      }
     }
   </style>
   `;
@@ -403,8 +492,7 @@ export function layout({
   extraHead = "",
   bodyContent = "",
   includeNav = true,
-  includeFooterScripts = true,
-  siteUrl = "https://pochify.com"
+  includeFooterScripts = true
 }) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -421,6 +509,7 @@ export function layout({
   <meta property="og:url" content="${canonicalUrl}" />
   ${ogImage ? `<meta property="og:image" content="${escapeHtml(ogImage)}" />` : ""}
   <meta name="twitter:card" content="summary_large_image" />
+  ${googleAnalyticsTag()}
   ${sharedStyles()}
   ${extraHead}
 </head>
@@ -439,10 +528,23 @@ export function dealCardHtml(deal) {
 
   const summary = escapeHtml(deal.hook || deal.description || "Read the full breakdown.");
 
+  const priceRow =
+    deal.current_price || deal.original_price || deal.discount_percent || deal.offer_type
+      ? `
+        <div class="card-price-row">
+          ${deal.current_price ? `<span class="card-price-current">$${escapeHtml(String(deal.current_price))}</span>` : ""}
+          ${deal.original_price ? `<span class="card-price-old">$${escapeHtml(String(deal.original_price))}</span>` : ""}
+          ${deal.discount_percent ? `<span class="badge badge-sale">${escapeHtml(String(deal.discount_percent))}% off</span>` : ""}
+          ${deal.offer_type === "lifetime" ? `<span class="badge">Lifetime deal</span>` : ""}
+        </div>
+      `
+      : "";
+
   return `
     <div class="card deal-card">
       ${imageHtml}
       <h3>${escapeHtml(deal.name)}</h3>
+      ${priceRow}
       <p>${summary}</p>
       <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
     </div>
