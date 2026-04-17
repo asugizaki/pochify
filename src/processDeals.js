@@ -4,6 +4,8 @@ import {
   generateDealPage,
   generateDealsIndex,
   generateCategoryPages,
+  generateHomePage,
+  generateStaticPages,
   generateRobotsTxt,
   generateSitemap
 } from "./generateDealPage.js";
@@ -52,7 +54,7 @@ async function run() {
 
   const selectedForEnrichment = rawDeals
     .filter((d) => d.score >= 4)
-    .slice(0, 8);
+    .slice(0, 24);
 
   console.log(`📦 Selected ${selectedForEnrichment.length} deals for enrichment`);
 
@@ -68,11 +70,17 @@ async function run() {
     console.log("📝 Generated page:", filePath);
   }
 
-  const indexPath = generateDealsIndex(enrichedDeals);
-  console.log("🗂️ Generated deals index:", indexPath);
+  const homePath = generateHomePage();
+  console.log("🏠 Generated homepage:", homePath);
+
+  const dealsIndexPaths = generateDealsIndex(enrichedDeals);
+  console.log("🗂️ Generated deals index pages:", dealsIndexPaths);
 
   const categoryPaths = generateCategoryPages(enrichedDeals);
   console.log("🧭 Generated category pages:", categoryPaths);
+
+  const staticPaths = generateStaticPages();
+  console.log("📄 Generated static pages:", staticPaths);
 
   generateRobotsTxt();
   console.log("🤖 Generated robots.txt");
