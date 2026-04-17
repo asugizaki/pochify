@@ -3,6 +3,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_API_URL = "https://go.pochify.com/api/admin/opportunities";
+const ADMIN_URL = "https://go.pochify.com/admin";
 
 function basicAuthHeader() {
   const raw = `${ADMIN_USERNAME}:${ADMIN_PASSWORD}`;
@@ -64,24 +65,35 @@ async function run() {
   const rows = data.items || [];
 
   if (rows.length === 0) {
-    await sendTelegram("📭 <b>Pochify Affiliate Digest</b>\n\nNo new affiliate opportunities right now.");
+    await sendTelegram(
+      `📭 <b>Pochify Affiliate Digest</b>\n\nAdmin: <a href="${ADMIN_URL}">${ADMIN_URL}</a>\n\nNo new affiliate opportunities right now.`
+    );
     return;
   }
 
   const body = rows
     .slice(0, 10)
-    .map(
-      (r, i) =>
+    .map((r, i) => {
+      const pageUrl = r.page_url || (r.deal_slug ? `https://pochify.com/deals/${r.deal_slug}.html` : "");
+      const adminDeepLink = `${ADMIN_URL}/opportunities?brand_key=${encodeURIComponent(r.brand_key)}`;
+
+      return (
         `${i + 1}. <b>${r.display_name}</b>\n` +
         `Brand key: <code>${r.brand_key}</code>\n` +
         `Network: ${r.network_guess || "unknown"}\n` +
         `Clicks: ${r.click_count || 0}\n` +
         `Status: ${r.status || "unknown"}\n` +
-        `Affiliate page: ${r.affiliate_url || "n/a"}`
-    )
+        `Affiliate page: ${r.affiliate_url || "n/a"}\n` +
+        `${pageUrl ? `Pochify page: <a href="${pageUrl}">open</a>\n` : ""}` +
+        `Admin opportunity: <a href="${adminDeepLink}">open</a>`
+      );
+    })
     .join("\n\n");
 
-  const text = `📬 <b>Pochify Affiliate Digest</b>\n\nTop opportunities to review:\n\n${body}`;
+  const text =
+    `📬 <b>Pochify Affiliate Digest</b>\n\n` +
+    `Admin: <a href="${ADMIN_URL}">${ADMIN_URL}</a>\n\n` +
+    `Top opportunities to review:\n\n${body}`;
 
   await sendTelegram(text);
 }
