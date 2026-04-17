@@ -13,11 +13,12 @@ import { fetchDynamicDeals } from "./productSource.js";
 import { fetchStackSocialDeals } from "./sources/stackSocialSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
-import { discoverAffiliateInfo } from "./affiliateDiscovery.js";
 import { generateDealContent } from "./ai/generateDealContent.js";
 
 const BACKEND_URL = "https://go.pochify.com/api/deals/ingest";
+const SETTINGS_URL = "https://go.pochify.com/api/settings/public";
 const PENDING_PATH = path.join("data", "pending-telegram.json");
+const MAX_SELECTED_DEALS = 24;
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -64,7 +65,25 @@ function dedupeDeals(deals) {
   return [...map.values()];
 }
 
-async function ingestDeals(deals) {
+async function loadSettings() {
+  try {
+    const res = await fetch(SETTINGS_URL);
+    if (!res.ok) throw new Error(`settings status ${res.status}`);
+    const data = await res.json();
+    return data.settings || {};
+  } catch (error) {
+    console.warn("⚠️ Could not load settings from backend, using defaults:", error.message);
+    return {
+      enable_producthunt_source: false,
+      enable_stacksocial_source: true,
+      require_affiliate_approval: false,
+      allow_stacksocial_direct_posting: true,
+      require_images_for_publish: true
+    };
+  }
+}
+
+async function ingestDeals(deals, settings) {
   const res = await fetch(BACKEND_URL, {
     method: "POST",
     headers: {
@@ -72,7 +91,8 @@ async function ingestDeals(deals) {
     },
     body: JSON.stringify({
       deals,
-      maxToSend: 2
+      maxToSend: 2,
+      settings
     })
   });
 
@@ -86,10 +106,21 @@ async function ingestDeals(deals) {
   return data.sendCandidates || [];
 }
 
-function buildFinalAffiliateLink(deal, affiliateInfo) {
-  if (deal.affiliateLink) return deal.affiliateLink;
-  if (deal.source === "stacksocial" && deal.stacksocial_url) {
-    return deal.affiliateLink || "";
+function isPublishableForPhaseOne(deal, settings) {
+  if (settings.require_images_for_publish && !deal.og_image) return false;
+
+  if (deal.source !== "stacksocial") return false;
+
+  if (!settings.allow_stacksocial_direct_posting) return false;
+
+  if (!deal.stacksocial_url) return false;
+
+  return true;
+}
+
+function buildStackSocialDirectLink(deal, settings) {
+  if (deal.source === "stacksocial" && settings.allow_stacksocial_direct_posting) {
+    return deal.stacksocial_url || deal.url || "";
   }
   return "";
 }
@@ -97,16 +128,29 @@ function buildFinalAffiliateLink(deal, affiliateInfo) {
 async function run() {
   console.log("🚀 Processing deals...");
 
-  const [productHuntDeals, stackSocialDeals] = await Promise.all([
-    fetchDynamicDeals().catch((error) => {
+  const settings = await loadSettings();
+  console.log("⚙️ Loaded settings:", settings);
+
+  let productHuntDeals = [];
+  let stackSocialDeals = [];
+
+  if (settings.enable_producthunt_source) {
+    productHuntDeals = await fetchDynamicDeals().catch((error) => {
       console.error("❌ Product Hunt source failed:", error.message);
       return [];
-    }),
-    fetchStackSocialDeals({ maxDeals: 14 }).catch((error) => {
+    });
+  } else {
+    console.log("ℹ️ Product Hunt source disabled by feature flag");
+  }
+
+  if (settings.enable_stacksocial_source) {
+    stackSocialDeals = await fetchStackSocialDeals({ maxDeals: 20 }).catch((error) => {
       console.error("❌ StackSocial source failed:", error.message);
       return [];
-    })
-  ]);
+    });
+  } else {
+    console.log("ℹ️ StackSocial source disabled by feature flag");
+  }
 
   console.log(`📥 Product Hunt deals: ${productHuntDeals.length}`);
   console.log(`📥 StackSocial deals: ${stackSocialDeals.length}`);
@@ -115,7 +159,7 @@ async function run() {
 
   const selectedForEnrichment = rawDeals
     .filter((d) => (d.score || 0) >= 4)
-    .slice(0, 24);
+    .slice(0, MAX_SELECTED_DEALS);
 
   console.log(`📦 Selected ${selectedForEnrichment.length} deals for enrichment`);
 
@@ -124,23 +168,25 @@ async function run() {
   for (const deal of selectedForEnrichment) {
     const enriched = await enrichProduct(deal);
     const improved = enhanceCopy(enriched);
-
-    const affiliateTargetUrl =
-      improved.vendor_url || improved.url || improved.stacksocial_url || "";
-
-    const affiliateInfo = await discoverAffiliateInfo(affiliateTargetUrl);
     const aiContent = await generateDealContent(improved);
-    const finalAffiliateLink = buildFinalAffiliateLink(improved, affiliateInfo);
 
-    enrichedDeals.push({
+    const finalDeal = {
       ...improved,
       ...aiContent,
-      affiliate_url: affiliateInfo.affiliate_url,
-      affiliate_detected: affiliateInfo.affiliate_detected,
-      network_guess: affiliateInfo.network_guess,
-      affiliateLink: finalAffiliateLink
-    });
+      affiliate_url: "",
+      affiliate_detected: false,
+      network_guess: "",
+      affiliateLink: buildStackSocialDirectLink(improved, settings)
+    };
+
+    if (isPublishableForPhaseOne(finalDeal, settings)) {
+      enrichedDeals.push(finalDeal);
+    } else {
+      console.log(`⏭️ Skipping low-quality or incomplete deal: ${finalDeal.name}`);
+    }
   }
+
+  console.log(`✅ Publishable deals after filtering: ${enrichedDeals.length}`);
 
   for (const deal of enrichedDeals) {
     const filePath = generateDealPage(deal, enrichedDeals);
@@ -165,7 +211,7 @@ async function run() {
   generateSitemap(enrichedDeals);
   console.log("🗺️ Generated sitemap");
 
-  const sendCandidates = await ingestDeals(enrichedDeals);
+  const sendCandidates = await ingestDeals(enrichedDeals, settings);
   saveJson(PENDING_PATH, sendCandidates);
 
   console.log(`📨 Pending Telegram deals: ${sendCandidates.length}`);
