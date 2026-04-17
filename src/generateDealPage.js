@@ -131,10 +131,15 @@ function buildDealHtml(deal, allDeals) {
   const benefits = Array.isArray(deal.benefits) ? deal.benefits.slice(0, 4) : [];
   const relatedDeals = getRelatedDeals(allDeals, deal);
 
+  const channelBreadcrumb =
+    deal.channel === "ai" || deal.channel === "saas"
+      ? `/ <a href="/categories/${escapeHtml(deal.channel)}.html">${escapeHtml(deal.channel.toUpperCase())}</a>`
+      : "";
+
   const bodyContent = `
     <div class="container narrow">
       <div class="breadcrumbs">
-        <a href="/">Home</a> / <a href="/deals/">Deals</a> / <a href="/categories/${escapeHtml(deal.channel || "general")}.html">${escapeHtml(deal.channel || "general")}</a> / ${escapeHtml(title)}
+        <a href="/">Home</a> / <a href="/deals/">Deals</a>${channelBreadcrumb} / ${escapeHtml(title)}
       </div>
 
       <div class="eyebrow">Pochify Pick</div>
@@ -261,7 +266,7 @@ function buildDealsIndexHtml(deals, currentPage, totalPages) {
 }
 
 function buildCategoryPageHtml(category, deals) {
-  const pretty = category === "ai" ? "AI" : category === "saas" ? "SaaS" : "General";
+  const pretty = category === "ai" ? "AI" : "SaaS";
   const cards = deals.map((deal) => dealCardHtml(deal)).join("");
 
   const bodyContent = `
@@ -339,11 +344,6 @@ function buildHomePageHtml() {
             <h3>SaaS</h3>
             <p class="muted">Software products built for productivity, teams, and recurring workflows.</p>
             <a class="inline-link" href="/categories/saas.html">Explore SaaS</a>
-          </div>
-          <div>
-            <h3>General</h3>
-            <p class="muted">Other useful tools that still look worth reviewing.</p>
-            <a class="inline-link" href="/categories/general.html">Explore General</a>
           </div>
         </div>
       </div>
@@ -474,7 +474,12 @@ export function generateDealPage(deal, allDeals) {
 export function generateDealsIndex(deals) {
   ensureDir(path.join("docs", "deals"));
 
-  const sortedDeals = [...deals].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  const sortedDeals = [...deals].sort((a, b) => {
+    const aVal = a.created_at || "";
+    const bVal = b.created_at || "";
+    return bVal.localeCompare(aVal);
+  });
+
   const totalPages = Math.max(1, Math.ceil(sortedDeals.length / DEALS_PER_PAGE));
   const generated = [];
 
@@ -493,11 +498,11 @@ export function generateDealsIndex(deals) {
 
 export function generateCategoryPages(deals) {
   ensureDir(path.join("docs", "categories"));
-  const categories = ["ai", "saas", "general"];
+  const categories = ["ai", "saas"];
   const generated = [];
 
   for (const category of categories) {
-    const filtered = deals.filter((d) => (d.channel || "general") === category);
+    const filtered = deals.filter((d) => d.channel === category);
     const filePath = getCategoryPagePath(category);
     fs.writeFileSync(filePath, buildCategoryPageHtml(category, filtered), "utf8");
     generated.push(filePath);
@@ -599,8 +604,7 @@ export function generateSitemap(deals) {
 
   const categoryUrls = [
     `${SITE_URL}/categories/ai.html`,
-    `${SITE_URL}/categories/saas.html`,
-    `${SITE_URL}/categories/general.html`
+    `${SITE_URL}/categories/saas.html`
   ];
 
   const totalPages = Math.max(1, Math.ceil(deals.length / DEALS_PER_PAGE));
