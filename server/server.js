@@ -848,8 +848,8 @@ app.post("/api/deals/ingest", async (req, res) => {
     const formattedDeals = deals.map((d) => {
       const existing = existingDealMap.get(d.slug);
       let status = existing?.status || "discovered";
-
-      if (activeBrandKeys.has(d.brand_key)) {
+      
+      if (activeBrandKeys.has(d.brand_key) || d.affiliateLink) {
         if (!["posted", "rejected"].includes(status)) {
           status = "ready_to_post";
         }
