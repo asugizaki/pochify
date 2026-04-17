@@ -4,6 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const SITE_URL = "https://pochify.com";
+const ADMIN_BASE_URL = "https://go.pochify.com";
+
+const REPOST_DAYS = 7;
+const MAX_POST_COUNT = 3;
+const MIN_REPOST_CLICKS = 10;
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -26,17 +33,19 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const SITE_URL = "https://pochify.com";
-const ADMIN_BASE_URL = "https://go.pochify.com";
-
-const appSupabase = createClient(
+const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const REPOST_DAYS = 7;
-const MAX_POST_COUNT = 3;
-const MIN_REPOST_CLICKS = 10;
+function escapeHtml(text = "") {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 function daysSince(dateString) {
   if (!dateString) return Number.POSITIVE_INFINITY;
@@ -49,11 +58,12 @@ function guessNetwork(name = "", description = "") {
   const text = `${name} ${description}`.toLowerCase();
 
   if (text.includes("partnerstack")) return "partnerstack";
-  if (text.includes("design") || text.includes("ecommerce") || text.includes("cj")) return "cj";
-  if (text.includes("b2b") || text.includes("saas") || text.includes("software") || text.includes("impact")) return "impact";
   if (text.includes("rewardful")) return "rewardful";
   if (text.includes("firstpromoter")) return "firstpromoter";
   if (text.includes("tolt")) return "tolt";
+  if (text.includes("cj") || text.includes("commission junction")) return "cj";
+  if (text.includes("impact")) return "impact";
+  if (text.includes("saas") || text.includes("software") || text.includes("b2b")) return "impact";
   return "unknown";
 }
 
@@ -85,6 +95,7 @@ function resolveTargetUrl(deal, program) {
 
 function requireAdmin(req, res, next) {
   const header = req.headers.authorization || "";
+
   if (!header.startsWith("Basic ")) {
     res.set("WWW-Authenticate", 'Basic realm="Pochify Admin"');
     return res.status(401).send("Authentication required");
@@ -102,21 +113,12 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function escapeHtml(text = "") {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 function adminLayout({ title, content, active = "dashboard" }) {
   const navItem = (href, label, key) =>
     `<a class="nav-link ${active === key ? "active" : ""}" href="${href}">${label}</a>`;
 
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>${escapeHtml(title)} | Pochify Admin</title>
@@ -293,8 +295,46 @@ function adminLayout({ title, content, active = "dashboard" }) {
 </html>`;
 }
 
+async function getSummaryStats() {
+  const [{ count: dealsCount }, { count: oppCount }, { count: affCount }, { count: clickCount }] =
+    await Promise.all([
+      supabase.from("deals").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_opportunities").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_programs").select("*", { count: "exact", head: true }),
+      supabase.from("click_events").select("*", { count: "exact", head: true })
+    ]);
+
+  const { data: statusCounts } = await supabase
+    .from("deals")
+    .select("status");
+
+  const buckets = {};
+  for (const row of statusCounts || []) {
+    const key = row.status || "unknown";
+    buckets[key] = (buckets[key] || 0) + 1;
+  }
+
+  const { data: queue } = await supabase
+    .from("deals")
+    .select("name, slug, click_count, score, status, page_url")
+    .eq("status", "ready_to_post")
+    .order("score", { ascending: false })
+    .limit(10);
+
+  return {
+    summary: {
+      deals: dealsCount || 0,
+      opportunities: oppCount || 0,
+      affiliates: affCount || 0,
+      clicks: clickCount || 0
+    },
+    buckets,
+    queue: queue || []
+  };
+}
+
 async function loadOpportunityRows({ q = "", status = "" } = {}) {
-  let query = appSupabase
+  let query = supabase
     .from("affiliate_opportunities")
     .select(`
       brand_key,
@@ -309,7 +349,9 @@ async function loadOpportunityRows({ q = "", status = "" } = {}) {
     .order("last_seen_at", { ascending: false })
     .limit(200);
 
-  if (status) query = query.eq("status", status);
+  if (status) {
+    query = query.eq("status", status);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
@@ -332,7 +374,7 @@ async function loadOpportunityRows({ q = "", status = "" } = {}) {
       continue;
     }
 
-    const { data: deal } = await appSupabase
+    const { data: deal } = await supabase
       .from("deals")
       .select("slug, page_url, click_count, status, post_count, name")
       .eq("brand_key", row.brand_key)
@@ -353,7 +395,7 @@ async function loadOpportunityRows({ q = "", status = "" } = {}) {
 }
 
 async function loadDealRows({ q = "", status = "" } = {}) {
-  let query = appSupabase
+  let query = supabase
     .from("deals")
     .select(`
       name,
@@ -375,7 +417,9 @@ async function loadDealRows({ q = "", status = "" } = {}) {
     .order("created_at", { ascending: false })
     .limit(300);
 
-  if (status) query = query.eq("status", status);
+  if (status) {
+    query = query.eq("status", status);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
@@ -395,49 +439,12 @@ async function loadDealRows({ q = "", status = "" } = {}) {
   });
 }
 
-async function getSummaryStats() {
-  const [{ count: dealsCount }, { count: oppCount }, { count: affCount }, { count: clickCount }] =
-    await Promise.all([
-      appSupabase.from("deals").select("*", { count: "exact", head: true }),
-      appSupabase.from("affiliate_opportunities").select("*", { count: "exact", head: true }),
-      appSupabase.from("affiliate_programs").select("*", { count: "exact", head: true }),
-      appSupabase.from("click_events").select("*", { count: "exact", head: true })
-    ]);
-
-  const { data: statusCounts } = await appSupabase
-    .from("deals")
-    .select("status");
-
-  const buckets = {};
-  for (const row of statusCounts || []) {
-    buckets[row.status || "unknown"] = (buckets[row.status || "unknown"] || 0) + 1;
-  }
-
-  const { data: queue } = await appSupabase
-    .from("deals")
-    .select("name, slug, click_count, score, status, page_url")
-    .eq("status", "ready_to_post")
-    .order("score", { ascending: false })
-    .limit(10);
-
-  return {
-    summary: {
-      deals: dealsCount || 0,
-      opportunities: oppCount || 0,
-      affiliates: affCount || 0,
-      clicks: clickCount || 0
-    },
-    buckets,
-    queue: queue || []
-  };
-}
-
 app.get("/", (req, res) => {
   res.send("Pochify backend running 🚀");
 });
 
 app.get("/api/public/latest-deals", async (req, res) => {
-  const { data, error } = await appSupabase
+  const { data, error } = await supabase
     .from("deals")
     .select(`
       name,
@@ -475,7 +482,7 @@ app.get("/api/public/related-deals", async (req, res) => {
     return res.status(400).json({ error: "Missing slug" });
   }
 
-  const { data: currentDeal, error: currentError } = await appSupabase
+  const { data: currentDeal, error: currentError } = await supabase
     .from("deals")
     .select("slug, channel")
     .eq("slug", slug)
@@ -485,7 +492,7 @@ app.get("/api/public/related-deals", async (req, res) => {
     return res.status(404).json({ error: "Deal not found" });
   }
 
-  let query = appSupabase
+  let query = supabase
     .from("deals")
     .select(`
       name,
@@ -521,7 +528,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
   const days = Number(req.query.days || 7);
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: clicks, error: clickError } = await appSupabase
+  const { data: clicks, error: clickError } = await supabase
     .from("click_events")
     .select("slug, created_at")
     .gte("created_at", since);
@@ -545,7 +552,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
     return res.json({ items: [] });
   }
 
-  const { data: deals, error: dealsError } = await appSupabase
+  const { data: deals, error: dealsError } = await supabase
     .from("deals")
     .select(`
       name,
@@ -574,136 +581,142 @@ app.get("/api/public/top-clicked", async (req, res) => {
 });
 
 app.post("/api/deals/ingest", async (req, res) => {
-  const deals = req.body?.deals || [];
-  const maxToSend = req.body?.maxToSend || 2;
+  try {
+    const deals = req.body?.deals || [];
+    const maxToSend = req.body?.maxToSend || 2;
 
-  if (!Array.isArray(deals)) {
-    return res.status(400).json({ error: "Expected deals array" });
-  }
-
-  const slugs = deals.map((d) => d.slug);
-
-  const { data: existingDeals, error: existingDealsError } = await appSupabase
-    .from("deals")
-    .select("slug, status, brand_key")
-    .in("slug", slugs);
-
-  if (existingDealsError) {
-    return res.status(500).json({ error: existingDealsError });
-  }
-
-  const existingDealMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
-
-  const brandKeys = [...new Set(deals.map((d) => d.brand_key).filter(Boolean))];
-
-  const { data: activePrograms, error: activeProgramsError } = await appSupabase
-    .from("affiliate_programs")
-    .select("brand_key")
-    .in("brand_key", brandKeys)
-    .eq("status", "active");
-
-  if (activeProgramsError) {
-    return res.status(500).json({ error: activeProgramsError });
-  }
-
-  const activeBrandKeys = new Set((activePrograms || []).map((p) => p.brand_key));
-
-  const formattedDeals = deals.map((d) => {
-    const existing = existingDealMap.get(d.slug);
-    let status = existing?.status || "discovered";
-
-    if (activeBrandKeys.has(d.brand_key)) {
-      if (!["posted", "rejected"].includes(status)) {
-        status = "ready_to_post";
-      }
-    } else if (d.affiliate_detected && d.affiliate_url) {
-      if (!["posted", "rejected"].includes(status)) {
-        status = "awaiting_link";
-      }
-    } else if (!existing?.status) {
-      status = "discovered";
+    if (!Array.isArray(deals)) {
+      return res.status(400).json({ error: "Expected deals array" });
     }
 
-    return {
-      name: d.name,
-      slug: d.slug,
-      brand_key: d.brand_key,
-      description: d.description || "",
-      url: d.url || "",
-      affiliate_link: d.affiliateLink || null,
-      affiliate_url: d.affiliate_url || null,
-      affiliate_detected: !!d.affiliate_detected,
-      network_guess: d.network_guess || guessNetwork(d.name, d.description),
-      page_url: d.page_url || `${SITE_URL}/deals/${d.slug}.html`,
-      source: d.source || "unknown",
-      channel: d.channel || "general",
-      votes_count: d.votes_count || 0,
-      score: d.score || 0,
-      meta_title: d.meta_title || "",
-      meta_description: d.meta_description || "",
-      og_image: d.og_image || "",
-      hook: d.hook || "",
-      audience: d.audience || "",
-      why_now: d.why_now || "",
-      caution: d.caution || "",
-      benefits: d.benefits || [],
-      status,
-      updated_at: new Date().toISOString()
-    };
-  });
+    const slugs = deals.map((d) => d.slug);
+    const brandKeys = [...new Set(deals.map((d) => d.brand_key).filter(Boolean))];
 
-  const { error: upsertError } = await appSupabase
-    .from("deals")
-    .upsert(formattedDeals, { onConflict: "slug" });
+    const { data: existingDeals, error: existingDealsError } = await supabase
+      .from("deals")
+      .select("slug, status, brand_key")
+      .in("slug", slugs);
 
-  if (upsertError) {
-    console.error("❌ Supabase deal upsert error:", upsertError);
-    return res.status(500).json({ error: upsertError });
-  }
-
-  const opportunityRows = formattedDeals
-    .filter((d) => !activeBrandKeys.has(d.brand_key) && d.affiliate_detected && d.affiliate_url)
-    .map((d) => ({
-      brand_key: d.brand_key,
-      display_name: d.name,
-      product_url: d.url,
-      source_url: d.url,
-      affiliate_url: d.affiliate_url,
-      network_guess: d.network_guess || guessNetwork(d.name, d.description),
-      status: "awaiting_signup",
-      last_seen_at: new Date().toISOString()
-    }));
-
-  if (opportunityRows.length > 0) {
-    const { error: oppError } = await appSupabase
-      .from("affiliate_opportunities")
-      .upsert(opportunityRows, { onConflict: "brand_key" });
-
-    if (oppError) {
-      console.error("❌ affiliate opportunities upsert error:", oppError);
-      return res.status(500).json({ error: oppError });
+    if (existingDealsError) {
+      return res.status(500).json({ error: existingDealsError });
     }
+
+    const existingDealMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
+
+    const { data: activePrograms, error: activeProgramsError } = await supabase
+      .from("affiliate_programs")
+      .select("brand_key")
+      .in("brand_key", brandKeys)
+      .eq("status", "active");
+
+    if (activeProgramsError) {
+      return res.status(500).json({ error: activeProgramsError });
+    }
+
+    const activeBrandKeys = new Set((activePrograms || []).map((p) => p.brand_key));
+
+    const formattedDeals = deals.map((d) => {
+      const existing = existingDealMap.get(d.slug);
+      let status = existing?.status || "discovered";
+
+      if (activeBrandKeys.has(d.brand_key)) {
+        if (!["posted", "rejected"].includes(status)) {
+          status = "ready_to_post";
+        }
+      } else if (d.affiliate_detected && d.affiliate_url) {
+        if (!["posted", "rejected"].includes(status)) {
+          status = "awaiting_link";
+        }
+      } else if (!existing?.status) {
+        status = "discovered";
+      }
+
+      return {
+        name: d.name,
+        slug: d.slug,
+        brand_key: d.brand_key,
+        description: d.description || "",
+        url: d.url || "",
+        affiliate_link: d.affiliateLink || null,
+        affiliate_url: d.affiliate_url || null,
+        affiliate_detected: !!d.affiliate_detected,
+        network_guess: d.network_guess || guessNetwork(d.name, d.description),
+        page_url: d.page_url || `${SITE_URL}/deals/${d.slug}.html`,
+        source: d.source || "unknown",
+        channel: d.channel || "general",
+        votes_count: d.votes_count || 0,
+        score: d.score || 0,
+        meta_title: d.meta_title || "",
+        meta_description: d.meta_description || "",
+        og_image: d.og_image || "",
+        hook: d.hook || "",
+        audience: d.audience || "",
+        why_now: d.why_now || "",
+        caution: d.caution || "",
+        benefits: d.benefits || [],
+        status,
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    const { error: upsertError } = await supabase
+      .from("deals")
+      .upsert(formattedDeals, { onConflict: "slug" });
+
+    if (upsertError) {
+      console.error("❌ Supabase deal upsert error:", upsertError);
+      return res.status(500).json({ error: upsertError });
+    }
+
+    const opportunityRows = formattedDeals
+      .filter((d) => !activeBrandKeys.has(d.brand_key) && d.affiliate_detected && d.affiliate_url)
+      .map((d) => ({
+        brand_key: d.brand_key,
+        display_name: d.name,
+        product_url: d.url,
+        source_url: d.url,
+        affiliate_url: d.affiliate_url,
+        network_guess: d.network_guess || guessNetwork(d.name, d.description),
+        status: "awaiting_signup",
+        last_seen_at: new Date().toISOString()
+      }));
+
+    if (opportunityRows.length > 0) {
+      const { error: oppError } = await supabase
+        .from("affiliate_opportunities")
+        .upsert(opportunityRows, { onConflict: "brand_key" });
+
+      if (oppError) {
+        console.error("❌ affiliate opportunities upsert error:", oppError);
+        return res.status(500).json({ error: oppError });
+      }
+    }
+
+    const { data: storedDeals, error: storedError } = await supabase
+      .from("deals")
+      .select("*")
+      .in("slug", slugs);
+
+    if (storedError) {
+      console.error("❌ Supabase select error:", storedError);
+      return res.status(500).json({ error: storedError });
+    }
+
+    const sendCandidates = (storedDeals || [])
+      .filter(isEligibleToSend)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, maxToSend);
+
+    return res.json({
+      success: true,
+      sendCandidates
+    });
+  } catch (error) {
+    console.error("❌ /api/deals/ingest fatal error:", error);
+    return res.status(500).json({
+      error: error?.message || "Unknown ingest error"
+    });
   }
-
-  const { data: storedDeals, error: storedError } = await appSupabase
-    .from("deals")
-    .select("*")
-    .in("slug", slugs);
-
-  if (storedError) {
-    console.error("❌ Supabase select error:", storedError);
-    return res.status(500).json({ error: storedError });
-  }
-
-  const sendCandidates = (storedDeals || [])
-    .filter(isEligibleToSend)
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, maxToSend);
-
-  res.json({
-    success: true,
-    sendCandidates
-  });
 });
 
 app.post("/api/deals/mark-posted", async (req, res) => {
@@ -713,7 +726,7 @@ app.post("/api/deals/mark-posted", async (req, res) => {
     return res.status(400).json({ error: "Expected slugs array" });
   }
 
-  const { data: existingDeals, error: selectError } = await appSupabase
+  const { data: existingDeals, error: selectError } = await supabase
     .from("deals")
     .select("slug, post_count")
     .in("slug", slugs);
@@ -730,7 +743,7 @@ app.post("/api/deals/mark-posted", async (req, res) => {
     updated_at: new Date().toISOString()
   }));
 
-  const { error: updateError } = await appSupabase
+  const { error: updateError } = await supabase
     .from("deals")
     .upsert(updates, { onConflict: "slug" });
 
@@ -744,7 +757,7 @@ app.post("/api/deals/mark-posted", async (req, res) => {
 app.get("/go/:slug", async (req, res) => {
   const slug = req.params.slug;
 
-  const { data: deal, error: dealError } = await appSupabase
+  const { data: deal, error: dealError } = await supabase
     .from("deals")
     .select("*")
     .eq("slug", slug)
@@ -754,7 +767,7 @@ app.get("/go/:slug", async (req, res) => {
     return res.redirect(SITE_URL);
   }
 
-  const { data: affiliate } = await appSupabase
+  const { data: affiliate } = await supabase
     .from("affiliate_programs")
     .select("*")
     .eq("brand_key", deal.brand_key)
@@ -763,7 +776,7 @@ app.get("/go/:slug", async (req, res) => {
 
   const targetUrl = resolveTargetUrl(deal, affiliate);
 
-  await appSupabase.from("click_events").insert({
+  await supabase.from("click_events").insert({
     slug: deal.slug,
     brand_key: deal.brand_key,
     target_url: targetUrl,
@@ -771,7 +784,7 @@ app.get("/go/:slug", async (req, res) => {
     referer: req.get("referer") || null
   });
 
-  await appSupabase
+  await supabase
     .from("deals")
     .upsert(
       {
@@ -789,7 +802,7 @@ app.get("/go/:slug", async (req, res) => {
 app.get("/api/admin/stats", requireAdmin, async (req, res) => {
   const data = await getSummaryStats();
 
-  const { data: topDeals } = await appSupabase
+  const { data: topDeals } = await supabase
     .from("deals")
     .select("name, slug, click_count, post_count, score, status")
     .order("click_count", { ascending: false })
@@ -809,7 +822,7 @@ app.get("/api/admin/opportunities", requireAdmin, async (req, res) => {
     });
     res.json({ items: rows });
   } catch (error) {
-    res.status(500).json({ error });
+    res.status(500).json({ error: error?.message || "Failed to load opportunities" });
   }
 });
 
@@ -820,7 +833,7 @@ app.post("/api/admin/opportunities/status", requireAdmin, async (req, res) => {
     return res.status(400).json({ error: "brand_keys array and status are required" });
   }
 
-  const { error } = await appSupabase
+  const { error } = await supabase
     .from("affiliate_opportunities")
     .update({
       status,
@@ -833,7 +846,7 @@ app.post("/api/admin/opportunities/status", requireAdmin, async (req, res) => {
   }
 
   if (status === "approved") {
-    await appSupabase
+    await supabase
       .from("deals")
       .update({
         status: "ready_to_post",
@@ -844,7 +857,7 @@ app.post("/api/admin/opportunities/status", requireAdmin, async (req, res) => {
   }
 
   if (status === "rejected" || status === "ignore") {
-    await appSupabase
+    await supabase
       .from("deals")
       .update({
         status: "rejected",
@@ -864,7 +877,7 @@ app.get("/api/admin/deals", requireAdmin, async (req, res) => {
     });
     res.json({ items: rows });
   } catch (error) {
-    res.status(500).json({ error });
+    res.status(500).json({ error: error?.message || "Failed to load deals" });
   }
 });
 
@@ -875,7 +888,7 @@ app.post("/api/admin/deals/status", requireAdmin, async (req, res) => {
     return res.status(400).json({ error: "slugs array and status are required" });
   }
 
-  const { error } = await appSupabase
+  const { error } = await supabase
     .from("deals")
     .update({
       status,
@@ -891,7 +904,7 @@ app.post("/api/admin/deals/status", requireAdmin, async (req, res) => {
 });
 
 app.get("/api/admin/queue", requireAdmin, async (req, res) => {
-  const { data, error } = await appSupabase
+  const { data, error } = await supabase
     .from("deals")
     .select("name, slug, score, click_count, status, page_url, post_count")
     .eq("status", "ready_to_post")
@@ -906,7 +919,7 @@ app.get("/api/admin/queue", requireAdmin, async (req, res) => {
 });
 
 app.get("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
-  const { data, error } = await appSupabase
+  const { data, error } = await supabase
     .from("affiliate_programs")
     .select("*")
     .order("created_at", { ascending: false });
@@ -932,7 +945,7 @@ app.post("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await appSupabase
+  const { error } = await supabase
     .from("affiliate_programs")
     .upsert(row, { onConflict: "brand_key" });
 
@@ -940,7 +953,7 @@ app.post("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
     return res.status(500).json({ error });
   }
 
-  await appSupabase
+  await supabase
     .from("affiliate_opportunities")
     .upsert(
       {
@@ -952,7 +965,7 @@ app.post("/api/admin/affiliate-programs", requireAdmin, async (req, res) => {
       { onConflict: "brand_key" }
     );
 
-  await appSupabase
+  await supabase
     .from("deals")
     .update({
       status: "ready_to_post",
@@ -1518,4 +1531,8 @@ app.get("/admin/analytics", requireAdmin, async (req, res) => {
   `;
 
   res.send(adminLayout({ title: "Analytics", content, active: "analytics" }));
+});
+
+app.listen(PORT, () => {
+  console.log("🚀 Server running");
 });
