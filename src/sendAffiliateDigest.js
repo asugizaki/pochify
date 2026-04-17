@@ -38,17 +38,27 @@ async function run() {
     return;
   }
 
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    throw new Error("Missing ADMIN_USERNAME or ADMIN_PASSWORD in workflow env");
+  }
+
   const res = await fetch(ADMIN_API_URL, {
     headers: {
       Authorization: basicAuthHeader()
     }
   });
 
-  const data = await res.json();
+  const rawText = await res.text();
 
   if (!res.ok) {
-    console.error("❌ Failed to fetch opportunities:", data);
-    process.exit(1);
+    throw new Error(`Failed to fetch opportunities: ${res.status} ${rawText}`);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Expected JSON but got: ${rawText}`);
   }
 
   const rows = data.items || [];
@@ -64,9 +74,10 @@ async function run() {
       (r, i) =>
         `${i + 1}. <b>${r.display_name}</b>\n` +
         `Brand key: <code>${r.brand_key}</code>\n` +
-        `Guess: ${r.network_guess || "unknown"}\n` +
+        `Network: ${r.network_guess || "unknown"}\n` +
         `Clicks: ${r.click_count || 0}\n` +
-        `Source: ${r.source_url || "n/a"}`
+        `Status: ${r.status || "unknown"}\n` +
+        `Affiliate page: ${r.affiliate_url || "n/a"}`
     )
     .join("\n\n");
 
@@ -76,6 +87,6 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error("❌ sendAffiliateDigest fatal error:", err);
+  console.error("❌ sendAffiliateDigest fatal error:", err.message);
   process.exit(1);
 });
