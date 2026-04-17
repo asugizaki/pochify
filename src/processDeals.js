@@ -12,6 +12,7 @@ import {
 import { fetchDynamicDeals } from "./productSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
+import { discoverAffiliateInfo } from "./affiliateDiscovery.js";
 
 const BACKEND_URL = "https://go.pochify.com/api/deals/ingest";
 const PENDING_PATH = path.join("data", "pending-telegram.json");
@@ -62,7 +63,14 @@ async function run() {
   for (const deal of selectedForEnrichment) {
     const enriched = await enrichProduct(deal);
     const improved = enhanceCopy(enriched);
-    enrichedDeals.push(improved);
+    const affiliateInfo = await discoverAffiliateInfo(improved.url);
+
+    enrichedDeals.push({
+      ...improved,
+      affiliate_url: affiliateInfo.affiliate_url,
+      affiliate_detected: affiliateInfo.affiliate_detected,
+      network_guess: affiliateInfo.network_guess
+    });
   }
 
   for (const deal of enrichedDeals) {
