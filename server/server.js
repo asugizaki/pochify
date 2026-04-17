@@ -7,8 +7,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const SITE_URL = "https://pochify.com";
-const ADMIN_BASE_URL = "https://go.pochify.com";
-
 const REPOST_DAYS = 7;
 const MAX_POST_COUNT = 3;
 const MIN_REPOST_CLICKS = 10;
@@ -348,12 +346,6 @@ function adminLayout({ title, content, active = "dashboard", adminUser = "admin"
       min-width: 180px;
       flex: 1;
     }
-    .inline-form {
-      margin: 0;
-    }
-    .inline-form button {
-      margin-top: 0;
-    }
     .pagination {
       display: flex;
       gap: 8px;
@@ -490,6 +482,154 @@ function loginPage({ error = "", next = "/admin" }) {
 </html>`;
 }
 
+async function getSummaryStats() {
+  const [{ count: dealsCount }, { count: oppCount }, { count: affCount }, { count: clickCount }] =
+    await Promise.all([
+      supabase.from("deals").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_opportunities").select("*", { count: "exact", head: true }),
+      supabase.from("affiliate_programs").select("*", { count: "exact", head: true }),
+      supabase.from("click_events").select("*", { count: "exact", head: true })
+    ]);
+
+  const { data: statusCounts } = await supabase
+    .from("deals")
+    .select("status");
+
+  const buckets = {};
+  for (const row of statusCounts || []) {
+    const key = row.status || "unknown";
+    buckets[key] = (buckets[key] || 0) + 1;
+  }
+
+  const { data: queue } = await supabase
+    .from("deals")
+    .select("name, slug, click_count, score, status, page_url")
+    .eq("status", "ready_to_post")
+    .order("score", { ascending: false })
+    .limit(10);
+
+  return {
+    summary: {
+      deals: dealsCount || 0,
+      opportunities: oppCount || 0,
+      affiliates: affCount || 0,
+      clicks: clickCount || 0
+    },
+    buckets,
+    queue: queue || []
+  };
+}
+
+async function loadOpportunityRows({ q = "", status = "" } = {}) {
+  let query = supabase
+    .from("affiliate_opportunities")
+    .select(`
+      brand_key,
+      display_name,
+      product_url,
+      source_url,
+      affiliate_url,
+      network_guess,
+      status,
+      last_seen_at
+    `)
+    .order("last_seen_at", { ascending: false })
+    .limit(500);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const rows = [];
+  for (const row of data || []) {
+    if (
+      q &&
+      ![
+        row.brand_key,
+        row.display_name,
+        row.product_url,
+        row.affiliate_url,
+        row.network_guess
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(q.toLowerCase())
+    ) {
+      continue;
+    }
+
+    const { data: deal } = await supabase
+      .from("deals")
+      .select("slug, page_url, click_count, status, post_count, name")
+      .eq("brand_key", row.brand_key)
+      .order("click_count", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    rows.push({
+      ...row,
+      click_count: deal?.click_count || 0,
+      deal_status: deal?.status || "",
+      deal_slug: deal?.slug || "",
+      page_url: deal?.page_url || (deal?.slug ? `${SITE_URL}/deals/${deal.slug}.html` : "")
+    });
+  }
+
+  return rows;
+}
+
+async function loadDealRows({ q = "", status = "" } = {}) {
+  let query = supabase
+    .from("deals")
+    .select(`
+      name,
+      slug,
+      brand_key,
+      status,
+      score,
+      click_count,
+      post_count,
+      affiliate_detected,
+      affiliate_url,
+      affiliate_link,
+      network_guess,
+      page_url,
+      channel,
+      created_at,
+      last_posted_at
+    `)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data || []).filter((row) => {
+    if (!q) return true;
+    return [
+      row.name,
+      row.slug,
+      row.brand_key,
+      row.network_guess,
+      row.channel
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(q.toLowerCase());
+  });
+}
+
+app.get("/", (req, res) => {
+  res.send("Pochify backend running 🚀");
+});
+
 app.get("/login", (req, res) => {
   const next = req.query.next || "/admin";
   res.send(loginPage({ next }));
@@ -501,10 +641,12 @@ app.post("/login", (req, res) => {
   const next = req.body?.next || "/admin";
 
   if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-    return res.status(401).send(loginPage({
-      error: "Invalid credentials",
-      next
-    }));
+    return res.status(401).send(
+      loginPage({
+        error: "Invalid credentials",
+        next
+      })
+    );
   }
 
   const sessionValue = createSessionValue(username);
@@ -529,6 +671,362 @@ app.get("/logout", (req, res) => {
   });
 
   res.redirect("/login");
+});
+
+app.get("/api/public/latest-deals", async (req, res) => {
+  const { data, error } = await supabase
+    .from("deals")
+    .select(`
+      name,
+      slug,
+      description,
+      hook,
+      audience,
+      why_now,
+      caution,
+      benefits,
+      og_image,
+      page_url,
+      click_count,
+      votes_count,
+      score,
+      created_at,
+      channel
+    `)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  if (error) {
+    console.error("❌ latest deals error:", error);
+    return res.status(500).json({ error: "Failed to load latest deals" });
+  }
+
+  res.json({ items: data || [] });
+});
+
+app.get("/api/public/related-deals", async (req, res) => {
+  const slug = req.query.slug;
+
+  if (!slug) {
+    return res.status(400).json({ error: "Missing slug" });
+  }
+
+  const { data: currentDeal, error: currentError } = await supabase
+    .from("deals")
+    .select("slug, channel")
+    .eq("slug", slug)
+    .single();
+
+  if (currentError || !currentDeal) {
+    return res.status(404).json({ error: "Deal not found" });
+  }
+
+  let query = supabase
+    .from("deals")
+    .select(`
+      name,
+      slug,
+      description,
+      hook,
+      og_image,
+      score,
+      click_count,
+      channel
+    `)
+    .eq("status", "active")
+    .neq("slug", slug)
+    .order("click_count", { ascending: false })
+    .order("score", { ascending: false })
+    .limit(3);
+
+  if (currentDeal.channel === "ai" || currentDeal.channel === "saas") {
+    query = query.eq("channel", currentDeal.channel);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("❌ related deals error:", error);
+    return res.status(500).json({ error: "Failed to load related deals" });
+  }
+
+  res.json({ items: data || [] });
+});
+
+app.get("/api/public/top-clicked", async (req, res) => {
+  const days = Number(req.query.days || 7);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: clicks, error: clickError } = await supabase
+    .from("click_events")
+    .select("slug, created_at")
+    .gte("created_at", since);
+
+  if (clickError) {
+    console.error("❌ top clicked click_events error:", clickError);
+    return res.status(500).json({ error: "Failed to load top clicked" });
+  }
+
+  const counts = new Map();
+  for (const row of clicks || []) {
+    counts.set(row.slug, (counts.get(row.slug) || 0) + 1);
+  }
+
+  const topSlugs = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([slug]) => slug);
+
+  if (topSlugs.length === 0) {
+    return res.json({ items: [] });
+  }
+
+  const { data: deals, error: dealsError } = await supabase
+    .from("deals")
+    .select(`
+      name,
+      slug,
+      description,
+      hook,
+      og_image,
+      click_count,
+      score
+    `)
+    .in("slug", topSlugs);
+
+  if (dealsError) {
+    console.error("❌ top clicked deals error:", dealsError);
+    return res.status(500).json({ error: "Failed to load top clicked deals" });
+  }
+
+  const merged = (deals || [])
+    .map((deal) => ({
+      ...deal,
+      week_clicks: counts.get(deal.slug) || 0
+    }))
+    .sort((a, b) => (b.week_clicks || 0) - (a.week_clicks || 0));
+
+  res.json({ items: merged });
+});
+
+app.post("/api/deals/ingest", async (req, res) => {
+  try {
+    const deals = req.body?.deals || [];
+    const maxToSend = req.body?.maxToSend || 2;
+
+    if (!Array.isArray(deals)) {
+      return res.status(400).json({ error: "Expected deals array" });
+    }
+
+    const slugs = deals.map((d) => d.slug);
+    const brandKeys = [...new Set(deals.map((d) => d.brand_key).filter(Boolean))];
+
+    const { data: existingDeals, error: existingDealsError } = await supabase
+      .from("deals")
+      .select("slug, status, brand_key")
+      .in("slug", slugs);
+
+    if (existingDealsError) {
+      return res.status(500).json({ error: existingDealsError });
+    }
+
+    const existingDealMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
+
+    const { data: activePrograms, error: activeProgramsError } = await supabase
+      .from("affiliate_programs")
+      .select("brand_key")
+      .in("brand_key", brandKeys)
+      .eq("status", "active");
+
+    if (activeProgramsError) {
+      return res.status(500).json({ error: activeProgramsError });
+    }
+
+    const activeBrandKeys = new Set((activePrograms || []).map((p) => p.brand_key));
+
+    const formattedDeals = deals.map((d) => {
+      const existing = existingDealMap.get(d.slug);
+      let status = existing?.status || "discovered";
+
+      if (activeBrandKeys.has(d.brand_key)) {
+        if (!["posted", "rejected"].includes(status)) {
+          status = "ready_to_post";
+        }
+      } else if (d.affiliate_detected && d.affiliate_url) {
+        if (!["posted", "rejected"].includes(status)) {
+          status = "awaiting_link";
+        }
+      } else if (!existing?.status) {
+        status = "discovered";
+      }
+
+      return {
+        name: d.name,
+        slug: d.slug,
+        brand_key: d.brand_key,
+        description: d.description || "",
+        url: d.url || "",
+        affiliate_link: d.affiliateLink || null,
+        affiliate_url: d.affiliate_url || null,
+        affiliate_detected: !!d.affiliate_detected,
+        network_guess: d.network_guess || guessNetwork(d.name, d.description),
+        page_url: d.page_url || `${SITE_URL}/deals/${d.slug}.html`,
+        source: d.source || "unknown",
+        channel: d.channel || "general",
+        votes_count: d.votes_count || 0,
+        score: d.score || 0,
+        meta_title: d.meta_title || "",
+        meta_description: d.meta_description || "",
+        og_image: d.og_image || "",
+        hook: d.hook || "",
+        audience: d.audience || "",
+        why_now: d.why_now || "",
+        caution: d.caution || "",
+        benefits: d.benefits || [],
+        status,
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    const { error: upsertError } = await supabase
+      .from("deals")
+      .upsert(formattedDeals, { onConflict: "slug" });
+
+    if (upsertError) {
+      console.error("❌ Supabase deal upsert error:", upsertError);
+      return res.status(500).json({ error: upsertError });
+    }
+
+    const opportunityRows = formattedDeals
+      .filter((d) => !activeBrandKeys.has(d.brand_key) && d.affiliate_detected && d.affiliate_url)
+      .map((d) => ({
+        brand_key: d.brand_key,
+        display_name: d.name,
+        product_url: d.url,
+        source_url: d.url,
+        affiliate_url: d.affiliate_url,
+        network_guess: d.network_guess || guessNetwork(d.name, d.description),
+        status: "awaiting_signup",
+        last_seen_at: new Date().toISOString()
+      }));
+
+    if (opportunityRows.length > 0) {
+      const { error: oppError } = await supabase
+        .from("affiliate_opportunities")
+        .upsert(opportunityRows, { onConflict: "brand_key" });
+
+      if (oppError) {
+        console.error("❌ affiliate opportunities upsert error:", oppError);
+        return res.status(500).json({ error: oppError });
+      }
+    }
+
+    const { data: storedDeals, error: storedError } = await supabase
+      .from("deals")
+      .select("*")
+      .in("slug", slugs);
+
+    if (storedError) {
+      console.error("❌ Supabase select error:", storedError);
+      return res.status(500).json({ error: storedError });
+    }
+
+    const sendCandidates = (storedDeals || [])
+      .filter(isEligibleToSend)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, maxToSend);
+
+    return res.json({
+      success: true,
+      sendCandidates
+    });
+  } catch (error) {
+    console.error("❌ /api/deals/ingest fatal error:", error);
+    return res.status(500).json({
+      error: error?.message || "Unknown ingest error"
+    });
+  }
+});
+
+app.post("/api/deals/mark-posted", async (req, res) => {
+  const slugs = req.body?.slugs || [];
+
+  if (!Array.isArray(slugs) || slugs.length === 0) {
+    return res.status(400).json({ error: "Expected slugs array" });
+  }
+
+  const { data: existingDeals, error: selectError } = await supabase
+    .from("deals")
+    .select("slug, post_count")
+    .in("slug", slugs);
+
+  if (selectError) {
+    return res.status(500).json({ error: selectError });
+  }
+
+  const updates = (existingDeals || []).map((d) => ({
+    slug: d.slug,
+    post_count: (d.post_count || 0) + 1,
+    last_posted_at: new Date().toISOString(),
+    status: "posted",
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: updateError } = await supabase
+    .from("deals")
+    .upsert(updates, { onConflict: "slug" });
+
+  if (updateError) {
+    return res.status(500).json({ error: updateError });
+  }
+
+  res.json({ success: true, updated: updates.length });
+});
+
+app.get("/go/:slug", async (req, res) => {
+  const slug = req.params.slug;
+
+  const { data: deal, error: dealError } = await supabase
+    .from("deals")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  if (dealError || !deal) {
+    return res.redirect(SITE_URL);
+  }
+
+  const { data: affiliate } = await supabase
+    .from("affiliate_programs")
+    .select("*")
+    .eq("brand_key", deal.brand_key)
+    .eq("status", "active")
+    .maybeSingle();
+
+  const targetUrl = resolveTargetUrl(deal, affiliate);
+
+  await supabase.from("click_events").insert({
+    slug: deal.slug,
+    brand_key: deal.brand_key,
+    target_url: targetUrl,
+    user_agent: req.get("user-agent") || null,
+    referer: req.get("referer") || null
+  });
+
+  await supabase
+    .from("deals")
+    .upsert(
+      {
+        slug: deal.slug,
+        click_count: (deal.click_count || 0) + 1,
+        last_clicked_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "slug" }
+    );
+
+  return res.redirect(targetUrl || SITE_URL);
 });
 
 app.get("/admin", requireAdmin, async (req, res) => {
