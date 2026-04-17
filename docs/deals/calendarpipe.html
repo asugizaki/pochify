@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Deals | Pochify</title>
+  <title>CalendarPipe | Pochify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browse Pochify’s latest AI tools, SaaS products, and useful software picks." />
+  <meta name="description" content="Create pipes to filter, transform, and sync events between Google Calendar, Outlook, and Apple Calendar. Build visually, describe in plain English, or write code." />
   <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://pochify.com/deals/" />
-  <meta property="og:title" content="Deals | Pochify" />
-  <meta property="og:description" content="Browse Pochify’s latest AI tools, SaaS products, and useful software picks." />
+  <link rel="canonical" href="https://pochify.com/deals/calendarpipe.html" />
+  <meta property="og:title" content="CalendarPipe | Pochify" />
+  <meta property="og:description" content="Create pipes to filter, transform, and sync events between Google Calendar, Outlook, and Apple Calendar. Build visually, describe in plain English, or write code." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://pochify.com/deals/" />
-  
+  <meta property="og:url" content="https://pochify.com/deals/calendarpipe.html" />
+  <meta property="og:image" content="https://www.calendarpipe.com/opengraph-image?672626b762e502f4" />
   <meta name="twitter:card" content="summary_large_image" />
   
   <style>
@@ -309,7 +309,7 @@
     }
   </style>
   
-  
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"CalendarPipe","description":"Create pipes to filter, transform, and sync events between Google Calendar, Outlook, and Apple Calendar. Build visually, describe in plain English, or write code.","mainEntityOfPage":"https://pochify.com/deals/calendarpipe.html","url":"https://pochify.com/deals/calendarpipe.html","image":["https://www.calendarpipe.com/opengraph-image?672626b762e502f4"],"author":{"@type":"Organization","name":"Pochify"},"publisher":{"@type":"Organization","name":"Pochify"}}</script>
 </head>
 <body class="">
   
@@ -327,18 +327,107 @@
     </header>
   
   
-    <div class="container">
+    <div class="container narrow">
       <div class="breadcrumbs">
-        <a href="/">Home</a> / Deals
+        <a href="/">Home</a> / <a href="/deals/">Deals</a>/ <a href="/categories/ai.html">AI</a> / CalendarPipe
       </div>
 
-      <h1>Deals</h1>
-      <div class="sub">
-        Explore Pochify’s latest AI tools, SaaS products, and software picks with full breakdowns.
+      <div class="eyebrow">Pochify Pick</div>
+      <h1>CalendarPipe</h1>
+      <div class="sub">Create pipes to filter, transform, and sync events between Google Calendar, Outlook, and Apple Calendar. Build visually, describe in plain English, or write code.</div>
+
+      <img class="hero-image" src="https://www.calendarpipe.com/opengraph-image?672626b762e502f4" alt="CalendarPipe" loading="lazy" />
+
+      <div class="card">
+        <h2>What this product is</h2>
+        <p>Create pipes to filter, transform, and sync events between Google Calendar, Outlook, and Apple Calendar. Build visually, describe in plain English, or write code.</p>
+        <p>CalendarPipe may be interesting if you want to speed up technical work without changing your whole stack.</p>
+
+        <div class="cta-row">
+          <a class="cta" href="https://go.pochify.com/go/calendarpipe" rel="nofollow sponsored">Try CalendarPipe</a>
+          <a class="secondary" href="/deals/">More deals</a>
+        </div>
       </div>
 
-      <div class="grid">
+      <div class="card">
+        <h2>Why someone might use it</h2>
         
+    <ul>
+      <li>Can help developers move faster in daily work</li><li>Useful if you want less repetitive technical work</li><li>Worth testing if it fits your existing workflow</li>
+    </ul>
+  
+      </div>
+
+      <div class="card">
+        <h2>Who this looks best for</h2>
+        <p>Developers, technical founders, and builders</p>
+      </div>
+
+      <div class="card">
+        <h2>What’s the value here</h2>
+        <p>There may not be a direct discount, but it may still offer meaningful value if it fits your workflow.</p>
+      </div>
+
+      <div class="card">
+        <h2>Why it may be worth checking now</h2>
+        <p>This is getting attention early, which makes it a good time to evaluate whether it fits your workflow.</p>
+      </div>
+
+      <div class="card">
+        <h2>One thing to keep in mind</h2>
+        <p class="muted">As with most AI tools, the real value will depend on how well it fits your existing workflow.</p>
+
+        <div class="cta-row">
+          <a class="cta" href="https://go.pochify.com/go/calendarpipe" rel="nofollow sponsored">Go to CalendarPipe</a>
+        </div>
+      </div>
+
+      
+    <div class="card">
+      <h2>Related tools worth browsing</h2>
+      <div id="relatedDeals" class="grid">
+        <div class="muted">Loading related tools…</div>
+      </div>
+    </div>
+
+    <script>
+      async function loadRelatedDeals() {
+        const container = document.getElementById("relatedDeals");
+        if (!container) return;
+
+        try {
+          const res = await fetch("https://go.pochify.com/api/public/related-deals?slug=calendarpipe");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const items = data.items || [];
+
+          if (!items.length) {
+            container.innerHTML = '<div class="muted">No related tools found yet.</div>';
+            return;
+          }
+
+          container.innerHTML = items.map(item => `
+            <div class="deal-card">
+              ${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
+              <h3>${item.name}</h3>
+              <p>${item.hook || item.description || 'Read the full breakdown.'}</p>
+              <a class="inline-link" href="/deals/${item.slug}.html">Read full breakdown</a>
+            </div>
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load related deals", err);
+          container.innerHTML = '<div class="muted">Related tools are temporarily unavailable.</div>';
+        }
+      }
+
+      loadRelatedDeals();
+    </script>
+  
+
+      <div class="card">
+        <h2>More picks from this batch</h2>
+        <div class="grid">
+          
     <div class="card deal-card">
       <img src="https://cdn.sanity.io/images/4zrzovbb/website/96ea2509a90e527642c822303e56296a07bcfce4-1920x1080.png" alt="Claude Opus 4.7" loading="lazy" />
       <h3>Claude Opus 4.7</h3>
@@ -360,72 +449,21 @@
       <a class="inline-link" href="/deals/codex-2-0-by-openai.html">Read full breakdown</a>
     </div>
   
-    <div class="card deal-card">
-      
-      <h3>Visual PR Testing with AI</h3>
-      <p>Visual PR Testing with AI looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/visual-pr-testing-with-ai.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://content-management-files.canva.com/b65baf4f-d1d2-41c0-94a0-c98ebe2dca38/CanvaAI2.0.png" alt="Canva AI 2.0" loading="lazy" />
-      <h3>Canva AI 2.0</h3>
-      <p>Canva AI 2.0 looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/canva-ai-2-0.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://www.calendarpipe.com/opengraph-image?672626b762e502f4" alt="CalendarPipe" loading="lazy" />
-      <h3>CalendarPipe</h3>
-      <p>CalendarPipe may be interesting if you want to speed up technical work without changing your whole stack.</p>
-      <a class="inline-link" href="/deals/calendarpipe.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://storage.googleapis.com/gweb-uniblog-publish-prod/images/AI_Mode_in_Chrome_-_Social_feed.width-1300.png" alt="AI Mode in Chrome" loading="lazy" />
-      <h3>AI Mode in Chrome</h3>
-      <p>AI Mode in Chrome looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/ai-mode-in-chrome.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://www.elvan.ai/feature-og.png" alt="Elvan" loading="lazy" />
-      <h3>Elvan</h3>
-      <p>Elvan looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/elvan.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://cf-assets.www.cloudflare.com/zkvhlag99gkb/3RDH6grpXMz6DWEQmZgXj9/0dcfca0bf86c72e933d4fcb8b585b45c/OG_Share_2024-2025-2026__2_.png" alt="Cloudflare Email Service" loading="lazy" />
-      <h3>Cloudflare Email Service</h3>
-      <p>Cloudflare Email Service looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/cloudflare-email-service.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://parallaxpro.ai/og-image.png" alt="ParallaxPro" loading="lazy" />
-      <h3>ParallaxPro</h3>
-      <p>ParallaxPro looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/parallaxpro.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://api.expertchase.com/storage/v1/object/public/Expert-Chase/ec-icon.png" alt="E.Y.E. by Expert Chase" loading="lazy" />
-      <h3>E.Y.E. by Expert Chase</h3>
-      <p>E.Y.E. by Expert Chase looks worth a closer look if this category is relevant to the way you work.</p>
-      <a class="inline-link" href="/deals/e-y-e-by-expert-chase.html">Read full breakdown</a>
-    </div>
-  
-    <div class="card deal-card">
-      <img src="https://arky.so/og-image.png" alt="Arky" loading="lazy" />
-      <h3>Arky</h3>
-      <p>If you spend a lot of time writing or organizing ideas, Arky looks worth a closer look.</p>
-      <a class="inline-link" href="/deals/arky.html">Read full breakdown</a>
-    </div>
-  
+        </div>
       </div>
 
       
+    <div class="card">
+      <h2>Share this pick</h2>
+      <div class="share-row">
+        <a class="share-btn" href="https://twitter.com/intent/tweet?text=CalendarPipe%20%E2%80%94%20CalendarPipe%20may%20be%20interesting%20if%20you%20want%20to%20speed%20up%20technical%20work%20without%20changing%20your%20whole%20stack.&url=https%3A%2F%2Fpochify.com%2Fdeals%2Fcalendarpipe.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22H16.9l-4.94-6.94L5.88 22H2.76l7.24-8.28L.8 2h6.46l4.46 6.3L18.9 2zm-1.1 18h1.74L6.22 3.9H4.36L17.8 20z"/></svg><span>X</span></a>
+        <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpochify.com%2Fdeals%2Fcalendarpipe.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 1 0 5.3 6.94 1.97 1.97 0 0 0 5.25 3zM20.44 12.77c0-3.43-1.83-5.02-4.27-5.02-1.97 0-2.85 1.08-3.34 1.84V8.5H9.45c.04.72 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.38 1.91-1.38 1.35 0 1.89 1.03 1.89 2.54V20h3.38v-7.23z"/></svg><span>LinkedIn</span></a>
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fpochify.com%2Fdeals%2Fcalendarpipe.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.25c-1.23 0-1.61.76-1.61 1.55V12h2.74l-.44 2.89h-2.3v6.99A10 10 0 0 0 22 12z"/></svg><span>Facebook</span></a>
+        <button class="share-btn-copy" onclick="copyText('https://pochify.com/deals/calendarpipe.html', 'Link copied for Instagram sharing')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2.2A2.8 2.8 0 0 0 4.2 7v10A2.8 2.8 0 0 0 7 19.8h10a2.8 2.8 0 0 0 2.8-2.8V7A2.8 2.8 0 0 0 17 4.2H7zm5 3.3A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5zm0 2.2A2.3 2.3 0 1 0 14.3 12 2.3 2.3 0 0 0 12 9.7zm4.8-3.5a1.05 1.05 0 1 1-1.05 1.05A1.05 1.05 0 0 1 16.8 6.2z"/></svg><span>Instagram</span></button>
+        <button class="share-btn-copy" onclick="copyText('https://pochify.com/deals/calendarpipe.html', 'Link copied')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l5-5a3 3 0 0 0-4.24-4.24l-1.88 1.88a1 1 0 1 0 1.41 1.41l1.88-1.88a1 1 0 1 1 1.41 1.41l-5 5z"/><path fill="currentColor" d="M13.41 10.59a1 1 0 0 0-1.41-1.41l-5 5a3 3 0 0 0 4.24 4.24l1.88-1.88a1 1 0 1 0-1.41-1.41l-1.88 1.88a1 1 0 1 1-1.41-1.41l5-5z"/></svg><span>Copy link</span></button>
+      </div>
+    </div>
+  
 
       
     <div class="footer">
