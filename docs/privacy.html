@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Privacy Policy | Pochify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Privacy Policy for Pochify." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/privacy.html" />
+  <meta property="og:title" content="Privacy Policy | Pochify" />
+  <meta property="og:description" content="Privacy Policy for Pochify." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/privacy.html" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2QCX91NDD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-W2QCX91NDD');
+    </script>
+  
+  
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --card-border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #04130a;
+      --link: #93c5fd;
+      --btn-dark: #0f172a;
+      --price: #f8fafc;
+      --old-price: #94a3b8;
+      --badge-bg: #052e16;
+      --badge-text: #86efac;
+      --sale-bg: #3f0d12;
+      --sale-text: #fda4af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .nav-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .nav-links a:hover,
+    .brand:hover {
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 20px 80px;
+    }
+
+    .narrow {
+      max-width: 920px;
+    }
+
+    h1 {
+      font-size: 42px;
+      line-height: 1.15;
+      margin: 0 0 14px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 19px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .breadcrumbs a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      margin-bottom: 24px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .price-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      margin: 12px 0 0;
+    }
+
+    .price-current {
+      font-size: 34px;
+      font-weight: bold;
+      color: var(--price);
+    }
+
+    .price-old {
+      font-size: 18px;
+      color: var(--old-price);
+      text-decoration: line-through;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: bold;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+    }
+
+    .badge-sale {
+      background: var(--sale-bg);
+      color: var(--sale-text);
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-dark);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .secondary {
+      display: inline-block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .deal-card {
+      position: relative;
+    }
+
+    .deal-card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #243041;
+      background: #0f172a;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .card-price-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-price-current {
+      font-weight: bold;
+      font-size: 20px;
+      color: var(--price);
+    }
+
+    .card-price-old {
+      color: var(--old-price);
+      text-decoration: line-through;
+      font-size: 14px;
+    }
+
+    .deal-card p,
+    .muted {
+      color: var(--muted);
+    }
+
+    .inline-link {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .share-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .share-btn,
+    .share-btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid #334155;
+      color: var(--text);
+      background: var(--btn-dark);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .share-btn svg,
+    .share-btn-copy svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .page-link {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .page-link.current {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 10px 0;
+    }
+
+    @media (max-width: 760px) {
+      .menu-toggle {
+        display: inline-block;
+      }
+
+      .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        padding-top: 10px;
+      }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-wrap {
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .price-current {
+        font-size: 28px;
+      }
+    }
+  </style>
+  
+  
+</head>
+<body class="">
+  
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/">Pochify</a>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
+          <a href="/deals/">Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  
+  
+    <div class="container narrow">
+      <div class="breadcrumbs">
+        <a href="/">Home</a> / Privacy Policy
+      </div>
+
+      <h1>Privacy Policy</h1>
+
+      <div class="card">
+        
+        <p>Pochify may collect limited technical information such as page views, click activity, user-agent data, and referring pages in order to understand which pages and links perform best.</p>
+        <p>Pochify may use analytics services such as Google Analytics to measure site usage.</p>
+        <p>Pochify may include outbound links to third-party marketplaces and product websites.</p>
+        <p>Pochify does not sell personal information. If email capture or additional data collection is added later, this policy should be updated accordingly.</p>
+      
+      </div>
+
+      
+    <div class="footer">
+      <p>
+        <a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.
+      </p>
+      <p class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </p>
+    </div>
+  
+    </div>
+  
+  
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || "Link copied");
+        } catch (e) {
+          alert("Could not copy link");
+        }
+      }
+    </script>
+  
+</body>
+</html>
