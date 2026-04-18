@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { alertAdmin } from "../alertAdmin.js";
 
 const STACKSOCIAL_COLLECTIONS = [
   "https://www.stacksocial.com/collections/artificial-intelligence",
@@ -8,6 +9,8 @@ const STACKSOCIAL_COLLECTIONS = [
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; PochifyBot/1.0; +https://pochify.com)";
+
+let imageFailureAlertSent = false;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -236,54 +239,87 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 20) 
   return [...dealMap.values()].slice(0, limitPerCollection);
 }
 
+function firstSrcFromSrcset(srcset = "") {
+  return String(srcset)
+    .split(",")[0]
+    ?.trim()
+    .split(" ")[0]
+    ?.trim();
+}
+
+function pushCandidate(list, value, canonicalUrl) {
+  if (!value) return;
+  const url = absoluteUrl(canonicalUrl, value);
+  if (!url) return;
+  list.push(url);
+}
+
 function extractDealImage($, canonicalUrl, productJsonLd) {
   const candidates = [];
 
   if (productJsonLd?.image) {
     if (Array.isArray(productJsonLd.image)) {
-      candidates.push(...productJsonLd.image);
+      for (const img of productJsonLd.image) {
+        pushCandidate(candidates, img, canonicalUrl);
+      }
     } else {
-      candidates.push(productJsonLd.image);
+      pushCandidate(candidates, productJsonLd.image, canonicalUrl);
     }
   }
 
-  candidates.push(
-    $('meta[property="og:image"]').attr("content"),
-    $('meta[name="twitter:image"]').attr("content")
-  );
+  pushCandidate(candidates, $('meta[property="og:image"]').attr("content"), canonicalUrl);
+  pushCandidate(candidates, $('meta[name="twitter:image"]').attr("content"), canonicalUrl);
 
   $("picture source").each((_, el) => {
-    const srcset = $(el).attr("srcset") || "";
-    const first = srcset.split(",")[0]?.trim().split(" ")[0];
-    if (first) candidates.push(first);
+    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
+    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+
+    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
+    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
   });
 
   $("picture img").each((_, el) => {
-    const src = $(el).attr("src");
-    if (src) candidates.push(src);
+    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
+    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+
+    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
+    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
   });
 
   $("img").each((_, el) => {
-    const src = $(el).attr("src");
-    if (src && src.includes("stackassets")) {
-      candidates.push(src);
-    }
+    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
+    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+
+    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
+    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
   });
 
-  const cleaned = candidates
-    .filter(Boolean)
-    .map((url) => absoluteUrl(canonicalUrl, url))
-    .filter((url) => {
-      const lower = url.toLowerCase();
-      return (
-        lower &&
-        !lower.endsWith(".svg") &&
-        !lower.includes("logo") &&
-        !lower.includes("icon")
-      );
-    });
+  const cleaned = [...new Set(candidates)].filter((url) => {
+    const lower = String(url).toLowerCase();
+    return (
+      lower &&
+      !lower.endsWith(".svg") &&
+      !lower.includes("logo") &&
+      !lower.includes("icon") &&
+      (
+        lower.includes("stackassets") ||
+        lower.includes("cloudfront") ||
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".png") ||
+        lower.endsWith(".webp")
+      )
+    );
+  });
 
-  return cleaned[0] || "";
+  const preferred =
+    cleaned.find((url) => url.includes("product_")) ||
+    cleaned.find((url) => url.includes("product_shots")) ||
+    cleaned.find((url) => url.includes("stackassets")) ||
+    cleaned[0] ||
+    "";
+
+  return safeUrl(preferred);
 }
 
 function extractPricing($, productJsonLd, pageText) {
@@ -339,7 +375,7 @@ function extractPricing($, productJsonLd, pageText) {
   ];
 
   for (const selector of percentSelectors) {
-    const value = cleanText($(selector).first().text());
+    const value = cleanText($(selector).text());
     const parsed = parsePercentString(value);
     if (parsed && !discountPercent) {
       discountPercent = parsed;
@@ -386,7 +422,6 @@ async function fetchDealDetail(dealLink) {
     $('meta[property="og:description"]').attr("content") || ""
   );
   const h1 = cleanText($("h1").first().text());
-
   const pageText = cleanText($("body").text());
 
   const name =
@@ -402,7 +437,14 @@ async function fetchDealDetail(dealLink) {
     "";
 
   const image = extractDealImage($, canonicalUrl, productJsonLd);
+
   if (!image) {
+    if (!imageFailureAlertSent) {
+      imageFailureAlertSent = true;
+      await alertAdmin(
+        `Pochify alert: StackSocial image extraction failed. Their page structure may have changed and needs a parser update.\n\nExample: ${dealLink.url}`
+      );
+    }
     throw new Error("Missing valid image");
   }
 
