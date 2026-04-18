@@ -90,10 +90,25 @@ function hasPriceInfo(deal) {
 function passesQualityGate(deal, settings) {
   const minScore = Number(settings.minimum_quality_score || 5);
 
-  if (deal.source !== "stacksocial") return false;
-  if (settings.require_images_for_publish && !deal.og_image) return false;
-  if (!hasPriceInfo(deal)) return false;
-  if ((deal.score || 0) < minScore) return false;
+  if (deal.source !== "stacksocial") {
+    console.log(`⏭️ Skip ${deal.name}: not StackSocial`);
+    return false;
+  }
+
+  if (settings.require_images_for_publish && !deal.og_image) {
+    console.log(`⏭️ Skip ${deal.name}: missing image`);
+    return false;
+  }
+
+  if (!hasPriceInfo(deal)) {
+    console.log(`⏭️ Skip ${deal.name}: missing valid price info`);
+    return false;
+  }
+
+  if ((deal.score || 0) < minScore) {
+    console.log(`⏭️ Skip ${deal.name}: score ${(deal.score || 0)} below minimum ${minScore}`);
+    return false;
+  }
 
   return true;
 }
