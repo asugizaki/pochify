@@ -237,28 +237,53 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 20) 
 }
 
 function extractDealImage($, canonicalUrl, productJsonLd) {
-  const candidates = [
-    productJsonLd?.image,
-    $('meta[property="og:image"]').attr("content"),
-    $('meta[name="twitter:image"]').attr("content"),
-    $('img[src*="cloudfront"]').first().attr("src"),
-    $('img').first().attr("src")
-  ]
-    .flat()
-    .filter(Boolean)
-    .map((value) => absoluteUrl(canonicalUrl, value));
+  const candidates = [];
 
-  const good = candidates.find((url) => {
-    const lower = String(url).toLowerCase();
-    return (
-      lower &&
-      !lower.endsWith(".svg") &&
-      !lower.includes("logo") &&
-      !lower.includes("icon")
-    );
+  if (productJsonLd?.image) {
+    if (Array.isArray(productJsonLd.image)) {
+      candidates.push(...productJsonLd.image);
+    } else {
+      candidates.push(productJsonLd.image);
+    }
+  }
+
+  candidates.push(
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content")
+  );
+
+  $("picture source").each((_, el) => {
+    const srcset = $(el).attr("srcset") || "";
+    const first = srcset.split(",")[0]?.trim().split(" ")[0];
+    if (first) candidates.push(first);
   });
 
-  return safeUrl(good || "");
+  $("picture img").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src) candidates.push(src);
+  });
+
+  $("img").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src && src.includes("stackassets")) {
+      candidates.push(src);
+    }
+  });
+
+  const cleaned = candidates
+    .filter(Boolean)
+    .map((url) => absoluteUrl(canonicalUrl, url))
+    .filter((url) => {
+      const lower = url.toLowerCase();
+      return (
+        lower &&
+        !lower.endsWith(".svg") &&
+        !lower.includes("logo") &&
+        !lower.includes("icon")
+      );
+    });
+
+  return cleaned[0] || "";
 }
 
 function extractPricing($, productJsonLd, pageText) {
@@ -294,8 +319,8 @@ function extractPricing($, productJsonLd, pageText) {
     '[class*="retail-price"]',
     '[class*="original-price"]',
     '[class*="compare-at"]',
-    's',
-    'del'
+    "s",
+    "del"
   ];
 
   for (const selector of compareSelectors) {
@@ -309,8 +334,8 @@ function extractPricing($, productJsonLd, pageText) {
   const percentSelectors = [
     '[class*="discount"]',
     '[class*="savings"]',
-    'span',
-    'div'
+    "span",
+    "div"
   ];
 
   for (const selector of percentSelectors) {
@@ -377,6 +402,9 @@ async function fetchDealDetail(dealLink) {
     "";
 
   const image = extractDealImage($, canonicalUrl, productJsonLd);
+  if (!image) {
+    throw new Error("Missing valid image");
+  }
 
   const { currentPrice, originalPrice, discountPercent } = extractPricing(
     $,
