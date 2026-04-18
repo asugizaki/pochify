@@ -254,103 +254,110 @@ function pushCandidate(list, value, canonicalUrl) {
   list.push(url);
 }
 
-function gallerySelectors() {
-  return [
-    ".swiper-slide.swiper-slide-active picture source",
-    ".swiper-slide.swiper-slide-active picture img",
-    ".swiper-slide.swiper-slide-active img",
-    ".swiper-slide-active picture source",
-    ".swiper-slide-active picture img",
-    ".swiper-slide-active img",
-    '[class*="product"] .swiper-slide.swiper-slide-active picture source',
-    '[class*="product"] .swiper-slide.swiper-slide-active picture img',
-    '[class*="product"] .swiper-slide.swiper-slide-active img',
-    '[class*="gallery"] .swiper-slide.swiper-slide-active picture source',
-    '[class*="gallery"] .swiper-slide.swiper-slide-active picture img',
-    '[class*="gallery"] .swiper-slide.swiper-slide-active img'
+function extractImageFromRawHtml(html) {
+  const patterns = [
+    /https:\/\/cdnp\d+\.stackassets\.com\/[^"'\\\s]+product_\d+_product_shots1\.(?:jpg|jpeg|png|webp)/i,
+    /https:\/\/cdnp\d+\.stackassets\.com\/[^"'\\\s]+product_\d+_product_shots\d+\.(?:jpg|jpeg|png|webp)/i,
+    /https:\/\/cdnp\d+\.stackassets\.com\/[^"'\\\s]+\.(?:jpg|jpeg|png|webp)/i
   ];
-}
 
-function extractFromElement($, el, canonicalUrl, candidates) {
-  pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
-  pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
-  pushCandidate(candidates, $(el).attr("data-lazy-src"), canonicalUrl);
-
-  const srcset =
-    $(el).attr("srcset") ||
-    $(el).attr("data-srcset") ||
-    $(el).attr("data-lazy-srcset") ||
-    "";
-  pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
-}
-
-function extractDealImage($, canonicalUrl, productJsonLd) {
-  const candidates = [];
-
-  // 1. product structured data
-  if (productJsonLd?.image) {
-    if (Array.isArray(productJsonLd.image)) {
-      for (const img of productJsonLd.image) {
-        pushCandidate(candidates, img, canonicalUrl);
-      }
-    } else {
-      pushCandidate(candidates, productJsonLd.image, canonicalUrl);
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[0]) {
+      return match[0];
     }
   }
 
-  // 2. Open Graph / Twitter
-  pushCandidate(candidates, $('meta[property="og:image"]').attr("content"), canonicalUrl);
-  pushCandidate(candidates, $('meta[name="twitter:image"]').attr("content"), canonicalUrl);
+  return "";
+}
 
-  // 3. Explicit active swiper/gallery first
-  for (const selector of gallerySelectors()) {
+function extractImageFromActiveSlide($, canonicalUrl) {
+  const candidates = [];
+  const selectors = [
+    ".swiper-slide.swiper-slide-active img",
+    ".swiper-slide.swiper-slide-active source",
+    ".swiper-slide-active img",
+    ".swiper-slide-active source",
+    '[class*="swiper-slide"][class*="active"] img',
+    '[class*="swiper-slide"][class*="active"] source'
+  ];
+
+  for (const selector of selectors) {
     $(selector).each((_, el) => {
-      extractFromElement($, el, canonicalUrl, candidates);
+      pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
+      pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+      pushCandidate(candidates, $(el).attr("data-lazy-src"), canonicalUrl);
+
+      const srcset =
+        $(el).attr("srcset") ||
+        $(el).attr("data-srcset") ||
+        $(el).attr("data-lazy-srcset") ||
+        "";
+      pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
     });
+
+    const preferred = candidates.find((url) => {
+      const lower = url.toLowerCase();
+      return (
+        lower.includes("stackassets") &&
+        (lower.includes("product_shots1") || lower.includes("product_"))
+      );
+    });
+
+    if (preferred) return preferred;
   }
 
-  // 4. Any picture/source anywhere
-  $("picture source").each((_, el) => {
-    extractFromElement($, el, canonicalUrl, candidates);
-  });
+  return "";
+}
 
-  $("picture img").each((_, el) => {
-    extractFromElement($, el, canonicalUrl, candidates);
-  });
+function extractDealImage(html, $, canonicalUrl, productJsonLd) {
+  const rawHtmlImage = extractImageFromRawHtml(html);
+  if (rawHtmlImage) {
+    return safeUrl(rawHtmlImage);
+  }
 
-  // 5. Generic img fallback
-  $("img").each((_, el) => {
-    extractFromElement($, el, canonicalUrl, candidates);
-  });
+  if (productJsonLd?.image) {
+    const images = Array.isArray(productJsonLd.image)
+      ? productJsonLd.image
+      : [productJsonLd.image];
 
-  const cleaned = [...new Set(candidates)].filter((url) => {
-    const lower = String(url).toLowerCase();
+    const structured = images
+      .map((img) => absoluteUrl(canonicalUrl, img))
+      .find(Boolean);
+
+    if (structured) {
+      return safeUrl(structured);
+    }
+  }
+
+  const activeSlideImage = extractImageFromActiveSlide($, canonicalUrl);
+  if (activeSlideImage) {
+    return safeUrl(activeSlideImage);
+  }
+
+  const metaCandidates = [
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content")
+  ]
+    .map((img) => absoluteUrl(canonicalUrl, img))
+    .filter(Boolean);
+
+  const metaImage = metaCandidates.find((url) => {
+    const lower = url.toLowerCase();
     return (
-      lower &&
-      !lower.endsWith(".svg") &&
-      !lower.includes("logo") &&
-      !lower.includes("icon") &&
-      !lower.includes("avatar") &&
-      (
-        lower.includes("stackassets") ||
-        lower.includes("cloudfront") ||
-        lower.endsWith(".jpg") ||
-        lower.endsWith(".jpeg") ||
-        lower.endsWith(".png") ||
-        lower.endsWith(".webp")
-      )
+      lower.includes("stackassets") ||
+      lower.endsWith(".jpg") ||
+      lower.endsWith(".jpeg") ||
+      lower.endsWith(".png") ||
+      lower.endsWith(".webp")
     );
   });
 
-  const preferred =
-    cleaned.find((url) => url.includes("product_shots1")) ||
-    cleaned.find((url) => url.includes("product_shots")) ||
-    cleaned.find((url) => url.includes("product_")) ||
-    cleaned.find((url) => url.includes("stackassets")) ||
-    cleaned[0] ||
-    "";
+  if (metaImage) {
+    return safeUrl(metaImage);
+  }
 
-  return safeUrl(preferred);
+  return "";
 }
 
 function extractPricing($, productJsonLd, pageText) {
@@ -467,7 +474,7 @@ async function fetchDealDetail(dealLink) {
     dealLink.anchorText ||
     "";
 
-  const image = extractDealImage($, canonicalUrl, productJsonLd);
+  const image = extractDealImage(html, $, canonicalUrl, productJsonLd);
 
   if (!image) {
     if (!imageFailureAlertSent) {
