@@ -80,352 +80,53 @@ export function sharedStyles() {
     }
 
     * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-    }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(11, 18, 32, 0.92);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid #1e293b;
-    }
-
-    .nav-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .brand {
-      color: var(--text);
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 22px;
-    }
-
-    .menu-toggle {
-      display: none;
-      background: transparent;
-      border: 1px solid #334155;
-      color: var(--text);
-      border-radius: 10px;
-      padding: 8px 12px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .nav-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 15px;
-    }
-
-    .nav-links a:hover,
-    .brand:hover {
-      color: var(--text);
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 36px 20px 80px;
-    }
-
-    .narrow {
-      max-width: 920px;
-    }
-
-    h1 {
-      font-size: 42px;
-      line-height: 1.15;
-      margin: 0 0 14px;
-    }
-
-    h2, h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-    }
-
-    .eyebrow {
-      color: var(--accent);
-      font-weight: bold;
-      letter-spacing: 0.08em;
-      font-size: 12px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 19px;
-      margin-bottom: 24px;
-    }
-
-    .breadcrumbs {
-      margin-bottom: 18px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .breadcrumbs a {
-      color: var(--link);
-      text-decoration: none;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
-      margin: 20px 0;
-    }
-
-    .hero-image {
-      display: block;
-      width: 100%;
-      max-width: 100%;
-      border-radius: 16px;
-      border: 1px solid var(--card-border);
-      background: #0f172a;
-      margin-bottom: 24px;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-    }
-
-    .price-box {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px 16px;
-      margin: 12px 0 0;
-    }
-
-    .price-current {
-      font-size: 34px;
-      font-weight: bold;
-      color: var(--price);
-    }
-
-    .price-old {
-      font-size: 18px;
-      color: var(--old-price);
-      text-decoration: line-through;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: bold;
-      background: var(--badge-bg);
-      color: var(--badge-text);
-    }
-
-    .badge-sale {
-      background: var(--sale-bg);
-      color: var(--sale-text);
-    }
-
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
-    .cta {
-      display: inline-block;
-      background: var(--accent);
-      color: var(--accent-dark);
-      text-decoration: none;
-      padding: 14px 22px;
-      border-radius: 12px;
-      font-weight: bold;
-    }
-
-    .secondary {
-      display: inline-block;
-      color: var(--text);
-      text-decoration: none;
-      padding: 14px 22px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-    }
-
-    .grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    }
-
-    .deal-card {
-      position: relative;
-    }
-
-    .deal-card img {
-      width: 100%;
-      border-radius: 12px;
-      margin-bottom: 14px;
-      border: 1px solid #243041;
-      background: #0f172a;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-    }
-
-    .card-price-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-      margin-bottom: 8px;
-    }
-
-    .card-price-current {
-      font-weight: bold;
-      font-size: 20px;
-      color: var(--price);
-    }
-
-    .card-price-old {
-      color: var(--old-price);
-      text-decoration: line-through;
-      font-size: 14px;
-    }
-
-    .deal-card p,
-    .muted {
-      color: var(--muted);
-    }
-
-    .inline-link {
-      display: inline-block;
-      margin-top: 12px;
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: bold;
-    }
-
-    .share-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .share-btn,
-    .share-btn-copy {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      border: 1px solid #334155;
-      color: var(--text);
-      background: var(--btn-dark);
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .share-btn svg,
-    .share-btn-copy svg {
-      width: 16px;
-      height: 16px;
-      flex: 0 0 16px;
-    }
-
-    .footer {
-      margin-top: 48px;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .footer a {
-      color: var(--link);
-      text-decoration: none;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    .pagination {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-    }
-
-    .page-link {
-      display: inline-block;
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      text-decoration: none;
-      color: var(--text);
-    }
-
-    .page-link.current {
-      background: var(--accent);
-      color: var(--accent-dark);
-      border-color: var(--accent);
-      font-weight: bold;
-    }
-
-    .empty {
-      color: var(--muted);
-      padding: 10px 0;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .site-header { position: sticky; top: 0; z-index: 20; background: rgba(11, 18, 32, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid #1e293b; }
+    .nav-wrap { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { color: var(--text); text-decoration: none; font-weight: bold; font-size: 22px; }
+    .menu-toggle { display: none; background: transparent; border: 1px solid #334155; color: var(--text); border-radius: 10px; padding: 8px 12px; font-size: 20px; cursor: pointer; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 14px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 15px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 36px 20px 80px; }
+    .narrow { max-width: 920px; }
+    h1 { font-size: 42px; line-height: 1.15; margin: 0 0 14px; }
+    h2, h3 { margin-top: 0; margin-bottom: 12px; }
+    .eyebrow { color: var(--accent); font-weight: bold; letter-spacing: 0.08em; font-size: 12px; text-transform: uppercase; margin-bottom: 10px; }
+    .sub { color: var(--muted); font-size: 19px; margin-bottom: 24px; }
+    .breadcrumbs { margin-bottom: 18px; color: var(--muted); font-size: 14px; }
+    .breadcrumbs a { color: var(--link); text-decoration: none; }
+    .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; margin: 20px 0; }
+    .hero-image { display: block; width: 100%; border-radius: 16px; border: 1px solid var(--card-border); background: #0f172a; margin-bottom: 24px; aspect-ratio: 16 / 9; object-fit: cover; }
+    .price-box { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 12px 0 0; }
+    .price-current { font-size: 34px; font-weight: bold; color: var(--price); }
+    .price-old { font-size: 18px; color: var(--old-price); text-decoration: line-through; }
+    .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; background: var(--badge-bg); color: var(--badge-text); }
+    .badge-sale { background: var(--sale-bg); color: var(--sale-text); }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .cta { display: inline-block; background: var(--accent); color: var(--accent-dark); text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: bold; }
+    .secondary { display: inline-block; color: var(--text); text-decoration: none; padding: 14px 22px; border-radius: 12px; border: 1px solid #334155; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .deal-card img { width: 100%; border-radius: 12px; margin-bottom: 14px; border: 1px solid #243041; background: #0f172a; aspect-ratio: 16 / 9; object-fit: cover; }
+    .card-price-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 8px; }
+    .card-price-current { font-weight: bold; font-size: 20px; color: var(--price); }
+    .card-price-old { color: var(--old-price); text-decoration: line-through; font-size: 14px; }
+    .deal-card p, .muted { color: var(--muted); }
+    .inline-link { display: inline-block; margin-top: 12px; color: var(--accent); text-decoration: none; font-weight: bold; }
+    .share-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .share-btn, .share-btn-copy { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; text-decoration: none; border: 1px solid #334155; color: var(--text); background: var(--btn-dark); font-size: 14px; cursor: pointer; }
+    .share-btn svg, .share-btn-copy svg { width: 16px; height: 16px; flex: 0 0 16px; }
+    .footer { margin-top: 48px; color: #64748b; font-size: 14px; }
+    .footer a { color: var(--link); text-decoration: none; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+    .empty { color: var(--muted); padding: 10px 0; }
 
     @media (max-width: 760px) {
-      .menu-toggle {
-        display: inline-block;
-      }
-
-      .nav-links {
-        display: none;
-        width: 100%;
-        flex-direction: column;
-        padding-top: 10px;
-      }
-
-      .nav-links.open {
-        display: flex;
-      }
-
-      .nav-wrap {
-        flex-wrap: wrap;
-      }
-
-      h1 {
-        font-size: 34px;
-      }
-
-      .price-current {
-        font-size: 28px;
-      }
+      .menu-toggle { display: inline-block; }
+      .nav-links { display: none; width: 100%; flex-direction: column; padding-top: 10px; }
+      .nav-links.open { display: flex; }
+      .nav-wrap { flex-wrap: wrap; }
+      h1 { font-size: 34px; }
+      .price-current { font-size: 28px; }
     }
   </style>
   `;
@@ -451,9 +152,7 @@ export function navHtml() {
 export function footerHtml(siteUrl) {
   return `
     <div class="footer">
-      <p>
-        <a href="${siteUrl}">Pochify</a> curates AI tools, SaaS products, and useful software finds.
-      </p>
+      <p><a href="${siteUrl}">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
       <p class="footer-links">
         <a href="/faq.html">FAQ</a>
         <a href="/privacy.html">Privacy Policy</a>
@@ -475,7 +174,7 @@ export function sharedScripts() {
         try {
           await navigator.clipboard.writeText(text);
           alert(label || "Link copied");
-        } catch (e) {
+        } catch {
           alert("Could not copy link");
         }
       }
@@ -487,7 +186,6 @@ export function layout({
   title,
   description,
   canonicalUrl,
-  bodyClass = "",
   ogImage = "",
   extraHead = "",
   bodyContent = "",
@@ -513,42 +211,12 @@ export function layout({
   ${sharedStyles()}
   ${extraHead}
 </head>
-<body class="${bodyClass}">
+<body>
   ${includeNav ? navHtml() : ""}
   ${bodyContent}
   ${includeFooterScripts ? sharedScripts() : ""}
 </body>
 </html>`;
-}
-
-export function dealCardHtml(deal) {
-  const imageHtml = deal.og_image
-    ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />`
-    : "";
-
-  const summary = escapeHtml(deal.hook || deal.description || "Read the full breakdown.");
-
-  const priceRow =
-    deal.current_price || deal.original_price || deal.discount_percent || deal.offer_type
-      ? `
-        <div class="card-price-row">
-          ${deal.current_price ? `<span class="card-price-current">$${escapeHtml(String(deal.current_price))}</span>` : ""}
-          ${deal.original_price ? `<span class="card-price-old">$${escapeHtml(String(deal.original_price))}</span>` : ""}
-          ${deal.discount_percent ? `<span class="badge badge-sale">${escapeHtml(String(deal.discount_percent))}% off</span>` : ""}
-          ${deal.offer_type === "lifetime" ? `<span class="badge">Lifetime deal</span>` : ""}
-        </div>
-      `
-      : "";
-
-  return `
-    <div class="card deal-card">
-      ${imageHtml}
-      <h3>${escapeHtml(deal.name)}</h3>
-      ${priceRow}
-      <p>${summary}</p>
-      <a class="inline-link" href="/deals/${deal.slug}.html">Read full breakdown</a>
-    </div>
-  `;
 }
 
 export function shareButtonsHtml({ pageUrl, title, summary }) {
@@ -589,17 +257,4 @@ export function structuredArticleData({ title, description, url, image }) {
   };
 
   return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
-}
-
-export function paginationHtml({ basePath, currentPage, totalPages }) {
-  if (totalPages <= 1) return "";
-
-  const links = [];
-
-  for (let i = 1; i <= totalPages; i += 1) {
-    const href = i === 1 ? `${basePath}/` : `${basePath}/page/${i}/`;
-    links.push(`<a class="page-link ${i === currentPage ? "current" : ""}" href="${href}">${i}</a>`);
-  }
-
-  return `<div class="pagination">${links.join("")}</div>`;
 }
