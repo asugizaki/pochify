@@ -2,23 +2,20 @@ import fs from "fs";
 import path from "path";
 import {
   generateDealPage,
-  generateDealsIndex,
-  generateCategoryPages,
-  generateHomePage,
-  generateStaticPages,
-  generateRobotsTxt,
-  generateSitemap
+  ensureShellPages,
+  generateRobotsTxtIfMissing,
+  generateSitemapFromDeals
 } from "./generateDealPage.js";
-import { fetchDynamicDeals } from "./productSource.js";
 import { fetchStackSocialDeals } from "./sources/stackSocialSource.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
 import { generateDealContent } from "./ai/generateDealContent.js";
 
-const BACKEND_URL = "https://go.pochify.com/api/deals/ingest";
-const SETTINGS_URL = "https://go.pochify.com/api/settings/public";
-const PENDING_PATH = path.join("data", "pending-telegram.json");
-const MAX_SELECTED_DEALS = 24;
+const BASE_URL = "https://go.pochify.com";
+const SETTINGS_URL = `${BASE_URL}/api/settings/public`;
+const EXISTING_SUMMARIES_URL = `${BASE_URL}/api/deals/existing-summaries`;
+const INGEST_URL = `${BASE_URL}/api/deals/ingest`;
+const ALL_DEALS_URL = `${BASE_URL}/api/public/deals?limit=1000`;
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -43,22 +40,15 @@ function dedupeDeals(deals) {
     if (!key) continue;
 
     const existing = map.get(key);
-
     if (!existing) {
       map.set(key, deal);
       continue;
     }
 
     if ((deal.score || 0) > (existing.score || 0)) {
-      map.set(key, {
-        ...existing,
-        ...deal
-      });
+      map.set(key, { ...existing, ...deal });
     } else {
-      map.set(key, {
-        ...deal,
-        ...existing
-      });
+      map.set(key, { ...deal, ...existing });
     }
   }
 
@@ -66,29 +56,52 @@ function dedupeDeals(deals) {
 }
 
 async function loadSettings() {
-  try {
-    const res = await fetch(SETTINGS_URL);
-    if (!res.ok) throw new Error(`settings status ${res.status}`);
-    const data = await res.json();
-    return data.settings || {};
-  } catch (error) {
-    console.warn("⚠️ Could not load settings from backend, using defaults:", error.message);
-    return {
-      enable_producthunt_source: false,
-      enable_stacksocial_source: true,
-      require_affiliate_approval: false,
-      allow_stacksocial_direct_posting: true,
-      require_images_for_publish: true
-    };
+  const res = await fetch(SETTINGS_URL);
+  if (!res.ok) {
+    throw new Error(`Failed to load settings: ${res.status}`);
   }
+
+  const data = await res.json();
+  return data.settings || {};
+}
+
+async function loadExistingSummaries(slugs) {
+  const res = await fetch(EXISTING_SUMMARIES_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slugs })
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to load existing summaries: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return new Map((data.items || []).map((item) => [item.slug, item]));
+}
+
+function hasPriceInfo(deal) {
+  return Boolean(
+    deal.current_price &&
+    (deal.original_price || deal.discount_percent || deal.offer_type === "lifetime")
+  );
+}
+
+function passesQualityGate(deal, settings) {
+  const minScore = Number(settings.minimum_quality_score || 5);
+
+  if (deal.source !== "stacksocial") return false;
+  if (settings.require_images_for_publish && !deal.og_image) return false;
+  if (!hasPriceInfo(deal)) return false;
+  if ((deal.score || 0) < minScore) return false;
+
+  return true;
 }
 
 async function ingestDeals(deals, settings) {
-  const res = await fetch(BACKEND_URL, {
+  const res = await fetch(INGEST_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       deals,
       maxToSend: 2,
@@ -106,23 +119,11 @@ async function ingestDeals(deals, settings) {
   return data.sendCandidates || [];
 }
 
-function isPublishableForPhaseOne(deal, settings) {
-  if (settings.require_images_for_publish && !deal.og_image) return false;
-
-  if (deal.source !== "stacksocial") return false;
-
-  if (!settings.allow_stacksocial_direct_posting) return false;
-
-  if (!deal.stacksocial_url) return false;
-
-  return true;
-}
-
-function buildStackSocialDirectLink(deal, settings) {
-  if (deal.source === "stacksocial" && settings.allow_stacksocial_direct_posting) {
-    return deal.stacksocial_url || deal.url || "";
-  }
-  return "";
+async function loadAllDealsForSitemap() {
+  const res = await fetch(ALL_DEALS_URL);
+  if (!res.ok) throw new Error(`Failed to load deals for sitemap: ${res.status}`);
+  const data = await res.json();
+  return data.items || [];
 }
 
 async function run() {
@@ -131,41 +132,45 @@ async function run() {
   const settings = await loadSettings();
   console.log("⚙️ Loaded settings:", settings);
 
-  let productHuntDeals = [];
-  let stackSocialDeals = [];
+  ensureShellPages();
+  generateRobotsTxtIfMissing();
+
+  if (!settings.enable_stacksocial_source) {
+    console.log("ℹ️ StackSocial source disabled by feature flag");
+    return;
+  }
 
   if (settings.enable_producthunt_source) {
-    productHuntDeals = await fetchDynamicDeals().catch((error) => {
-      console.error("❌ Product Hunt source failed:", error.message);
-      return [];
-    });
-  } else {
-    console.log("ℹ️ Product Hunt source disabled by feature flag");
+    console.log("ℹ️ Product Hunt is enabled in DB, but this flow intentionally ignores it for now.");
   }
 
-  if (settings.enable_stacksocial_source) {
-    stackSocialDeals = await fetchStackSocialDeals({ maxDeals: 20 }).catch((error) => {
-      console.error("❌ StackSocial source failed:", error.message);
-      return [];
-    });
-  } else {
-    console.log("ℹ️ StackSocial source disabled by feature flag");
+  const rawDeals = dedupeDeals(await fetchStackSocialDeals({ maxDeals: 20 }));
+  console.log(`📥 StackSocial deals: ${rawDeals.length}`);
+
+  const existingMap = await loadExistingSummaries(rawDeals.map((d) => d.slug));
+
+  const candidates = [];
+  for (const deal of rawDeals) {
+    const existing = existingMap.get(deal.slug);
+
+    if (existing && !existing.needs_regeneration) {
+      console.log(`⏭️ Skipping existing deal with no regeneration flag: ${deal.name}`);
+      continue;
+    }
+
+    if (!passesQualityGate(deal, settings)) {
+      console.log(`⏭️ Skipping low-quality or incomplete deal: ${deal.name}`);
+      continue;
+    }
+
+    candidates.push(deal);
   }
 
-  console.log(`📥 Product Hunt deals: ${productHuntDeals.length}`);
-  console.log(`📥 StackSocial deals: ${stackSocialDeals.length}`);
+  console.log(`✅ Candidates after pre-filtering: ${candidates.length}`);
 
-  const rawDeals = dedupeDeals([...stackSocialDeals, ...productHuntDeals]);
+  const finalDeals = [];
 
-  const selectedForEnrichment = rawDeals
-    .filter((d) => (d.score || 0) >= 4)
-    .slice(0, MAX_SELECTED_DEALS);
-
-  console.log(`📦 Selected ${selectedForEnrichment.length} deals for enrichment`);
-
-  const enrichedDeals = [];
-
-  for (const deal of selectedForEnrichment) {
+  for (const deal of candidates) {
     const enriched = await enrichProduct(deal);
     const improved = enhanceCopy(enriched);
     const aiContent = await generateDealContent(improved);
@@ -176,43 +181,26 @@ async function run() {
       affiliate_url: "",
       affiliate_detected: false,
       network_guess: "",
-      affiliateLink: buildStackSocialDirectLink(improved, settings)
+      affiliateLink: improved.stacksocial_url || improved.url || "",
+      quality_score: improved.score || 0,
+      has_required_assets: true,
+      is_publishable: true,
+      needs_regeneration: false
     };
 
-    if (isPublishableForPhaseOne(finalDeal, settings)) {
-      enrichedDeals.push(finalDeal);
-    } else {
-      console.log(`⏭️ Skipping low-quality or incomplete deal: ${finalDeal.name}`);
-    }
+    generateDealPage(finalDeal);
+    finalDeals.push(finalDeal);
+    console.log(`📝 Generated page: docs/deals/${finalDeal.slug}.html`);
   }
 
-  console.log(`✅ Publishable deals after filtering: ${enrichedDeals.length}`);
+  console.log(`✅ Final publishable deals this run: ${finalDeals.length}`);
 
-  for (const deal of enrichedDeals) {
-    const filePath = generateDealPage(deal, enrichedDeals);
-    console.log("📝 Generated page:", filePath);
-  }
+  const sendCandidates = await ingestDeals(finalDeals, settings);
+  saveJson(path.join("data", "pending-telegram.json"), sendCandidates);
 
-  const homePath = generateHomePage();
-  console.log("🏠 Generated homepage:", homePath);
-
-  const dealsIndexPaths = generateDealsIndex(enrichedDeals);
-  console.log("🗂️ Generated deals index pages:", dealsIndexPaths);
-
-  const categoryPaths = generateCategoryPages(enrichedDeals);
-  console.log("🧭 Generated category pages:", categoryPaths);
-
-  const staticPaths = generateStaticPages();
-  console.log("📄 Generated static pages:", staticPaths);
-
-  generateRobotsTxt();
-  console.log("🤖 Generated robots.txt");
-
-  generateSitemap(enrichedDeals);
+  const allDeals = await loadAllDealsForSitemap();
+  generateSitemapFromDeals(allDeals);
   console.log("🗺️ Generated sitemap");
-
-  const sendCandidates = await ingestDeals(enrichedDeals, settings);
-  saveJson(PENDING_PATH, sendCandidates);
 
   console.log(`📨 Pending Telegram deals: ${sendCandidates.length}`);
   console.log("🏁 Done");
