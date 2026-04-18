@@ -19,7 +19,7 @@ function slugify(text = "") {
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, 100);
 }
 
 function cleanText(text = "") {
@@ -42,16 +42,27 @@ function absoluteUrl(base, href) {
   }
 }
 
-function extractMoney(text = "") {
-  const matches = [...String(text).matchAll(/\$([0-9]+(?:\.[0-9]{2})?)/g)].map((m) =>
-    Number.parseFloat(m[1])
-  );
-  return matches;
+function parseMoneyString(text = "") {
+  const normalized = String(text).replace(/[^0-9.]/g, "");
+  if (!normalized) return null;
+  const num = Number.parseFloat(normalized);
+  return Number.isFinite(num) ? num : null;
 }
 
-function extractPercent(text = "") {
-  const match = String(text).match(/(\d+)\s*%\s*Off/i);
-  return match ? Number.parseInt(match[1], 10) : null;
+function parsePercentString(text = "") {
+  const match = String(text).match(/(\d{1,3})\s*%/);
+  if (!match) return null;
+  const num = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(num)) return null;
+  if (num < 0 || num > 100) return null;
+  return num;
+}
+
+function computeDiscountPercent(currentPrice, originalPrice) {
+  if (!currentPrice || !originalPrice || originalPrice <= currentPrice) return null;
+  const percent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  if (percent < 0 || percent > 100) return null;
+  return percent;
 }
 
 function detectChannel(text = "") {
@@ -70,6 +81,44 @@ function detectChannel(text = "") {
   }
 
   return "saas";
+}
+
+function extractJsonLd($) {
+  const items = [];
+
+  $('script[type="application/ld+json"]').each((_, el) => {
+    const raw = $(el).html() || "";
+    if (!raw.trim()) return;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        items.push(...parsed);
+      } else {
+        items.push(parsed);
+      }
+    } catch {
+      // ignore malformed json-ld
+    }
+  });
+
+  return items;
+}
+
+function findProductJsonLd(jsonLdItems = []) {
+  for (const item of jsonLdItems) {
+    if (!item || typeof item !== "object") continue;
+
+    if (item["@type"] === "Product") return item;
+
+    if (Array.isArray(item["@graph"])) {
+      for (const child of item["@graph"]) {
+        if (child && child["@type"] === "Product") return child;
+      }
+    }
+  }
+
+  return null;
 }
 
 function extractVendorUrl($, pageUrl) {
@@ -100,7 +149,6 @@ function extractVendorUrl($, pageUrl) {
 function buildStackSocialAffiliateUrl(stackSocialUrl) {
   const template = process.env.STACKSOCIAL_AFFILIATE_DEEPLINK_TEMPLATE || "";
   if (!template) return "";
-
   return template.replace("{{url}}", encodeURIComponent(stackSocialUrl));
 }
 
@@ -188,34 +236,163 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 20) 
   return [...dealMap.values()].slice(0, limitPerCollection);
 }
 
+function extractDealImage($, canonicalUrl, productJsonLd) {
+  const candidates = [
+    productJsonLd?.image,
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content"),
+    $('img[src*="cloudfront"]').first().attr("src"),
+    $('img').first().attr("src")
+  ]
+    .flat()
+    .filter(Boolean)
+    .map((value) => absoluteUrl(canonicalUrl, value));
+
+  const good = candidates.find((url) => {
+    const lower = String(url).toLowerCase();
+    return (
+      lower &&
+      !lower.endsWith(".svg") &&
+      !lower.includes("logo") &&
+      !lower.includes("icon")
+    );
+  });
+
+  return safeUrl(good || "");
+}
+
+function extractPricing($, productJsonLd, pageText) {
+  let currentPrice = null;
+  let originalPrice = null;
+  let discountPercent = null;
+
+  const jsonOffer = productJsonLd?.offers;
+  if (jsonOffer && typeof jsonOffer === "object") {
+    currentPrice =
+      parseMoneyString(jsonOffer.price) ??
+      parseMoneyString(jsonOffer.lowPrice) ??
+      parseMoneyString(jsonOffer.highPrice);
+  }
+
+  const saleSelectors = [
+    '[data-testid*="sale"]',
+    '[class*="sale-price"]',
+    '[class*="final-price"]',
+    '[class*="price"]'
+  ];
+
+  for (const selector of saleSelectors) {
+    const value = cleanText($(selector).first().text());
+    const parsed = parseMoneyString(value);
+    if (parsed && !currentPrice) {
+      currentPrice = parsed;
+      break;
+    }
+  }
+
+  const compareSelectors = [
+    '[class*="retail-price"]',
+    '[class*="original-price"]',
+    '[class*="compare-at"]',
+    's',
+    'del'
+  ];
+
+  for (const selector of compareSelectors) {
+    const value = cleanText($(selector).first().text());
+    const parsed = parseMoneyString(value);
+    if (parsed && (!originalPrice || parsed > originalPrice)) {
+      originalPrice = parsed;
+    }
+  }
+
+  const percentSelectors = [
+    '[class*="discount"]',
+    '[class*="savings"]',
+    'span',
+    'div'
+  ];
+
+  for (const selector of percentSelectors) {
+    const value = cleanText($(selector).first().text());
+    const parsed = parsePercentString(value);
+    if (parsed && !discountPercent) {
+      discountPercent = parsed;
+    }
+  }
+
+  if (!discountPercent) {
+    const textPercent = parsePercentString(pageText);
+    if (textPercent) discountPercent = textPercent;
+  }
+
+  if (!originalPrice && currentPrice && discountPercent) {
+    const inferred = currentPrice / (1 - discountPercent / 100);
+    if (Number.isFinite(inferred) && inferred > currentPrice) {
+      originalPrice = Number(inferred.toFixed(2));
+    }
+  }
+
+  if (!discountPercent && currentPrice && originalPrice) {
+    discountPercent = computeDiscountPercent(currentPrice, originalPrice);
+  }
+
+  if (originalPrice && currentPrice && originalPrice <= currentPrice) {
+    originalPrice = null;
+    discountPercent = null;
+  }
+
+  return {
+    currentPrice,
+    originalPrice,
+    discountPercent
+  };
+}
+
 async function fetchDealDetail(dealLink) {
   const html = await fetchHtml(dealLink.url);
   const $ = cheerio.load(html);
+  const jsonLdItems = extractJsonLd($);
+  const productJsonLd = findProductJsonLd(jsonLdItems);
 
+  const canonicalUrl = safeUrl($('link[rel="canonical"]').attr("href") || dealLink.url);
   const ogTitle = cleanText($('meta[property="og:title"]').attr("content") || "");
   const ogDescription = cleanText(
     $('meta[property="og:description"]').attr("content") || ""
   );
-  const ogImage = safeUrl($('meta[property="og:image"]').attr("content") || "");
-  const canonicalUrl = safeUrl($('link[rel="canonical"]').attr("href") || dealLink.url);
-
   const h1 = cleanText($("h1").first().text());
+
   const pageText = cleanText($("body").text());
 
   const name =
+    cleanText(productJsonLd?.name) ||
     h1 ||
     ogTitle.replace(/\s*\|\s*StackSocial.*$/i, "") ||
     dealLink.anchorText.split(/\d+\s*%\s*Off/i)[0].trim();
 
-  const description = ogDescription || dealLink.anchorText || "";
-  const prices = extractMoney(pageText);
-  const discountPercent = extractPercent(pageText) || extractPercent(dealLink.anchorText) || 0;
+  const description =
+    cleanText(productJsonLd?.description) ||
+    ogDescription ||
+    dealLink.anchorText ||
+    "";
+
+  const image = extractDealImage($, canonicalUrl, productJsonLd);
+
+  const { currentPrice, originalPrice, discountPercent } = extractPricing(
+    $,
+    productJsonLd,
+    pageText
+  );
 
   const reviewMatch = pageText.match(/(\d+)\s+Reviews?/i);
   const reviewCount = reviewMatch ? Number.parseInt(reviewMatch[1], 10) : 0;
 
   const vendorUrl = extractVendorUrl($, canonicalUrl);
   const channel = detectChannel(`${name} ${description} ${canonicalUrl}`);
+  const offerType = /lifetime/i.test(`${name} ${description} ${pageText}`)
+    ? "lifetime"
+    : "discount";
+
   const score = scoreStackSocialDeal({
     name,
     description,
@@ -224,11 +401,6 @@ async function fetchDealDetail(dealLink) {
     sourceUrl: canonicalUrl
   });
 
-  const currentPrice = prices[0] || null;
-  const originalPrice = prices[1] || null;
-  const offerType = /lifetime/i.test(pageText) ? "lifetime" : "discount";
-
-  const brandKeySource = vendorUrl || name;
   const brandKey = slugify(
     vendorUrl
       ? new URL(vendorUrl).hostname.replace(/^www\./, "")
@@ -238,7 +410,7 @@ async function fetchDealDetail(dealLink) {
   return {
     name,
     slug: slugify(name),
-    brand_key: brandKey || slugify(brandKeySource),
+    brand_key: brandKey || slugify(name),
     description,
     url: vendorUrl || canonicalUrl,
     vendor_url: vendorUrl || "",
@@ -249,7 +421,7 @@ async function fetchDealDetail(dealLink) {
     source_detail: canonicalUrl,
     merchant: "stacksocial",
     merchant_url: canonicalUrl,
-    og_image: ogImage,
+    og_image: image,
     channel,
     score,
     votes_count: reviewCount,
