@@ -85,7 +85,7 @@ function buildDealHtml(deal) {
         <p>${escapeHtml(description)}</p>
         ${Array.isArray(deal.overview_paragraphs) ? deal.overview_paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("") : ""}
         <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Open deal on StackSocial</a>
+          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Open deal on StackSocial</a>
           <a class="secondary" href="/deals/">More deals</a>
         </div>
       </div>
@@ -151,8 +151,8 @@ function buildDealHtml(deal) {
         <h2>Get the deal</h2>
         <p>This page summarizes the offer, but the purchase happens on StackSocial.</p>
         <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" rel="nofollow sponsored">Go to StackSocial deal</a>
-          ${deal.stacksocial_url ? `<a class="secondary" href="${escapeHtml(deal.stacksocial_url)}" target="_blank" rel="noopener sponsored">View original deal page</a>` : ""}
+          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Go to StackSocial deal</a>
+          ${deal.stacksocial_url ? `<a class="secondary" href="${escapeHtml(deal.stacksocial_url)}" target="_blank" rel="noopener noreferrer sponsored">View original deal page</a>` : ""}
         </div>
       </div>
 
@@ -200,7 +200,7 @@ function buildHomeShell() {
           <div class="sub">
             We surface AI tools and SaaS products with visible discounts, lifetime offers, and useful pricing opportunities.
           </div>
-          <a href="https://t.me/pochify" class="cta">Join Telegram</a>
+          <a href="https://t.me/pochify" class="cta" target="_blank" rel="noopener noreferrer">Join Telegram</a>
           <a href="/deals/" class="secondary">Browse all deals</a>
         </div>
 
