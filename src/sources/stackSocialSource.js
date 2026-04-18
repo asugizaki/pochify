@@ -254,9 +254,40 @@ function pushCandidate(list, value, canonicalUrl) {
   list.push(url);
 }
 
+function gallerySelectors() {
+  return [
+    ".swiper-slide.swiper-slide-active picture source",
+    ".swiper-slide.swiper-slide-active picture img",
+    ".swiper-slide.swiper-slide-active img",
+    ".swiper-slide-active picture source",
+    ".swiper-slide-active picture img",
+    ".swiper-slide-active img",
+    '[class*="product"] .swiper-slide.swiper-slide-active picture source',
+    '[class*="product"] .swiper-slide.swiper-slide-active picture img',
+    '[class*="product"] .swiper-slide.swiper-slide-active img',
+    '[class*="gallery"] .swiper-slide.swiper-slide-active picture source',
+    '[class*="gallery"] .swiper-slide.swiper-slide-active picture img',
+    '[class*="gallery"] .swiper-slide.swiper-slide-active img'
+  ];
+}
+
+function extractFromElement($, el, canonicalUrl, candidates) {
+  pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
+  pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+  pushCandidate(candidates, $(el).attr("data-lazy-src"), canonicalUrl);
+
+  const srcset =
+    $(el).attr("srcset") ||
+    $(el).attr("data-srcset") ||
+    $(el).attr("data-lazy-srcset") ||
+    "";
+  pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
+}
+
 function extractDealImage($, canonicalUrl, productJsonLd) {
   const candidates = [];
 
+  // 1. product structured data
   if (productJsonLd?.image) {
     if (Array.isArray(productJsonLd.image)) {
       for (const img of productJsonLd.image) {
@@ -267,31 +298,29 @@ function extractDealImage($, canonicalUrl, productJsonLd) {
     }
   }
 
+  // 2. Open Graph / Twitter
   pushCandidate(candidates, $('meta[property="og:image"]').attr("content"), canonicalUrl);
   pushCandidate(candidates, $('meta[name="twitter:image"]').attr("content"), canonicalUrl);
 
-  $("picture source").each((_, el) => {
-    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
-    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
+  // 3. Explicit active swiper/gallery first
+  for (const selector of gallerySelectors()) {
+    $(selector).each((_, el) => {
+      extractFromElement($, el, canonicalUrl, candidates);
+    });
+  }
 
-    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
-    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
+  // 4. Any picture/source anywhere
+  $("picture source").each((_, el) => {
+    extractFromElement($, el, canonicalUrl, candidates);
   });
 
   $("picture img").each((_, el) => {
-    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
-    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
-
-    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
-    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
+    extractFromElement($, el, canonicalUrl, candidates);
   });
 
+  // 5. Generic img fallback
   $("img").each((_, el) => {
-    pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
-    pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
-
-    const srcset = $(el).attr("srcset") || $(el).attr("data-srcset") || "";
-    pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
+    extractFromElement($, el, canonicalUrl, candidates);
   });
 
   const cleaned = [...new Set(candidates)].filter((url) => {
@@ -301,6 +330,7 @@ function extractDealImage($, canonicalUrl, productJsonLd) {
       !lower.endsWith(".svg") &&
       !lower.includes("logo") &&
       !lower.includes("icon") &&
+      !lower.includes("avatar") &&
       (
         lower.includes("stackassets") ||
         lower.includes("cloudfront") ||
@@ -313,8 +343,9 @@ function extractDealImage($, canonicalUrl, productJsonLd) {
   });
 
   const preferred =
-    cleaned.find((url) => url.includes("product_")) ||
+    cleaned.find((url) => url.includes("product_shots1")) ||
     cleaned.find((url) => url.includes("product_shots")) ||
+    cleaned.find((url) => url.includes("product_")) ||
     cleaned.find((url) => url.includes("stackassets")) ||
     cleaned[0] ||
     "";
@@ -442,7 +473,7 @@ async function fetchDealDetail(dealLink) {
     if (!imageFailureAlertSent) {
       imageFailureAlertSent = true;
       await alertAdmin(
-        `Pochify alert: StackSocial image extraction failed. Their page structure may have changed and needs a parser update.\n\nExample: ${dealLink.url}`
+        `Pochify alert: StackSocial image extraction failed. Their product gallery structure may have changed and needs a parser update.\n\nExample: ${dealLink.url}`
       );
     }
     throw new Error("Missing valid image");
