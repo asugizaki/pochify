@@ -295,25 +295,33 @@ function extractImageFromActiveSlide($, canonicalUrl) {
         "";
       pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
     });
-
-    const preferred = candidates.find((url) => {
-      const lower = url.toLowerCase();
-      return (
-        lower.includes("stackassets") &&
-        (lower.includes("product_shots1") || lower.includes("product_"))
-      );
-    });
-
-    if (preferred) return preferred;
   }
 
-  return "";
+  const preferred =
+    candidates.find((url) => url.includes("product_shots1")) ||
+    candidates.find((url) => url.includes("product_shots")) ||
+    candidates.find((url) => url.includes("product_")) ||
+    candidates[0] ||
+    "";
+
+  return preferred;
 }
 
 function extractDealImage(html, $, canonicalUrl, productJsonLd) {
+  const debug = {
+    rawHtmlImage: "",
+    structuredDataImage: "",
+    activeSlideImage: "",
+    metaImage: "",
+    finalImage: "",
+    allCandidates: []
+  };
+
   const rawHtmlImage = extractImageFromRawHtml(html);
+  debug.rawHtmlImage = rawHtmlImage;
   if (rawHtmlImage) {
-    return safeUrl(rawHtmlImage);
+    debug.finalImage = safeUrl(rawHtmlImage);
+    return { image: safeUrl(rawHtmlImage), debug };
   }
 
   if (productJsonLd?.image) {
@@ -325,14 +333,18 @@ function extractDealImage(html, $, canonicalUrl, productJsonLd) {
       .map((img) => absoluteUrl(canonicalUrl, img))
       .find(Boolean);
 
+    debug.structuredDataImage = structured || "";
     if (structured) {
-      return safeUrl(structured);
+      debug.finalImage = safeUrl(structured);
+      return { image: safeUrl(structured), debug };
     }
   }
 
   const activeSlideImage = extractImageFromActiveSlide($, canonicalUrl);
+  debug.activeSlideImage = activeSlideImage;
   if (activeSlideImage) {
-    return safeUrl(activeSlideImage);
+    debug.finalImage = safeUrl(activeSlideImage);
+    return { image: safeUrl(activeSlideImage), debug };
   }
 
   const metaCandidates = [
@@ -341,6 +353,8 @@ function extractDealImage(html, $, canonicalUrl, productJsonLd) {
   ]
     .map((img) => absoluteUrl(canonicalUrl, img))
     .filter(Boolean);
+
+  debug.allCandidates = metaCandidates;
 
   const metaImage = metaCandidates.find((url) => {
     const lower = url.toLowerCase();
@@ -353,11 +367,10 @@ function extractDealImage(html, $, canonicalUrl, productJsonLd) {
     );
   });
 
-  if (metaImage) {
-    return safeUrl(metaImage);
-  }
+  debug.metaImage = metaImage || "";
+  debug.finalImage = metaImage ? safeUrl(metaImage) : "";
 
-  return "";
+  return { image: metaImage ? safeUrl(metaImage) : "", debug };
 }
 
 function extractPricing($, productJsonLd, pageText) {
@@ -474,7 +487,18 @@ async function fetchDealDetail(dealLink) {
     dealLink.anchorText ||
     "";
 
-  const image = extractDealImage(html, $, canonicalUrl, productJsonLd);
+  const imageResult = extractDealImage(html, $, canonicalUrl, productJsonLd);
+  const image = imageResult.image;
+
+  console.log("🖼️ StackSocial image debug:", {
+    deal: name,
+    url: dealLink.url,
+    rawHtmlImage: imageResult.debug.rawHtmlImage,
+    structuredDataImage: imageResult.debug.structuredDataImage,
+    activeSlideImage: imageResult.debug.activeSlideImage,
+    metaImage: imageResult.debug.metaImage,
+    finalImage: imageResult.debug.finalImage
+  });
 
   if (!image) {
     if (!imageFailureAlertSent) {
