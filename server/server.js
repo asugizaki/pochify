@@ -261,7 +261,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
 app.post("/api/deals/ingest", async (req, res) => {
   try {
     const deals = req.body?.deals || [];
-    const maxToSend = req.body?.maxToSend || 2;
+    const maxToSend = Number(req.body?.maxToSend || 2);
     const settings = { ...(await getPublicSettings()), ...(req.body?.settings || {}) };
 
     if (!Array.isArray(deals)) {
@@ -325,12 +325,23 @@ app.post("/api/deals/ingest", async (req, res) => {
       return res.status(500).json({ error: upsertError });
     }
 
-    const sendCandidates = [...formattedDeals]
-      .filter((d) => d.status === "ready_to_post")
-      .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, maxToSend);
+    const { data: queuedDeals, error: queueError } = await supabase
+      .from("deals")
+      .select("*")
+      .eq("status", "ready_to_post")
+      .order("quality_score", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(maxToSend);
 
-    return res.json({ success: true, sendCandidates });
+    if (queueError) {
+      return res.status(500).json({ error: queueError });
+    }
+
+    return res.json({
+      success: true,
+      sendCandidates: queuedDeals || []
+    });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Unknown ingest error" });
   }
