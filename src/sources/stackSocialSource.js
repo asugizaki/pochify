@@ -386,58 +386,79 @@ function extractPricing($, productJsonLd, pageText) {
       parseMoneyString(jsonOffer.highPrice);
   }
 
-  const saleSelectors = [
-    '[data-testid*="sale"]',
-    '[class*="sale-price"]',
-    '[class*="final-price"]',
-    '[class*="price"]'
-  ];
+  // 1. Label-based parsing from full page text (most reliable for StackSocial)
+  const dealPriceMatch = pageText.match(/Deal Price\s*\$([0-9]+(?:\.[0-9]{2})?)/i);
+  const suggestedPriceMatch = pageText.match(/Suggested Price\s*\$([0-9]+(?:\.[0-9]{2})?)/i);
+  const offMatch = pageText.match(/(\d{1,3})%\s*Off/i);
 
-  for (const selector of saleSelectors) {
-    const value = cleanText($(selector).first().text());
-    const parsed = parseMoneyString(value);
-    if (parsed && !currentPrice) {
-      currentPrice = parsed;
-      break;
+  if (dealPriceMatch?.[1]) {
+    currentPrice = parseMoneyString(dealPriceMatch[1]) ?? currentPrice;
+  }
+
+  if (suggestedPriceMatch?.[1]) {
+    originalPrice = parseMoneyString(suggestedPriceMatch[1]) ?? originalPrice;
+  }
+
+  if (offMatch?.[1]) {
+    discountPercent = parsePercentString(offMatch[1]) ?? discountPercent;
+  }
+
+  // 2. Fallback selectors if label-based parsing missed anything
+  if (!currentPrice) {
+    const saleSelectors = [
+      '[data-testid*="sale"]',
+      '[class*="sale-price"]',
+      '[class*="final-price"]',
+      '[class*="price"]'
+    ];
+
+    for (const selector of saleSelectors) {
+      const value = cleanText($(selector).first().text());
+      const parsed = parseMoneyString(value);
+      if (parsed) {
+        currentPrice = parsed;
+        break;
+      }
     }
   }
 
-  const compareSelectors = [
-    '[class*="retail-price"]',
-    '[class*="original-price"]',
-    '[class*="compare-at"]',
-    "s",
-    "del"
-  ];
+  if (!originalPrice) {
+    const compareSelectors = [
+      '[class*="retail-price"]',
+      '[class*="original-price"]',
+      '[class*="compare-at"]',
+      "s",
+      "del"
+    ];
 
-  for (const selector of compareSelectors) {
-    const value = cleanText($(selector).first().text());
-    const parsed = parseMoneyString(value);
-    if (parsed && (!originalPrice || parsed > originalPrice)) {
-      originalPrice = parsed;
-    }
-  }
-
-  const percentSelectors = [
-    '[class*="discount"]',
-    '[class*="savings"]',
-    "span",
-    "div"
-  ];
-
-  for (const selector of percentSelectors) {
-    const value = cleanText($(selector).text());
-    const parsed = parsePercentString(value);
-    if (parsed && !discountPercent) {
-      discountPercent = parsed;
+    for (const selector of compareSelectors) {
+      const value = cleanText($(selector).first().text());
+      const parsed = parseMoneyString(value);
+      if (parsed && (!originalPrice || parsed > originalPrice)) {
+        originalPrice = parsed;
+      }
     }
   }
 
   if (!discountPercent) {
-    const textPercent = parsePercentString(pageText);
-    if (textPercent) discountPercent = textPercent;
+    const percentSelectors = [
+      '[class*="discount"]',
+      '[class*="savings"]',
+      "span",
+      "div"
+    ];
+
+    for (const selector of percentSelectors) {
+      const value = cleanText($(selector).text());
+      const parsed = parsePercentString(value);
+      if (parsed) {
+        discountPercent = parsed;
+        break;
+      }
+    }
   }
 
+  // 3. Infer missing values if possible
   if (!originalPrice && currentPrice && discountPercent) {
     const inferred = currentPrice / (1 - discountPercent / 100);
     if (Number.isFinite(inferred) && inferred > currentPrice) {
@@ -449,8 +470,15 @@ function extractPricing($, productJsonLd, pageText) {
     discountPercent = computeDiscountPercent(currentPrice, originalPrice);
   }
 
+  // 4. Sanity cleanup
   if (originalPrice && currentPrice && originalPrice <= currentPrice) {
     originalPrice = null;
+  }
+
+  if (
+    discountPercent &&
+    (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100)
+  ) {
     discountPercent = null;
   }
 
