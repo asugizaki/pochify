@@ -607,14 +607,16 @@ async function fetchDealDetail(dealLink) {
 }
 
 export async function fetchStackSocialDeals(options = {}) {
-  const maxDeals = options.maxDeals || 12;
-  const limitPerCollection = options.limitPerCollection || 12;
+  const maxDeals = options.maxDeals || 20;
+  const limitPerCollection = options.limitPerCollection || 20;
 
   const allLinks = [];
 
   for (const collectionUrl of STACKSOCIAL_COLLECTIONS) {
     try {
+      console.log(`🔎 StackSocial collection: ${collectionUrl}`);
       const links = await fetchCollectionDealLinks(collectionUrl, limitPerCollection);
+      console.log(`📄 Found ${links.length} deal links from ${collectionUrl}`);
       allLinks.push(...links);
       await sleep(300);
     } catch (error) {
@@ -632,9 +634,11 @@ export async function fetchStackSocialDeals(options = {}) {
     }
   }
 
+  console.log(`🧹 Unique StackSocial deal links: ${uniqueLinks.length}`);
+
   const deals = [];
 
-  for (const link of uniqueLinks.slice(0, maxDeals * 2)) {
+  for (const link of uniqueLinks.slice(0, maxDeals * 3)) {
     try {
       const detail = await fetchDealDetail(link);
 
@@ -659,5 +663,6 @@ export async function fetchStackSocialDeals(options = {}) {
     }
   }
 
+  console.log(`✅ Parsed StackSocial deals kept: ${deals.length}`);
   return deals;
 }
