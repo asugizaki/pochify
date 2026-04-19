@@ -189,20 +189,43 @@ async function run() {
     const enriched = await enrichProduct(deal);
     const improved = enhanceCopy(enriched);
     const aiContent = await generateDealContent(improved);
-
+  
     const finalDeal = {
       ...improved,
       ...aiContent,
+  
+      // preserve source-of-truth fields from StackSocial parser
+      og_image: deal.og_image || improved.og_image || "",
+      stacksocial_url: deal.stacksocial_url || improved.stacksocial_url || "",
+      current_price: deal.current_price ?? improved.current_price ?? null,
+      original_price: deal.original_price ?? improved.original_price ?? null,
+      discount_percent: deal.discount_percent ?? improved.discount_percent ?? null,
+      offer_type: deal.offer_type || improved.offer_type || "",
+      source: deal.source || improved.source || "stacksocial",
+      source_detail: deal.source_detail || improved.source_detail || "",
+      merchant: deal.merchant || improved.merchant || "stacksocial",
+      merchant_url: deal.merchant_url || improved.merchant_url || "",
+  
       affiliate_url: "",
       affiliate_detected: false,
       network_guess: "",
-      affiliateLink: improved.stacksocial_url || improved.url || "",
-      quality_score: improved.score || 0,
-      has_required_assets: true,
+      affiliateLink: deal.stacksocial_url || deal.url || "",
+      quality_score: deal.score || improved.score || 0,
+      has_required_assets: Boolean(deal.og_image || improved.og_image),
       is_publishable: true,
       needs_regeneration: false
     };
-
+  
+    console.log("🧪 Final deal before page/ingest:", {
+      name: finalDeal.name,
+      slug: finalDeal.slug,
+      og_image: finalDeal.og_image,
+      stacksocial_url: finalDeal.stacksocial_url,
+      current_price: finalDeal.current_price,
+      original_price: finalDeal.original_price,
+      discount_percent: finalDeal.discount_percent
+    });
+  
     generateDealPage(finalDeal);
     finalDeals.push(finalDeal);
     console.log(`📝 Generated page: docs/deals/${finalDeal.slug}.html`);
