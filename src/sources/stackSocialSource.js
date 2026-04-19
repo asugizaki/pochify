@@ -544,6 +544,14 @@ async function fetchDealDetail(dealLink) {
     pageText
   );
 
+  console.log("💲 StackSocial pricing debug:", {
+    deal: name,
+    url: dealLink.url,
+    currentPrice,
+    originalPrice,
+    discountPercent
+  });
+
   const reviewMatch = pageText.match(/(\d+)\s+Reviews?/i);
   const reviewCount = reviewMatch ? Number.parseInt(reviewMatch[1], 10) : 0;
 
