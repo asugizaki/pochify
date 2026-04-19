@@ -3,7 +3,9 @@ import { alertAdmin } from "../alertAdmin.js";
 
 const STACKSOCIAL_COLLECTIONS = [
   "https://www.stacksocial.com/collections/artificial-intelligence",
+  "https://www.stacksocial.com/collections/artificial-intelligence?page=2",
   "https://www.stacksocial.com/collections/lifetime-subscriptions?page=1&sort=newest",
+  "https://www.stacksocial.com/collections/lifetime-subscriptions?page=2&sort=newest",
   "https://www.stacksocial.com/collections/apps-software-productivity"
 ];
 
