@@ -671,6 +671,16 @@ export async function fetchStackSocialDeals(options = {}) {
     }
   }
 
+  console.log(`📦 Total extracted links before dedupe: ${allLinks.length}`);
+
+  const texTalkyExtracted = allLinks.find(
+    (link) =>
+      link.url.includes("textalky-lifetime-subscription") ||
+      link.anchorText.toLowerCase().includes("textalky")
+  );
+
+  console.log("🧪 TexTalky in allLinks:", texTalkyExtracted || "NOT FOUND");
+
   const uniqueLinks = [];
   const seen = new Set();
 
@@ -683,9 +693,29 @@ export async function fetchStackSocialDeals(options = {}) {
 
   console.log(`🧹 Unique StackSocial deal links: ${uniqueLinks.length}`);
 
+  const texTalkyUnique = uniqueLinks.find(
+    (link) =>
+      link.url.includes("textalky-lifetime-subscription") ||
+      link.anchorText.toLowerCase().includes("textalky")
+  );
+
+  console.log("🧪 TexTalky in uniqueLinks:", texTalkyUnique || "NOT FOUND");
+
+  console.log("🔢 First 20 unique links to be parsed:");
+  uniqueLinks.slice(0, 20).forEach((link, index) => {
+    console.log(`   ${index + 1}. ${link.anchorText} | ${link.url}`);
+  });
+
   const parsedDeals = [];
 
-  for (const link of uniqueLinks) {
+  for (const [index, link] of uniqueLinks.entries()) {
+    if (
+      link.url.includes("textalky-lifetime-subscription") ||
+      link.anchorText.toLowerCase().includes("textalky")
+    ) {
+      console.log(`🎯 TexTalky reached parse loop at position ${index + 1}`);
+    }
+
     try {
       console.log(`🛠️ Parsing deal detail: ${link.anchorText} | ${link.url}`);
       const detail = await fetchDealDetail(link, options);
