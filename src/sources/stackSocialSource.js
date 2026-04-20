@@ -654,8 +654,8 @@ async function fetchDealDetail(dealLink, options = {}) {
 }
 
 export async function fetchStackSocialDeals(options = {}) {
-  const maxDeals = options.maxDeals || 20;
-  const limitPerCollection = options.limitPerCollection || 20;
+  const maxDeals = options.maxDeals || 30;
+  const limitPerCollection = options.limitPerCollection || 50;
 
   const allLinks = [];
 
@@ -685,8 +685,9 @@ export async function fetchStackSocialDeals(options = {}) {
 
   const deals = [];
 
-  for (const link of uniqueLinks.slice(0, maxDeals * 3)) {
+  for (const link of uniqueLinks) {
     try {
+      console.log(`🛠️ Parsing deal detail: ${link.anchorText} | ${link.url}`);
       const detail = await fetchDealDetail(link, options);
 
       const titleText = `${detail.name} ${detail.description}`.toLowerCase();
@@ -699,11 +700,19 @@ export async function fetchStackSocialDeals(options = {}) {
         titleText.includes("image") ||
         titleText.includes("voice");
 
-      if (looksRelevant) {
-        deals.push(detail);
+      if (!looksRelevant) {
+        console.log(`⏭️ Dropped after parse (not relevant enough): ${detail.name}`);
+        continue;
       }
 
-      if (deals.length >= maxDeals) break;
+      console.log(`✅ Parsed + relevant: ${detail.name} | score=${detail.score}`);
+      deals.push(detail);
+
+      if (deals.length >= maxDeals) {
+        console.log(`🛑 Reached maxDeals=${maxDeals}, stopping further parsing`);
+        break;
+      }
+
       await sleep(250);
     } catch (error) {
       console.error(`❌ StackSocial deal parse failed: ${link.url}`, error.message);
