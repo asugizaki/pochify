@@ -254,7 +254,7 @@ async function fetchHtml(url) {
   return await res.text();
 }
 
-async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 20) {
+async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 50) {
   const html = await fetchHtml(collectionUrl);
   const $ = cheerio.load(html);
 
@@ -276,7 +276,14 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 20) 
     }
   });
 
-  return [...dealMap.values()].slice(0, limitPerCollection);
+  const links = [...dealMap.values()].slice(0, limitPerCollection);
+
+  console.log(`📚 Collection extracted links: ${collectionUrl}`);
+  for (const link of links) {
+    console.log(`   ↳ ${link.anchorText} | ${link.url}`);
+  }
+
+  return links;
 }
 
 function firstSrcFromSrcset(srcset = "") {
