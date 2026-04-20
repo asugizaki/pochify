@@ -404,34 +404,21 @@ app.post("/api/deals/mark-posted", async (req, res) => {
     return res.status(400).json({ error: "Expected slugs array" });
   }
 
-  const { data: existingDeals, error: selectError } = await supabase
-    .from("deals")
-    .select("slug, post_count")
-    .in("slug", slugs);
+  const { data, error } = await supabase.rpc("mark_deals_posted", {
+    slugs
+  });
 
-  if (selectError) {
-    return res.status(500).json({ error: selectError });
-  }
-
-  for (const deal of existingDeals || []) {
-    const { error: updateError } = await supabase
-      .from("deals")
-      .update({
-        post_count: (deal.post_count || 0) + 1,
-        last_posted_at: new Date().toISOString(),
-        status: "posted",
-        updated_at: new Date().toISOString()
-      })
-      .eq("slug", deal.slug);
-
-    if (updateError) {
-      return res.status(500).json({ error: updateError });
-    }
+  if (error) {
+    return res.status(500).json({ error });
   }
 
   console.log("✅ Marked posted slugs:", slugs);
-  res.json({ success: true, updated: (existingDeals || []).length });
+  res.json({
+    success: true,
+    updated: data?.[0]?.updated_count || 0
+  });
 });
+
 app.get("/go/:slug", async (req, res) => {
   const slug = req.params.slug;
 
