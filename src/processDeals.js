@@ -13,7 +13,7 @@ import { generateDealContent } from "./ai/generateDealContent.js";
 
 const BASE_URL = "https://go.pochify.com";
 const SETTINGS_URL = `${BASE_URL}/api/settings/public`;
-const EXISTING_SUMMARIES_URL = `${BASE_URL}/api/deals/existing-summaries`;
+const EXISTING_DETAILS_URL = `${BASE_URL}/api/deals/existing-details`;
 const INGEST_URL = `${BASE_URL}/api/deals/ingest`;
 const ALL_DEALS_URL = `${BASE_URL}/api/public/deals?limit=1000`;
 
@@ -65,15 +65,15 @@ async function loadSettings() {
   return data.settings || {};
 }
 
-async function loadExistingSummaries(slugs) {
-  const res = await fetch(EXISTING_SUMMARIES_URL, {
+async function loadExistingDetails(slugs) {
+  const res = await fetch(EXISTING_DETAILS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ slugs })
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to load existing summaries: ${res.status}`);
+    throw new Error(`Failed to load existing details: ${res.status}`);
   }
 
   const data = await res.json();
@@ -89,6 +89,7 @@ function hasPriceInfo(deal) {
 
 function passesQualityGate(deal, settings) {
   const minScore = Number(settings.minimum_quality_score || 5);
+  const minDiscount = Number(settings.minimum_discount_percent || 50);
 
   if (deal.source !== "stacksocial") {
     console.log(`⏭️ Skip ${deal.name}: not StackSocial`);
@@ -105,12 +106,25 @@ function passesQualityGate(deal, settings) {
     return false;
   }
 
+  if (Number(deal.discount_percent || 0) < minDiscount) {
+    console.log(`⏭️ Skip ${deal.name}: discount ${deal.discount_percent || 0}% below minimum ${minDiscount}%`);
+    return false;
+  }
+
   if ((deal.score || 0) < minScore) {
     console.log(`⏭️ Skip ${deal.name}: score ${(deal.score || 0)} below minimum ${minScore}`);
     return false;
   }
 
   return true;
+}
+
+function pricingChanged(existing, deal) {
+  return (
+    Number(existing.current_price || 0) !== Number(deal.current_price || 0) ||
+    Number(existing.original_price || 0) !== Number(deal.original_price || 0) ||
+    Number(existing.discount_percent || 0) !== Number(deal.discount_percent || 0)
+  );
 }
 
 async function ingestDeals(deals, settings) {
@@ -169,15 +183,28 @@ async function run() {
   );
   console.log(`📥 StackSocial deals: ${rawDeals.length}`);
 
-  const existingMap = await loadExistingSummaries(rawDeals.map((d) => d.slug));
+  const existingMap = await loadExistingDetails(rawDeals.map((d) => d.slug));
 
-  const candidates = [];
+    const candidates = [];
   for (const deal of rawDeals) {
     const existing = existingMap.get(deal.slug);
 
-    if (existing && !existing.needs_regeneration) {
-      console.log(`⏭️ Skip existing/no-regeneration: ${deal.name} | slug=${deal.slug} | status=${existing.status || ""}`);
-      continue;
+    if (existing) {
+      const changed = pricingChanged(existing, deal);
+      const regen = !!existing.needs_regeneration;
+
+      if (!regen && !changed) {
+        console.log(`⏭️ Skip existing unchanged: ${deal.name} | slug=${deal.slug}`);
+        continue;
+      }
+
+      if (changed) {
+        console.log(`♻️ Reconsider changed pricing: ${deal.name} | slug=${deal.slug}`);
+      }
+
+      if (regen) {
+        console.log(`♻️ Reconsider regeneration flagged: ${deal.name} | slug=${deal.slug}`);
+      }
     }
 
     if (!passesQualityGate(deal, settings)) {
