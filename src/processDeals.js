@@ -159,7 +159,13 @@ async function run() {
     console.log("ℹ️ Product Hunt is enabled in DB, but this flow intentionally ignores it for now.");
   }
 
-  const rawDeals = dedupeDeals(await fetchStackSocialDeals({ maxDeals: 20 }));
+  const rawDeals = dedupeDeals(
+    await fetchStackSocialDeals({
+      maxDeals: 20,
+      lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
+      enableScoringDebug: !!settings.enable_scoring_debug
+    })
+  );
   console.log(`📥 StackSocial deals: ${rawDeals.length}`);
 
   const existingMap = await loadExistingSummaries(rawDeals.map((d) => d.slug));
