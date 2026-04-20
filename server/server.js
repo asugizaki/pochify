@@ -78,6 +78,7 @@ async function getPublicSettings() {
       "allow_stacksocial_direct_posting",
       "require_images_for_publish",
       "minimum_quality_score",
+      "minimum_discount_percent",
       "ga_measurement_id",
       "lifetime_score_bonus",
       "enable_scoring_debug"
@@ -90,6 +91,7 @@ async function getPublicSettings() {
     allow_stacksocial_direct_posting: true,
     require_images_for_publish: true,
     minimum_quality_score: 5,
+    minimum_discount_percent: 50,
     ga_measurement_id: null,
     lifetime_score_bonus: 0,
     enable_scoring_debug: false
@@ -481,6 +483,33 @@ app.get("/admin", requireAdmin, async (req, res) => {
       <p><a href="/logout" style="color:#93c5fd">Logout</a></p>
     </div>
   `);
+});
+
+app.post("/api/deals/existing-details", async (req, res) => {
+  const slugs = req.body?.slugs || [];
+
+  if (!Array.isArray(slugs) || !slugs.length) {
+    return res.json({ items: [] });
+  }
+
+  const { data, error } = await supabase
+    .from("deals")
+    .select(`
+      slug,
+      needs_regeneration,
+      status,
+      current_price,
+      original_price,
+      discount_percent,
+      og_image
+    `)
+    .in("slug", slugs);
+
+  if (error) {
+    return res.status(500).json({ error });
+  }
+
+  res.json({ items: data || [] });
 });
 
 app.listen(PORT, () => {
