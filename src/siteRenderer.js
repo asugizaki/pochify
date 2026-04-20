@@ -78,8 +78,8 @@ export function sharedStyles() {
       --sale-bg: #3f0d12;
       --sale-text: #fda4af;
       --hero-grad-1: #111827;
-      --hero-grad-2: #172554;
-      --hero-grad-3: #052e16;
+      --hero-grad-2: #0f172a;
+      --hero-grad-3: #1d4ed8;
     }
 
     * { box-sizing: border-box; }
@@ -87,7 +87,7 @@ export function sharedStyles() {
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: var(--bg);
+      background: linear-gradient(180deg, #0b1220 0%, #0a1020 100%);
       color: var(--text);
       line-height: 1.7;
     }
@@ -95,7 +95,7 @@ export function sharedStyles() {
     .site-header {
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 20;
       background: rgba(11, 18, 32, 0.92);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid #1e293b;
@@ -115,7 +115,7 @@ export function sharedStyles() {
       color: var(--text);
       text-decoration: none;
       font-weight: bold;
-      font-size: 24px;
+      font-size: 22px;
     }
 
     .menu-toggle {
@@ -132,14 +132,13 @@ export function sharedStyles() {
     .nav-links {
       display: flex;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 14px;
     }
 
     .nav-links a {
       color: var(--muted);
       text-decoration: none;
       font-size: 15px;
-      font-weight: 600;
     }
 
     .nav-links a:hover,
@@ -150,12 +149,11 @@ export function sharedStyles() {
     .container {
       max-width: 1180px;
       margin: 0 auto;
-      padding: 28px 20px 80px;
+      padding: 32px 20px 80px;
     }
 
     .narrow {
-      max-width: 920px;
-      position: relative;
+      max-width: 980px;
     }
 
     h1 {
@@ -180,8 +178,8 @@ export function sharedStyles() {
 
     .sub {
       color: var(--muted);
-      font-size: 18px;
-      margin-bottom: 18px;
+      font-size: 19px;
+      margin-bottom: 24px;
     }
 
     .breadcrumbs {
@@ -195,132 +193,110 @@ export function sharedStyles() {
       text-decoration: none;
     }
 
+    .card {
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      margin: 20px 0;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    }
+
     .hero-home {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 18px;
-      align-items: stretch;
+      position: relative;
+      overflow: hidden;
+      padding: 34px;
+      border-radius: 24px;
+      border: 1px solid #1f2937;
+      background:
+        radial-gradient(circle at top right, rgba(34,197,94,0.16), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(29,78,216,0.20), transparent 32%),
+        linear-gradient(135deg, var(--hero-grad-1), var(--hero-grad-2) 58%, var(--hero-grad-3) 130%);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.28);
       margin-bottom: 26px;
     }
 
-    .hero-panel {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid #1f2937;
-      border-radius: 22px;
-      padding: 28px;
-      background:
-        radial-gradient(circle at top left, rgba(34,197,94,0.18), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(59,130,246,0.22), transparent 35%),
-        linear-gradient(135deg, var(--hero-grad-1), var(--hero-grad-2), var(--hero-grad-3));
-      min-height: 300px;
+    .hero-home-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: center;
     }
 
-    .hero-panel::after {
-      content: "";
-      position: absolute;
-      inset: auto -40px -40px auto;
-      width: 220px;
-      height: 220px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 999px;
-      filter: blur(10px);
+    .hero-home h1 {
+      font-size: 54px;
+      margin-bottom: 16px;
     }
 
-    .hero-title {
-      font-size: 44px;
-      line-height: 1.05;
-      margin: 0 0 12px;
-      max-width: 720px;
-    }
-
-    .hero-copy {
+    .hero-home p {
       color: #cbd5e1;
-      font-size: 17px;
-      max-width: 620px;
-      margin-bottom: 18px;
+      font-size: 18px;
+      margin: 0 0 24px;
+      max-width: 720px;
     }
 
     .hero-actions {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 18px;
     }
 
-    .hero-metrics {
+    .hero-stat-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .metric {
-      background: rgba(15, 23, 42, 0.62);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .metric strong {
-      display: block;
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-
-    .hero-side {
-      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 14px;
     }
 
-    .hero-mini-card {
-      border: 1px solid #1f2937;
-      border-radius: 20px;
-      background: #0f172a;
-      padding: 18px;
-      min-height: 143px;
-    }
-
-    .hero-mini-card h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-
-    .hero-mini-card p {
-      color: var(--muted);
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .hero-mini-card .badge {
-      margin-bottom: 10px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
+    .hero-stat {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 18px;
-      padding: 22px;
-      margin: 18px 0;
+      padding: 18px;
     }
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 14px;
+    .hero-stat strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 6px;
+      color: #fff;
     }
 
-    .section-header p {
-      color: var(--muted);
-      margin: 0;
+    .hero-stat span {
+      color: #cbd5e1;
       font-size: 14px;
+    }
+
+    .hero-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .hero-quick-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .hero-quick-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .hero-quick-card span {
+      display: block;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
     .hero-image {
       display: block;
       width: 100%;
+      max-width: 100%;
       border-radius: 16px;
       border: 1px solid var(--card-border);
       background: #0f172a;
@@ -390,33 +366,46 @@ export function sharedStyles() {
       border: 1px solid #334155;
     }
 
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+    }
+
     .grid {
       display: grid;
-      gap: 18px;
+      gap: 20px;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
 
-    .deal-card-link {
+    .deal-link-card {
       display: block;
-      color: inherit;
       text-decoration: none;
+      color: inherit;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      height: 100%;
+    }
+
+    .deal-link-card:hover {
+      transform: translateY(-4px);
     }
 
     .deal-card {
       position: relative;
       height: 100%;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-    .deal-card:hover {
-      transform: translateY(-3px);
-      border-color: #334155;
-      box-shadow: 0 14px 34px rgba(0,0,0,0.22);
+      min-height: 100%;
     }
 
     .deal-card img {
       width: 100%;
-      border-radius: 14px;
+      border-radius: 12px;
       margin-bottom: 14px;
       border: 1px solid #243041;
       background: #0f172a;
@@ -424,10 +413,15 @@ export function sharedStyles() {
       object-fit: cover;
     }
 
+    .deal-link-card:hover .deal-card {
+      border-color: #2f435f;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+    }
+
     .deal-card h3 {
-      font-size: 18px;
+      margin-bottom: 8px;
       line-height: 1.3;
-      margin-bottom: 10px;
+      font-size: 20px;
     }
 
     .card-price-row {
@@ -436,12 +430,12 @@ export function sharedStyles() {
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 10px;
-      margin-bottom: 0;
+      margin-bottom: 2px;
     }
 
     .card-price-current {
       font-weight: bold;
-      font-size: 22px;
+      font-size: 20px;
       color: var(--price);
     }
 
@@ -449,11 +443,6 @@ export function sharedStyles() {
       color: var(--old-price);
       text-decoration: line-through;
       font-size: 14px;
-    }
-
-    .deal-card p,
-    .muted {
-      color: var(--muted);
     }
 
     .inline-link {
@@ -466,38 +455,62 @@ export function sharedStyles() {
 
     .floating-share {
       position: fixed;
-      top: 180px;
-      left: max(16px, calc((100vw - 1180px) / 2 - 54px));
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 18;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      z-index: 40;
     }
 
     .floating-share a,
     .floating-share button {
       width: 42px;
       height: 42px;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      color: var(--text);
-      background: #111827;
       text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.2);
     }
 
     .floating-share svg {
       width: 18px;
       height: 18px;
-      flex: 0 0 18px;
     }
 
-    .share-card-fallback {
-      display: none;
+    .share-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .share-btn,
+    .share-btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid #334155;
+      color: var(--text);
+      background: var(--btn-dark);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .share-btn svg,
+    .share-btn-copy svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
     }
 
     .footer {
@@ -523,31 +536,17 @@ export function sharedStyles() {
       padding: 10px 0;
     }
 
-    @media (max-width: 1240px) {
-      .floating-share {
-        left: 14px;
-      }
-    }
-
     @media (max-width: 980px) {
-      .hero-home {
+      .hero-home-grid {
         grid-template-columns: 1fr;
       }
 
-      .hero-title {
-        font-size: 36px;
+      .hero-home h1 {
+        font-size: 42px;
       }
 
-      .hero-metrics {
-        grid-template-columns: 1fr;
-      }
-
-      .floating-share {
-        display: none;
-      }
-
-      .share-card-fallback {
-        display: block;
+      .hero-quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
@@ -579,13 +578,31 @@ export function sharedStyles() {
         font-size: 28px;
       }
 
-      .hero-title {
-        font-size: 32px;
+      .hero-home {
+        padding: 22px;
       }
 
-      .hero-panel {
-        padding: 22px;
-        min-height: auto;
+      .hero-home h1 {
+        font-size: 34px;
+      }
+
+      .hero-quick-grid,
+      .hero-stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .floating-share {
+        left: 10px;
+        bottom: 12px;
+        top: auto;
+        transform: none;
+        flex-direction: row;
+        overflow-x: auto;
+        max-width: calc(100vw - 20px);
+        padding: 6px;
+        border-radius: 14px;
+        background: rgba(11,18,32,0.7);
+        backdrop-filter: blur(8px);
       }
     }
   </style>
@@ -680,14 +697,10 @@ export function layout({
 }
 
 export function dealCardHtml(deal) {
-  const imageHtml = deal.og_image
-    ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />`
-    : "";
-
   return `
-    <a class="deal-card-link" href="/deals/${deal.slug}.html">
+    <a class="deal-link-card" href="/deals/${deal.slug}.html">
       <div class="card deal-card">
-        ${imageHtml}
+        ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
         <h3>${escapeHtml(deal.name)}</h3>
         <div class="card-price-row">
           ${deal.current_price ? `<span class="card-price-current">$${escapeHtml(String(deal.current_price))}</span>` : ""}
@@ -700,27 +713,34 @@ export function dealCardHtml(deal) {
   `;
 }
 
-export function shareButtonsHtml({ pageUrl, title, summary }) {
+export function floatingShareButtonsHtml({ pageUrl, title, summary }) {
   const encodedUrl = encodeURIComponent(pageUrl);
   const encodedText = encodeURIComponent(`${title} — ${summary}`);
 
   return `
-    <div class="floating-share" aria-label="Share this pick">
+    <div class="floating-share" aria-label="Share">
       <a href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener" aria-label="Share on X">${iconX()}</a>
       <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">${iconLinkedIn()}</a>
       <a href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener" aria-label="Share on Facebook">${iconFacebook()}</a>
       <button onclick="copyText('${pageUrl}', 'Link copied for Instagram sharing')" aria-label="Copy for Instagram">${iconInstagram()}</button>
       <button onclick="copyText('${pageUrl}', 'Link copied')" aria-label="Copy link">${iconLink()}</button>
     </div>
+  `;
+}
 
-    <div class="card share-card-fallback">
+export function shareButtonsHtml({ pageUrl, title, summary }) {
+  const encodedUrl = encodeURIComponent(pageUrl);
+  const encodedText = encodeURIComponent(`${title} — ${summary}`);
+
+  return `
+    <div class="card">
       <h2>Share this pick</h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <a class="secondary" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">X</a>
-        <a class="secondary" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">LinkedIn</a>
-        <a class="secondary" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">Facebook</a>
-        <button class="secondary" onclick="copyText('${pageUrl}', 'Link copied for Instagram sharing')">Instagram</button>
-        <button class="secondary" onclick="copyText('${pageUrl}', 'Link copied')">Copy link</button>
+      <div class="share-row">
+        <a class="share-btn" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">${iconX()}<span>X</span></a>
+        <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">${iconLinkedIn()}<span>LinkedIn</span></a>
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">${iconFacebook()}<span>Facebook</span></a>
+        <button class="share-btn-copy" onclick="copyText('${pageUrl}', 'Link copied for Instagram sharing')">${iconInstagram()}<span>Instagram</span></button>
+        <button class="share-btn-copy" onclick="copyText('${pageUrl}', 'Link copied')">${iconLink()}<span>Copy link</span></button>
       </div>
     </div>
   `;
