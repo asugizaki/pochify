@@ -5,7 +5,8 @@ import {
   layout,
   footerHtml,
   shareButtonsHtml,
-  structuredArticleData
+  structuredArticleData,
+  dealCardHtml
 } from "./siteRenderer.js";
 
 const SITE_URL = "https://pochify.com";
@@ -68,6 +69,12 @@ function buildDealHtml(deal) {
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
 
   const bodyContent = `
+    ${shareButtonsHtml({
+      pageUrl,
+      title,
+      summary: deal.hook || description
+    })}
+
     <div class="container narrow">
       <div class="breadcrumbs">
         <a href="/">Home</a> / <a href="/deals/">Deals</a> / ${escapeHtml(title)}
@@ -163,12 +170,6 @@ function buildDealHtml(deal) {
         </div>
       ` : ""}
 
-      ${shareButtonsHtml({
-        pageUrl,
-        title,
-        summary: deal.hook || description
-      })}
-
       ${footerHtml(SITE_URL)}
     </div>
   `;
@@ -191,243 +192,4 @@ function buildDealHtml(deal) {
 function buildHomeShell() {
   return layout({
     title: "Pochify — Find software deals worth your time",
-    description: "Discover discounted AI tools, SaaS products, and useful software deals with pricing context and clean breakdowns.",
-    canonicalUrl: `${SITE_URL}/`,
-    bodyContent: `
-      <div class="container">
-        <div class="hero" style="text-align:center;">
-          <h1>Find software deals actually worth checking</h1>
-          <div class="sub">
-            We surface AI tools and SaaS products with visible discounts, lifetime offers, and useful pricing opportunities.
-          </div>
-          <a href="https://t.me/pochify" class="cta" target="_blank" rel="noopener noreferrer">Join Telegram</a>
-          <a href="/deals/" class="secondary">Browse all deals</a>
-        </div>
-
-        <div class="card" style="margin-top:40px;">
-          <h2>Latest picks</h2>
-          <div id="latestDeals" class="grid"><div class="empty">Loading latest picks…</div></div>
-        </div>
-
-        <div class="card" style="margin-top:40px;">
-          <h2>Top clicked this week</h2>
-          <div id="topClickedDeals" class="grid"><div class="empty">Loading top clicked picks…</div></div>
-        </div>
-
-        ${footerHtml(SITE_URL)}
-      </div>
-
-      <script>
-        function card(item) {
-          return \`
-            <div class="card deal-card">
-              \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-              <h3>\${item.name}</h3>
-              <div class="card-price-row">
-                \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-              </div>
-              <p>\${item.hook || item.description || 'Read the full breakdown.'}</p>
-              <a class="inline-link" href="/deals/\${item.slug}.html">Read full breakdown</a>
-            </div>
-          \`;
-        }
-
-        async function loadLatestDeals() {
-          const container = document.getElementById("latestDeals");
-          try {
-            const res = await fetch("https://go.pochify.com/api/public/latest-deals");
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No picks yet.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Latest picks are temporarily unavailable.</div>';
-          }
-        }
-
-        async function loadTopClickedDeals() {
-          const container = document.getElementById("topClickedDeals");
-          try {
-            const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7");
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
-          }
-        }
-
-        loadLatestDeals();
-        loadTopClickedDeals();
-      </script>
-    `
-  });
-}
-
-function buildDealsShell(title, category = "") {
-  const canonicalUrl = category
-    ? `${SITE_URL}/categories/${category}.html`
-    : `${SITE_URL}/deals/`;
-
-  return layout({
-    title,
-    description: "Browse discounted AI tools and software deals from Pochify.",
-    canonicalUrl,
-    bodyContent: `
-      <div class="container">
-        <div class="breadcrumbs">
-          <a href="/">Home</a> / ${category ? `<a href="/deals/">Deals</a> / ${escapeHtml(category.toUpperCase())}` : "Deals"}
-        </div>
-
-        <h1>${escapeHtml(title)}</h1>
-        <div class="sub">Browse the latest high-quality deal pages from Pochify.</div>
-
-        <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
-
-        ${footerHtml(SITE_URL)}
-      </div>
-
-      <script>
-        function card(item) {
-          return \`
-            <div class="card deal-card">
-              \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-              <h3>\${item.name}</h3>
-              <div class="card-price-row">
-                \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-              </div>
-              <p>\${item.hook || item.description || 'Read the full breakdown.'}</p>
-              <a class="inline-link" href="/deals/\${item.slug}.html">Read full breakdown</a>
-            </div>
-          \`;
-        }
-
-        async function loadDeals() {
-          const container = document.getElementById("dealsGrid");
-          const url = "https://go.pochify.com/api/public/deals?limit=50${category ? `&category=${category}` : ""}";
-          try {
-            const res = await fetch(url);
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
-          }
-        }
-
-        loadDeals();
-      </script>
-    `
-  });
-}
-
-function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
-  return layout({
-    title: `${title} | Pochify`,
-    description,
-    canonicalUrl: `${SITE_URL}${canonicalPath}`,
-    bodyContent: `
-      <div class="container narrow">
-        <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
-        <h1>${escapeHtml(title)}</h1>
-        <div class="card">${contentHtml}</div>
-        ${footerHtml(SITE_URL)}
-      </div>
-    `
-  });
-}
-
-export function ensureShellPages() {
-  writeIfMissing(path.join("docs", "index.html"), buildHomeShell());
-  writeIfMissing(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"));
-  writeIfMissing(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"));
-  writeIfMissing(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"));
-
-  writeIfMissing(
-    path.join("docs", "faq.html"),
-    buildStaticPage({
-      title: "FAQ",
-      description: "Frequently asked questions about how Pochify works.",
-      canonicalPath: "/faq.html",
-      contentHtml: `
-        <h2>What is Pochify?</h2>
-        <p>Pochify curates discounted AI tools, SaaS products, and useful software picks.</p>
-        <h2>Do I buy through Pochify?</h2>
-        <p>No. Pochify summarizes the deal and links you to the original product or marketplace offer page.</p>
-        <h2>Are all listings affiliate links?</h2>
-        <p>No. During this phase, many links go directly to the source deal page while we focus on traffic and quality.</p>
-      `
-    })
-  );
-
-  writeIfMissing(
-    path.join("docs", "privacy.html"),
-    buildStaticPage({
-      title: "Privacy Policy",
-      description: "Privacy Policy for Pochify.",
-      canonicalPath: "/privacy.html",
-      contentHtml: `
-        <p>Pochify may collect limited technical information such as page views, click activity, user-agent data, and referring pages.</p>
-        <p>Pochify may use analytics services such as Google Analytics to measure site usage.</p>
-      `
-    })
-  );
-
-  writeIfMissing(
-    path.join("docs", "terms.html"),
-    buildStaticPage({
-      title: "Terms & Conditions",
-      description: "Terms and Conditions for Pochify.",
-      canonicalPath: "/terms.html",
-      contentHtml: `
-        <p>Pochify provides informational content about software products, tools, and offers for general informational purposes only.</p>
-        <p>Pochify does not guarantee that products, pricing, discounts, or offers will remain available or unchanged.</p>
-      `
-    })
-  );
-}
-
-export function generateDealPage(deal) {
-  const filePath = path.join("docs", "deals", `${deal.slug}.html`);
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, buildDealHtml(deal), "utf8");
-  return filePath;
-}
-
-export function generateRobotsTxtIfMissing() {
-  const filePath = path.join("docs", "robots.txt");
-  writeIfMissing(
-    filePath,
-    `User-agent: *
-Allow: /
-
-Sitemap: ${SITE_URL}/sitemap.xml
-`
-  );
-}
-
-export function generateSitemapFromDeals(deals) {
-  ensureDir("docs");
-  const urls = [
-    `${SITE_URL}/`,
-    `${SITE_URL}/deals/`,
-    `${SITE_URL}/categories/ai.html`,
-    `${SITE_URL}/categories/saas.html`,
-    `${SITE_URL}/faq.html`,
-    `${SITE_URL}/privacy.html`,
-    `${SITE_URL}/terms.html`,
-    ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
-  ];
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n")}
-</urlset>`;
-
-  fs.writeFileSync(path.join("docs", "sitemap.xml"), xml, "utf8");
-}
+    description: "Discover
