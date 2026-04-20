@@ -375,10 +375,13 @@ app.post("/api/deals/ingest", async (req, res) => {
       return res.status(500).json({ error: upsertError });
     }
 
+    const cooldownIso = new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(); // 14 days
+
     const { data: queuedDeals, error: queueError } = await supabase
       .from("deals")
       .select("*")
       .eq("status", "ready_to_post")
+      .or(`last_posted_at.is.null,last_posted_at.lt.${cooldownIso}`)
       .order("quality_score", { ascending: false })
       .order("score", { ascending: false })
       .order("created_at", { ascending: false })
