@@ -399,6 +399,7 @@ app.post("/api/deals/ingest", async (req, res) => {
 
 app.post("/api/deals/mark-posted", async (req, res) => {
   const slugs = req.body?.slugs || [];
+
   if (!Array.isArray(slugs) || !slugs.length) {
     return res.status(400).json({ error: "Expected slugs array" });
   }
@@ -412,25 +413,25 @@ app.post("/api/deals/mark-posted", async (req, res) => {
     return res.status(500).json({ error: selectError });
   }
 
-  const updates = (existingDeals || []).map((d) => ({
-    slug: d.slug,
-    post_count: (d.post_count || 0) + 1,
-    last_posted_at: new Date().toISOString(),
-    status: "posted",
-    updated_at: new Date().toISOString()
-  }));
+  for (const deal of existingDeals || []) {
+    const { error: updateError } = await supabase
+      .from("deals")
+      .update({
+        post_count: (deal.post_count || 0) + 1,
+        last_posted_at: new Date().toISOString(),
+        status: "posted",
+        updated_at: new Date().toISOString()
+      })
+      .eq("slug", deal.slug);
 
-  const { error: updateError } = await supabase
-    .from("deals")
-    .upsert(updates, { onConflict: "slug" });
-
-  if (updateError) {
-    return res.status(500).json({ error: updateError });
+    if (updateError) {
+      return res.status(500).json({ error: updateError });
+    }
   }
 
-  res.json({ success: true, updated: updates.length });
+  console.log("✅ Marked posted slugs:", slugs);
+  res.json({ success: true, updated: (existingDeals || []).length });
 });
-
 app.get("/go/:slug", async (req, res) => {
   const slug = req.params.slug;
 
