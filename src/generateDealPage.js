@@ -5,8 +5,7 @@ import {
   layout,
   footerHtml,
   shareButtonsHtml,
-  structuredArticleData,
-  dealCardHtml
+  structuredArticleData
 } from "./siteRenderer.js";
 
 const SITE_URL = "https://pochify.com";
@@ -196,48 +195,31 @@ function buildHomeShell() {
     canonicalUrl: `${SITE_URL}/`,
     bodyContent: `
       <div class="container">
-        <div class="hero-grid">
-          <section class="hero-panel">
-            <div class="eyebrow">Fresh software deals</div>
-            <h1 class="hero-title">Find better tools without paying full price.</h1>
-            <p class="hero-copy">
-              Pochify surfaces discounted AI tools, SaaS products, and lifetime software deals worth checking before they disappear.
-            </p>
-            <div class="cta-row">
-              <a href="/deals/" class="cta">Browse deals</a>
-              <a href="https://t.me/pochify" class="secondary" target="_blank" rel="noopener noreferrer">Join Telegram</a>
+        <section class="hero-panel">
+          <div class="eyebrow">Fresh software deals</div>
+          <h1 class="hero-title">Find better tools without paying full price.</h1>
+          <p class="hero-copy">
+            Pochify surfaces discounted AI tools, SaaS products, and lifetime software deals worth checking before they disappear.
+          </p>
+          <div class="cta-row">
+            <a href="/deals/" class="cta">Browse deals</a>
+            <a href="https://t.me/pochify" class="secondary" target="_blank" rel="noopener noreferrer">Join Telegram</a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <strong>AI</strong>
+              <span>Tools for creators, builders, and teams</span>
             </div>
-            <div class="hero-stats">
-              <div class="hero-stat">
-                <strong>AI</strong>
-                <span>Tools for creators, builders, and teams</span>
-              </div>
-              <div class="hero-stat">
-                <strong>Lifetime</strong>
-                <span>One-time payment deals when available</span>
-              </div>
-              <div class="hero-stat">
-                <strong>Fast</strong>
-                <span>Quick scanning with price-first cards</span>
-              </div>
+            <div class="hero-stat">
+              <strong>Lifetime</strong>
+              <span>One-time payment deals when available</span>
             </div>
-          </section>
-
-          <aside class="hero-side">
-            <div class="hero-feature-card">
-              <h3>See the numbers first</h3>
-              <p>Cards focus on sale price, original price, and discount so users can scan quickly.</p>
+            <div class="hero-stat">
+              <strong>Fast</strong>
+              <span>Quick price-first deal scanning</span>
             </div>
-            <div class="hero-feature-card">
-              <h3>Open the full breakdown</h3>
-              <p>Every card is clickable, making it much easier to explore deals on desktop and mobile.</p>
-            </div>
-            <div class="hero-feature-card">
-              <h3>Less clutter</h3>
-              <p>Homepage prioritizes deal discovery instead of a long wall of text at the top.</p>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </section>
 
         <div class="section-header">
           <div>
@@ -277,10 +259,6 @@ function buildHomeShell() {
                   \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
                   \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
                   \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                </div>
-                <div class="card-meta-row">
-                  <span>' + ((item.channel || '').toUpperCase() || 'DEAL') + '</span>
-                  <span>View deal →</span>
                 </div>
               </div>
             </a>
@@ -353,10 +331,6 @@ function buildDealsShell(title, category = "") {
                   \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
                   \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
                   \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                </div>
-                <div class="card-meta-row">
-                  <span>' + ((item.channel || '').toUpperCase() || 'DEAL') + '</span>
-                  <span>View deal →</span>
                 </div>
               </div>
             </a>
@@ -482,7 +456,7 @@ export function generateSitemapFromDeals(deals) {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => ` <url><loc>${u}</loc></url>`).join("\n")}
+${urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n")}
 </urlset>`;
 
   fs.writeFileSync(path.join("docs", "sitemap.xml"), xml, "utf8");
