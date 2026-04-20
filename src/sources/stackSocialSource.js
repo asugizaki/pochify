@@ -162,25 +162,47 @@ function scoreStackSocialDeal({
   description,
   discountPercent,
   reviewCount,
-  sourceUrl
+  sourceUrl,
+  lifetimeScoreBonus = 0,
+  enableScoringDebug = false
 }) {
   let score = 0;
+  const reasons = [];
   const text = `${name} ${description} ${sourceUrl}`.toLowerCase();
 
-  if (discountPercent && discountPercent >= 70) score += 3;
-  else if (discountPercent && discountPercent >= 40) score += 2;
-  else if (discountPercent && discountPercent >= 20) score += 1;
+  if (discountPercent && discountPercent >= 70) {
+    score += 3;
+    reasons.push(`discount>=70:+3`);
+  } else if (discountPercent && discountPercent >= 40) {
+    score += 2;
+    reasons.push(`discount>=40:+2`);
+  } else if (discountPercent && discountPercent >= 20) {
+    score += 1;
+    reasons.push(`discount>=20:+1`);
+  }
 
-  if (reviewCount >= 100) score += 3;
-  else if (reviewCount >= 20) score += 2;
-  else if (reviewCount >= 5) score += 1;
+  if (reviewCount >= 100) {
+    score += 3;
+    reasons.push(`reviews>=100:+3`);
+  } else if (reviewCount >= 20) {
+    score += 2;
+    reasons.push(`reviews>=20:+2`);
+  } else if (reviewCount >= 5) {
+    score += 1;
+    reasons.push(`reviews>=5:+1`);
+  }
 
   if (
     text.includes("lifetime") ||
     text.includes("lifetime subscription") ||
     text.includes("lifetime license")
   ) {
-    score += 2;
+    if (lifetimeScoreBonus) {
+      score += Number(lifetimeScoreBonus);
+      reasons.push(`lifetime:+${Number(lifetimeScoreBonus)}`);
+    } else {
+      reasons.push(`lifetime:+0`);
+    }
   }
 
   if (
@@ -193,13 +215,29 @@ function scoreStackSocialDeal({
     text.includes("voice")
   ) {
     score += 2;
+    reasons.push(`ai_relevance:+2`);
   }
 
   if (text.includes("bundle") || text.includes("course")) {
     score -= 2;
+    reasons.push(`bundle_or_course:-2`);
   }
 
-  return Math.max(1, Math.min(10, score));
+  const finalScore = Math.max(1, Math.min(10, score));
+
+  if (enableScoringDebug) {
+    console.log("📊 StackSocial scoring debug:", {
+      name,
+      discountPercent,
+      reviewCount,
+      lifetimeScoreBonus: Number(lifetimeScoreBonus || 0),
+      reasons,
+      rawScore: score,
+      finalScore
+    });
+  }
+
+  return finalScore;
 }
 
 async function fetchHtml(url) {
@@ -491,7 +529,7 @@ function extractPricing($, productJsonLd, pageText) {
   };
 }
 
-async function fetchDealDetail(dealLink) {
+async function fetchDealDetail(dealLink, options = {}) {
   const html = await fetchHtml(dealLink.url);
   const $ = cheerio.load(html);
   const jsonLdItems = extractJsonLd($);
@@ -568,7 +606,9 @@ async function fetchDealDetail(dealLink) {
     description,
     discountPercent,
     reviewCount,
-    sourceUrl: canonicalUrl
+    sourceUrl: canonicalUrl,
+    lifetimeScoreBonus: Number(options.lifetimeScoreBonus || 0),
+    enableScoringDebug: !!options.enableScoringDebug
   });
 
   const brandKey = slugify(
@@ -640,7 +680,7 @@ export async function fetchStackSocialDeals(options = {}) {
 
   for (const link of uniqueLinks.slice(0, maxDeals * 3)) {
     try {
-      const detail = await fetchDealDetail(link);
+      const detail = await fetchDealDetail(link, options);
 
       const titleText = `${detail.name} ${detail.description}`.toLowerCase();
       const looksRelevant =
