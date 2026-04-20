@@ -5,7 +5,8 @@ import {
   layout,
   footerHtml,
   shareButtonsHtml,
-  structuredArticleData
+  structuredArticleData,
+  ensureSharedAssets
 } from "./siteRenderer.js";
 
 const SITE_URL = "https://pochify.com";
@@ -158,7 +159,6 @@ function buildDealHtml(deal) {
         <p>This page summarizes the offer, but the purchase happens on StackSocial.</p>
         <div class="cta-row">
           <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Go to StackSocial deal</a>
-          ${deal.stacksocial_url ? `<a class="secondary" href="${escapeHtml(deal.stacksocial_url)}" target="_blank" rel="noopener noreferrer sponsored">View original deal page</a>` : ""}
         </div>
       </div>
 
@@ -373,6 +373,8 @@ function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
 }
 
 export function ensureShellPages() {
+  ensureSharedAssets();
+
   writeIfMissing(path.join("docs", "index.html"), buildHomeShell());
   writeIfMissing(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"));
   writeIfMissing(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"));
@@ -423,6 +425,7 @@ export function ensureShellPages() {
 }
 
 export function generateDealPage(deal) {
+  ensureSharedAssets();
   const filePath = path.join("docs", "deals", `${deal.slug}.html`);
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, buildDealHtml(deal), "utf8");
