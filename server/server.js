@@ -274,13 +274,55 @@ app.post("/api/deals/ingest", async (req, res) => {
       return res.status(400).json({ error: "Expected deals array" });
     }
 
+    const slugs = deals.map((d) => d.slug).filter(Boolean);
+
+    const { data: existingDeals, error: existingError } = await supabase
+      .from("deals")
+      .select(`
+        slug,
+        status,
+        current_price,
+        original_price,
+        discount_percent,
+        needs_regeneration,
+        last_posted_at,
+        post_count
+      `)
+      .in("slug", slugs);
+
+    if (existingError) {
+      return res.status(500).json({ error: existingError });
+    }
+
+    const existingMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
+
+    function hasPricingChanged(existing, incoming) {
+      return (
+        Number(existing?.current_price || 0) !== Number(incoming?.current_price || 0) ||
+        Number(existing?.original_price || 0) !== Number(incoming?.original_price || 0) ||
+        Number(existing?.discount_percent || 0) !== Number(incoming?.discount_percent || 0)
+      );
+    }
+
     const formattedDeals = deals.map((d) => {
-      let status = "ready_to_post";
+      const existing = existingMap.get(d.slug);
+      const pricingChanged = existing ? hasPricingChanged(existing, d) : false;
+      const regen = !!existing?.needs_regeneration;
+
+      let status = existing?.status || "ready_to_post";
+
+      if (!existing) {
+        status = "ready_to_post";
+      } else if (regen || pricingChanged) {
+        status = "ready_to_post";
+      } else if (existing.status === "posted") {
+        status = "posted";
+      } else if (existing.status === "ready_to_post") {
+        status = "ready_to_post";
+      }
 
       if (settings.require_affiliate_approval) {
-        status = d.affiliate_link ? "ready_to_post" : "awaiting_link";
-      } else if (settings.allow_stacksocial_direct_posting && d.source === "stacksocial") {
-        status = "ready_to_post";
+        status = d.affiliateLink ? status : "awaiting_link";
       }
 
       return {
@@ -307,7 +349,7 @@ app.post("/api/deals/ingest", async (req, res) => {
         quality_score: d.quality_score || d.score || 0,
         has_required_assets: !!d.has_required_assets,
         is_publishable: !!d.is_publishable,
-        needs_regeneration: !!d.needs_regeneration,
+        needs_regeneration: false,
         meta_title: d.meta_title || "",
         meta_description: d.meta_description || "",
         og_image: d.og_image || "",
@@ -319,6 +361,8 @@ app.post("/api/deals/ingest", async (req, res) => {
         content_generated_at: new Date().toISOString(),
         page_generated_at: new Date().toISOString(),
         status,
+        last_posted_at: existing?.last_posted_at || null,
+        post_count: existing?.post_count || 0,
         updated_at: new Date().toISOString()
       };
     });
