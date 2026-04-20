@@ -654,7 +654,7 @@ async function fetchDealDetail(dealLink, options = {}) {
 }
 
 export async function fetchStackSocialDeals(options = {}) {
-  const maxDeals = options.maxDeals || 30;
+  const maxDeals = options.maxDeals || 40;
   const limitPerCollection = options.limitPerCollection || 50;
 
   const allLinks = [];
@@ -683,7 +683,7 @@ export async function fetchStackSocialDeals(options = {}) {
 
   console.log(`🧹 Unique StackSocial deal links: ${uniqueLinks.length}`);
 
-  const deals = [];
+  const parsedDeals = [];
 
   for (const link of uniqueLinks) {
     try {
@@ -698,7 +698,10 @@ export async function fetchStackSocialDeals(options = {}) {
         titleText.includes("writing") ||
         titleText.includes("video") ||
         titleText.includes("image") ||
-        titleText.includes("voice");
+        titleText.includes("voice") ||
+        titleText.includes("speech") ||
+        titleText.includes("transcription") ||
+        titleText.includes("text-to-speech");
 
       if (!looksRelevant) {
         console.log(`⏭️ Dropped after parse (not relevant enough): ${detail.name}`);
@@ -706,12 +709,7 @@ export async function fetchStackSocialDeals(options = {}) {
       }
 
       console.log(`✅ Parsed + relevant: ${detail.name} | score=${detail.score}`);
-      deals.push(detail);
-
-      if (deals.length >= maxDeals) {
-        console.log(`🛑 Reached maxDeals=${maxDeals}, stopping further parsing`);
-        break;
-      }
+      parsedDeals.push(detail);
 
       await sleep(250);
     } catch (error) {
@@ -719,6 +717,16 @@ export async function fetchStackSocialDeals(options = {}) {
     }
   }
 
-  console.log(`✅ Parsed StackSocial deals kept: ${deals.length}`);
+  parsedDeals.sort((a, b) => {
+    if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+    if ((b.discount_percent || 0) !== (a.discount_percent || 0)) {
+      return (b.discount_percent || 0) - (a.discount_percent || 0);
+    }
+    return (b.votes_count || 0) - (a.votes_count || 0);
+  });
+
+  const deals = parsedDeals.slice(0, maxDeals);
+
+  console.log(`✅ Parsed StackSocial deals kept after sort: ${deals.length}`);
   return deals;
 }
