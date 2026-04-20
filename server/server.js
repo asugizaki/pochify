@@ -78,7 +78,9 @@ async function getPublicSettings() {
       "allow_stacksocial_direct_posting",
       "require_images_for_publish",
       "minimum_quality_score",
-      "ga_measurement_id"
+      "ga_measurement_id",
+      "lifetime_score_bonus",
+      "enable_scoring_debug"
     ]);
 
   const defaults = {
@@ -88,7 +90,9 @@ async function getPublicSettings() {
     allow_stacksocial_direct_posting: true,
     require_images_for_publish: true,
     minimum_quality_score: 5,
-    ga_measurement_id: null
+    ga_measurement_id: null,
+    lifetime_score_bonus: 0,
+    enable_scoring_debug: false
   };
 
   for (const row of data || []) {
