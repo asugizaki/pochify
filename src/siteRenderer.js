@@ -417,7 +417,7 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   height: 18px;
 }
 
-.share-card {
+.mobile-share {
   display: none;
 }
 
@@ -456,8 +456,41 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
     display: none;
   }
 
-  .share-card {
-    display: block;
+  .mobile-share {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 35;
+    display: flex;
+    gap: 10px;
+    background: rgba(17,24,39,0.96);
+    border: 1px solid #334155;
+    border-radius: 999px;
+    padding: 8px 10px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+  }
+
+  .mobile-share a,
+  .mobile-share button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #fff;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 0;
+  }
+
+  .mobile-share svg {
+    width: 18px;
+    height: 18px;
   }
 }
   `.trim();
@@ -581,14 +614,11 @@ export function shareButtonsHtml({ pageUrl, title, summary }) {
       <button onclick="copyText('${pageUrl}', 'Link copied')" title="Copy link">${iconLink()}</button>
     </div>
 
-    <div class="card share-card">
-      <h2>Share this pick</h2>
-      <div class="cta-row">
-        <a class="secondary" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener">X</a>
-        <a class="secondary" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener">LinkedIn</a>
-        <a class="secondary" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener">Facebook</a>
-        <button class="secondary" onclick="copyText('${pageUrl}', 'Link copied')">Copy link</button>
-      </div>
+    <div class="mobile-share" aria-label="Share">
+      <a href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" rel="noopener" title="Share on X">${iconX()}</a>
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener" title="Share on LinkedIn">${iconLinkedIn()}</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener" title="Share on Facebook">${iconFacebook()}</a>
+      <button onclick="copyText('${pageUrl}', 'Link copied')" title="Copy link">${iconLink()}</button>
     </div>
   `;
 }
