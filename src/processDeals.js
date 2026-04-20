@@ -161,7 +161,8 @@ async function run() {
 
   const rawDeals = dedupeDeals(
     await fetchStackSocialDeals({
-      maxDeals: 20,
+      maxDeals: 40,
+      limitPerCollection: 50,
       lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
       enableScoringDebug: !!settings.enable_scoring_debug
     })
@@ -175,15 +176,16 @@ async function run() {
     const existing = existingMap.get(deal.slug);
 
     if (existing && !existing.needs_regeneration) {
-      console.log(`⏭️ Skipping existing deal with no regeneration flag: ${deal.name}`);
+      console.log(`⏭️ Skip existing/no-regeneration: ${deal.name} | slug=${deal.slug} | status=${existing.status || ""}`);
       continue;
     }
 
     if (!passesQualityGate(deal, settings)) {
-      console.log(`⏭️ Skipping low-quality or incomplete deal: ${deal.name}`);
+      console.log(`⏭️ Failed quality gate: ${deal.name} | slug=${deal.slug} | score=${deal.score}`);
       continue;
     }
 
+    console.log(`✅ Candidate accepted for enrichment: ${deal.name} | slug=${deal.slug} | score=${deal.score}`);
     candidates.push(deal);
   }
 
