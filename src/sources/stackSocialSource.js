@@ -654,7 +654,7 @@ async function fetchDealDetail(dealLink, options = {}) {
 }
 
 export async function fetchStackSocialDeals(options = {}) {
-  const maxDeals = options.maxDeals || 40;
+  const maxDeals = options.maxDeals || 80;
   const limitPerCollection = options.limitPerCollection || 50;
 
   const allLinks = [];
