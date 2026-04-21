@@ -268,7 +268,7 @@ function buildHomeShell() {
         async function loadLatestDeals() {
           const container = document.getElementById("latestDeals");
           try {
-            const res = await fetch("https://go.pochify.com/api/public/latest-deals");
+            const res = await fetch("https://go.pochify.com/api/public/latest-deals?limit=16");
             const data = await res.json();
             const items = data.items || [];
             container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No picks yet.</div>';
@@ -280,7 +280,7 @@ function buildHomeShell() {
         async function loadTopClickedDeals() {
           const container = document.getElementById("topClickedDeals");
           try {
-            const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7");
+            const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7&limit=8");
             const data = await res.json();
             const items = data.items || [];
             container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
@@ -339,7 +339,7 @@ function buildDealsShell(title, category = "") {
 
         async function loadDeals() {
           const container = document.getElementById("dealsGrid");
-          const url = "https://go.pochify.com/api/public/deals?limit=50${category ? `&category=${category}` : ""}";
+          const url = "https://go.pochify.com/api/public/deals?limit=40${category ? `&category=${category}` : ""}";
           try {
             const res = await fetch(url);
             const data = await res.json();
