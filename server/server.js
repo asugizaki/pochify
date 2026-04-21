@@ -81,7 +81,9 @@ async function getPublicSettings() {
       "minimum_discount_percent",
       "ga_measurement_id",
       "lifetime_score_bonus",
-      "enable_scoring_debug"
+      "enable_scoring_debug",
+      "enable_source_debug",
+      "blocked_deal_keywords"
     ]);
 
   const defaults = {
@@ -94,7 +96,27 @@ async function getPublicSettings() {
     minimum_discount_percent: 50,
     ga_measurement_id: null,
     lifetime_score_bonus: 0,
-    enable_scoring_debug: false
+    enable_scoring_debug: false,
+    enable_source_debug: false,
+    blocked_deal_keywords: [
+      "bundle",
+      "course",
+      "training",
+      "masterclass",
+      "certification",
+      "pdf",
+      "microsoft",
+      "data plan",
+      "windows",
+      "vpn",
+      "mac",
+      "hosting",
+      "ad blocker",
+      "storage",
+      "streaming",
+      "cheat",
+      "password"
+    ]
   };
 
   for (const row of data || []) {
