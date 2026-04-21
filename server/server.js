@@ -582,6 +582,21 @@ app.get("/api/health", async (_req, res) => {
   });
 });
 
+app.get("/api/source-pages", async (_req, res) => {
+  const { data, error } = await supabase
+    .from("source_pages")
+    .select("source_key, page_type, page_name, url, is_enabled, sort_order")
+    .eq("is_enabled", true)
+    .order("source_key", { ascending: true })
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    return res.status(500).json({ error: "Failed to load source pages" });
+  }
+
+  res.json({ items: data || [] });
+});
+
 app.listen(PORT, () => {
   console.log("🚀 Server running");
 });
