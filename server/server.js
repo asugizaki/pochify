@@ -140,9 +140,9 @@ app.get("/api/public/latest-deals", async (req, res) => {
   let query = supabase
     .from("deals")
     .select(`
-      name, slug, description, hook, audience, why_now, caution, benefits,
-      og_image, page_url, click_count, votes_count, score, created_at, channel,
-      current_price, original_price, discount_percent, offer_type
+      name, slug, description, hook, og_image, page_url, click_count, votes_count, score,
+      created_at, channel, current_price, original_price, discount_percent, offer_type,
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url
     `)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -154,6 +154,7 @@ app.get("/api/public/latest-deals", async (req, res) => {
 
   res.json({ items: data || [] });
 });
+
 app.get("/api/public/deals", async (req, res) => {
   const category = req.query.category || "";
   const limit = Math.min(Number(req.query.limit || 50), 1000);
