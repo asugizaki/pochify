@@ -125,29 +125,19 @@ function pricingChanged(existing, deal) {
   );
 }
 
-function isExcludedDeal(deal) {
+function getBlockedKeywords(settings) {
+  const raw = settings?.blocked_deal_keywords;
+
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item).toLowerCase().trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
+function isExcludedDeal(deal, settings) {
   const text = `${deal?.name || ""} ${deal?.description || ""}`.toLowerCase();
-
-  const blockedTerms = [
-    "bundle",
-    "course",
-    "training",
-    "masterclass",
-    "certification",
-    "pdf",
-    "microsoft",
-    "data plan",
-    "windows",
-    "vpn",
-    "mac",
-    "hosting",
-    "ad blocker",
-    "storage",
-    "streaming",
-    "cheat",
-    "password"
-  ];
-
+  const blockedTerms = getBlockedKeywords(settings);
   const matched = blockedTerms.find((term) => text.includes(term));
   return matched || "";
 }
@@ -323,7 +313,7 @@ async function run() {
       }
     }
 
-    const excludedBy = isExcludedDeal(deal);
+    const excludedBy = isExcludedDeal(deal, settings);
     if (excludedBy) {
       console.log(`⏭️ Excluded by blocked term "${excludedBy}": ${deal.name}`);
       continue;
