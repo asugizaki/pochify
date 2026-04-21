@@ -21,6 +21,14 @@ export async function runSources(settings = {}) {
   const sourcePages = await loadSourcePages();
   const grouped = groupPagesBySource(sourcePages);
 
+  console.log("🗂️ Loaded source pages:", sourcePages.length);
+  for (const [sourceKey, pages] of grouped.entries()) {
+    console.log(`   • ${sourceKey}: ${pages.length} page(s)`);
+    for (const page of pages) {
+      console.log(`      - ${page.page_name || "Unnamed"} | ${page.url}`);
+    }
+  }
+
   const jobs = [];
 
   if (settings.enable_stacksocial_source && grouped.has("stacksocial")) {
@@ -38,7 +46,8 @@ export async function runSources(settings = {}) {
     jobs.push(
       fetchAppsumoDeals(grouped.get("appsumo"), {
         lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
-        enableScoringDebug: !!settings.enable_scoring_debug
+        enableScoringDebug: !!settings.enable_scoring_debug,
+        enableSourceDebug: !!settings.enable_source_debug
       })
     );
   }
@@ -47,7 +56,8 @@ export async function runSources(settings = {}) {
     jobs.push(
       fetchDealmirrorDeals(grouped.get("dealmirror"), {
         lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
-        enableScoringDebug: !!settings.enable_scoring_debug
+        enableScoringDebug: !!settings.enable_scoring_debug,
+        enableSourceDebug: !!settings.enable_source_debug
       })
     );
   }
@@ -56,11 +66,15 @@ export async function runSources(settings = {}) {
     jobs.push(
       fetchDealifyDeals(grouped.get("dealify"), {
         lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
-        enableScoringDebug: !!settings.enable_scoring_debug
+        enableScoringDebug: !!settings.enable_scoring_debug,
+        enableSourceDebug: !!settings.enable_source_debug
       })
     );
   }
 
   const results = await Promise.all(jobs);
-  return results.flat();
+  const flattened = results.flat();
+
+  console.log(`📦 Total deals returned from enabled sources: ${flattened.length}`);
+  return flattened;
 }
