@@ -48,20 +48,28 @@ function extractCardTitle(anchor, wrapper) {
 }
 
 function extractCardPrices(text = "") {
-  const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
-    parseMoneyString(m[1])
-  );
+  const originalMatch = text.match(/Original price was:\s*\$([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
+  const currentMatch = text.match(/Current price is:\s*\$([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
 
-  if (prices.length < 2) {
-    return {
-      currentPrice: null,
-      originalPrice: null,
-      discountPercent: null
-    };
+  let originalPrice = originalMatch ? parseMoneyString(originalMatch[1]) : null;
+  let currentPrice = currentMatch ? parseMoneyString(currentMatch[1]) : null;
+
+  if (!originalPrice || !currentPrice) {
+    const prices = [...text.matchAll(/\$([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/g)].map((m) =>
+      parseMoneyString(m[1])
+    );
+
+    const uniquePrices = prices.filter((value, idx) => prices.indexOf(value) === idx);
+
+    if (!originalPrice && uniquePrices.length >= 2) {
+      originalPrice = Math.max(...uniquePrices);
+    }
+
+    if (!currentPrice && uniquePrices.length >= 2) {
+      currentPrice = Math.min(...uniquePrices);
+    }
   }
 
-  const currentPrice = prices[prices.length - 1];
-  const originalPrice = prices[prices.length - 2];
   const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
 
   return {
@@ -71,9 +79,67 @@ function extractCardPrices(text = "") {
   };
 }
 
+function mergeCategoryEntries(entries) {
+  const byHref = new Map();
+
+  for (const entry of entries) {
+    if (!entry.href) continue;
+
+    const existing = byHref.get(entry.href) || {
+      href: entry.href,
+      title: "",
+      imageUrl: "",
+      textParts: [],
+      currentPrice: null,
+      originalPrice: null,
+      discountPercent: null
+    };
+
+    if (!existing.title && entry.title) {
+      existing.title = entry.title;
+    }
+
+    if (!existing.imageUrl && entry.imageUrl) {
+      existing.imageUrl = entry.imageUrl;
+    }
+
+    if (entry.text) {
+      existing.textParts.push(entry.text);
+    }
+
+    if (!existing.currentPrice && entry.currentPrice) {
+      existing.currentPrice = entry.currentPrice;
+    }
+
+    if (!existing.originalPrice && entry.originalPrice) {
+      existing.originalPrice = entry.originalPrice;
+    }
+
+    if (!existing.discountPercent && entry.discountPercent) {
+      existing.discountPercent = entry.discountPercent;
+    }
+
+    byHref.set(entry.href, existing);
+  }
+
+  return [...byHref.values()].map((item) => {
+    const mergedText = cleanText(item.textParts.join(" "));
+    const mergedPrices = extractCardPrices(mergedText);
+
+    return {
+      href: item.href,
+      title: item.title,
+      imageUrl: item.imageUrl,
+      text: mergedText,
+      currentPrice: item.currentPrice || mergedPrices.currentPrice,
+      originalPrice: item.originalPrice || mergedPrices.originalPrice,
+      discountPercent: item.discountPercent || mergedPrices.discountPercent
+    };
+  });
+}
+
 function parseCategoryCandidates($, pageUrl) {
-  const candidates = [];
-  const productAnchors = [];
+  const rawEntries = [];
 
   $('a[href*="/product/"]').each((_, el) => {
     const anchor = $(el);
@@ -84,62 +150,80 @@ function parseCategoryCandidates($, pageUrl) {
     const imageUrl = extractCardImage(anchor, wrapper);
     const { currentPrice, originalPrice, discountPercent } = extractCardPrices(text);
 
-    const rawItem = {
+    rawEntries.push({
       href,
       title,
-      image: imageUrl,
-      currentPrice,
-      originalPrice,
-      discountPercent,
-      text: text.slice(0, 260)
-    };
-
-    productAnchors.push(rawItem);
-
-    if (!isProductHref(href)) return;
-    if (!title || title.length < 3) return;
-    if (!imageUrl) return;
-    if (!currentPrice || !originalPrice || !discountPercent) return;
-
-    const description = cleanText(
-      text
-        .replace(title, "")
-        .replace(/\$[0-9.,]+/g, " ")
-        .replace(/\bSold By:\b/gi, " ")
-        .replace(/\bRated [0-9.]+ out of 5\b/gi, " ")
-        .replace(/\bOriginal price was:\b/gi, " ")
-        .replace(/\bCurrent price is:\b/gi, " ")
-        .replace(/\bSale!\b/gi, " ")
-    ).slice(0, 220);
-
-    const offerType =
-      text.toLowerCase().includes("lifetime") || text.toLowerCase().includes("ltd")
-        ? "lifetime"
-        : "discount";
-
-    candidates.push({
-      href,
-      title,
-      description,
-      currentPrice,
-      originalPrice,
-      discountPercent,
       imageUrl,
-      offerType
+      text,
+      currentPrice,
+      originalPrice,
+      discountPercent
     });
   });
 
-  console.log(`🟢 [DealMirror] Product href anchors found: ${productAnchors.length}`);
-  productAnchors.slice(0, 30).forEach((item, index) => {
-    console.log(`🟢 [DealMirror] Product anchor ${index + 1}:`, item);
+  console.log(`🟢 [DealMirror] Product href anchors found: ${rawEntries.length}`);
+  rawEntries.slice(0, 30).forEach((item, index) => {
+    console.log(`🟢 [DealMirror] Product anchor ${index + 1}:`, {
+      href: item.href,
+      title: item.title,
+      image: item.imageUrl,
+      currentPrice: item.currentPrice,
+      originalPrice: item.originalPrice,
+      discountPercent: item.discountPercent,
+      text: item.text.slice(0, 260)
+    });
   });
 
-  return dedupeBySlug(
-    candidates.map((item) => ({
-      slug: slugify(item.title),
-      ...item
-    }))
-  );
+  const merged = mergeCategoryEntries(rawEntries);
+
+  console.log(`🟢 [DealMirror] Product entries after href merge: ${merged.length}`);
+  merged.slice(0, 20).forEach((item, index) => {
+    console.log(`🟢 [DealMirror] Merged entry ${index + 1}:`, {
+      href: item.href,
+      title: item.title,
+      image: item.imageUrl,
+      currentPrice: item.currentPrice,
+      originalPrice: item.originalPrice,
+      discountPercent: item.discountPercent,
+      text: item.text.slice(0, 260)
+    });
+  });
+
+  const candidates = merged
+    .filter((item) => item.href && item.title && item.title.length >= 3)
+    .filter((item) => item.imageUrl)
+    .filter((item) => item.currentPrice && item.originalPrice && item.discountPercent)
+    .map((item) => {
+      const description = cleanText(
+        item.text
+          .replace(item.title, "")
+          .replace(/\$[0-9.,]+/g, " ")
+          .replace(/\bSold By:\b/gi, " ")
+          .replace(/\bRated [0-9.]+ out of 5\b/gi, " ")
+          .replace(/\bOriginal price was:\b/gi, " ")
+          .replace(/\bCurrent price is:\b/gi, " ")
+          .replace(/\bSale!\b/gi, " ")
+      ).slice(0, 220);
+
+      const offerType =
+        item.text.toLowerCase().includes("lifetime") || item.text.toLowerCase().includes("ltd")
+          ? "lifetime"
+          : "discount";
+
+      return {
+        href: item.href,
+        title: item.title,
+        description,
+        currentPrice: item.currentPrice,
+        originalPrice: item.originalPrice,
+        discountPercent: item.discountPercent,
+        imageUrl: item.imageUrl,
+        offerType,
+        slug: slugify(item.title)
+      };
+    });
+
+  return dedupeBySlug(candidates);
 }
 
 function extractDetailHeroImage($) {
@@ -183,23 +267,19 @@ function extractDetailDescription($, fallback = "") {
 function extractDetailPricing($, fallbackCurrent = null, fallbackOriginal = null) {
   const bodyText = cleanText($("body").text());
 
+  let originalPrice =
+    parseMoneyString($(".price del .woocommerce-Price-amount").first().text()) ||
+    null;
+
   let currentPrice =
     parseMoneyString($(".price ins .woocommerce-Price-amount").first().text()) ||
     parseMoneyString($(".price .woocommerce-Price-amount").first().text()) ||
-    fallbackCurrent;
+    null;
 
-  let originalPrice =
-    parseMoneyString($(".price del .woocommerce-Price-amount").first().text()) ||
-    fallbackOriginal;
+  const labeled = extractCardPrices(bodyText);
 
-  if ((!currentPrice || !originalPrice) && bodyText) {
-    const prices = [...bodyText.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
-      parseMoneyString(m[1])
-    );
-
-    if (!currentPrice && prices.length > 0) currentPrice = prices[prices.length - 1];
-    if (!originalPrice && prices.length > 1) originalPrice = prices[prices.length - 2];
-  }
+  if (!originalPrice) originalPrice = labeled.originalPrice || fallbackOriginal;
+  if (!currentPrice) currentPrice = labeled.currentPrice || fallbackCurrent;
 
   return { currentPrice, originalPrice };
 }
