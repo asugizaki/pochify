@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Browse discounted AI tools and software deals from Pochify." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/categories/ai.html" />
+  <meta property="og:title" content="AI Tools" />
+  <meta property="og:description" content="Browse discounted AI tools and software deals from Pochify." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/categories/ai.html" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2QCX91NDD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-W2QCX91NDD');
+    </script>
+  
+  
+</head>
+<body>
+  
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/">Pochify</a>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
+          <a href="/deals/">Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  
+  
+      <div class="container">
+        <div class="breadcrumbs">
+          <a href="/">Home</a> / <a href="/deals/">Deals</a> / AI
+        </div>
+
+        <h1>AI Tools</h1>
+        <div class="sub">Browse the latest high-quality deal pages from Pochify.</div>
+
+        <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
+
+        
+    <div class="footer">
+      <p><a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
+      <p class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </p>
+    </div>
+  
+      </div>
+
+      <script>
+        function sourceLogo(item) {
+          return item.source_logo_path
+            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="width:22px;height:22px;object-fit:contain;border-radius:6px;background:#fff;padding:2px;" />'
+            : '';
+        }
+
+        function card(item) {
+          return `
+            <a class="deal-card-link" href="/deals/${item.slug}.html">
+              <div class="card deal-card">
+                ${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <h3>${item.name}</h3>
+                  ${sourceLogo(item)}
+                </div>
+                <div class="card-price-row">
+                  ${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                  ${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                  ${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                  ${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+                </div>
+              </div>
+            </a>
+          `;
+        }
+
+        async function loadDeals() {
+          const container = document.getElementById("dealsGrid");
+          const url = "https://go.pochify.com/api/public/deals?limit=40&category=ai";
+          try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const items = data.items || [];
+            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
+          } catch {
+            container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+          }
+        }
+
+        loadDeals();
+      </script>
+    
+  
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || "Link copied");
+        } catch {
+          alert("Could not copy link");
+        }
+      }
+    </script>
+  
+</body>
+</html>
