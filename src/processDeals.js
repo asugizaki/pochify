@@ -13,13 +13,16 @@ import { generateDealContent } from "./ai/generateDealContent.js";
 import { cacheRemoteImage } from "./assetCache.js";
 
 const BASE_URL = "https://go.pochify.com";
+const HEALTH_URL = `${BASE_URL}/api/health`;
 const SETTINGS_URL = `${BASE_URL}/api/settings/public`;
 const EXISTING_DETAILS_URL = `${BASE_URL}/api/deals/existing-details`;
 const INGEST_URL = `${BASE_URL}/api/deals/ingest`;
 const ALL_DEALS_URL = `${BASE_URL}/api/public/deals?limit=1000`;
 
-function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
+const PENDING_TELEGRAM_PATH = path.join("data", "pending-telegram.json");
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
 }
 
 function saveJson(filePath, data) {
@@ -30,12 +33,12 @@ function saveJson(filePath, data) {
 function dedupeDeals(deals) {
   const map = new Map();
 
-  for (const deal of deals) {
-    const key = deal.slug || deal.url || deal.source_deal_url;
+  for (const deal of deals || []) {
+    const key = deal.slug || deal.source_deal_url || deal.url;
     if (!key) continue;
 
     const existing = map.get(key);
-    if (!existing || (deal.score || 0) > (existing.score || 0)) {
+    if (!existing || Number(deal.score || 0) > Number(existing.score || 0)) {
       map.set(key, deal);
     }
   }
@@ -43,42 +46,87 @@ function dedupeDeals(deals) {
   return [...map.values()];
 }
 
+async function parseJsonResponse(res, label) {
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    console.error(`❌ ${label} returned non-JSON response`);
+    console.error(`❌ ${label} status:`, res.status);
+    console.error(`❌ ${label} content-type:`, contentType);
+    console.error(`❌ ${label} raw response:`, raw.slice(0, 1000));
+    throw new Error(`${label} returned non-JSON response (${res.status})`);
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error(`❌ ${label} JSON parse error:`, error.message);
+    console.error(`❌ ${label} raw response:`, raw.slice(0, 1000));
+    throw new Error(`Failed to parse JSON from ${label}`);
+  }
+}
+
+async function checkBackendHealth() {
+  const res = await fetch(HEALTH_URL);
+  const data = await parseJsonResponse(res, "health");
+
+  console.log("💓 Backend health:", data);
+
+  if (!res.ok || !data?.ok) {
+    throw new Error(`Backend health failed (${res.status})`);
+  }
+}
+
 async function loadSettings() {
   const res = await fetch(SETTINGS_URL);
-  if (!res.ok) throw new Error(`Failed to load settings: ${res.status}`);
-  const data = await res.json();
+  const data = await parseJsonResponse(res, "settings");
+
+  if (!res.ok) {
+    throw new Error(`Failed to load settings: ${res.status}`);
+  }
+
   return data.settings || {};
 }
 
 async function loadExistingDetails(slugs) {
+  if (!slugs.length) return new Map();
+
   const res = await fetch(EXISTING_DETAILS_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ slugs })
   });
 
-  if (!res.ok) throw new Error(`Failed to load existing details: ${res.status}`);
-  const data = await res.json();
+  const data = await parseJsonResponse(res, "existing-details");
+
+  if (!res.ok) {
+    throw new Error(`Failed to load existing details: ${res.status}`);
+  }
+
   return new Map((data.items || []).map((item) => [item.slug, item]));
 }
 
 function hasPriceInfo(deal) {
   return Boolean(
-    deal.current_price &&
-    (deal.original_price || deal.discount_percent || deal.offer_type === "lifetime")
+    deal &&
+      deal.current_price &&
+      (deal.original_price || deal.discount_percent || deal.offer_type === "lifetime")
   );
 }
 
 function pricingChanged(existing, deal) {
   return (
-    Number(existing.current_price || 0) !== Number(deal.current_price || 0) ||
-    Number(existing.original_price || 0) !== Number(deal.original_price || 0) ||
-    Number(existing.discount_percent || 0) !== Number(deal.discount_percent || 0)
+    Number(existing?.current_price || 0) !== Number(deal?.current_price || 0) ||
+    Number(existing?.original_price || 0) !== Number(deal?.original_price || 0) ||
+    Number(existing?.discount_percent || 0) !== Number(deal?.discount_percent || 0)
   );
 }
 
 function isExcludedDeal(deal) {
-  const text = `${deal.name || ""} ${deal.description || ""}`.toLowerCase();
+  const text = `${deal?.name || ""} ${deal?.description || ""}`.toLowerCase();
 
   const blockedTerms = [
     "bundle",
@@ -108,28 +156,27 @@ function passesQualityGate(deal, settings) {
   const minScore = Number(settings.minimum_quality_score || 5);
   const minDiscount = Number(settings.minimum_discount_percent || 50);
 
-  if (deal.source !== "stacksocial") {
-    console.log(`⏭️ Skip ${deal.name}: not StackSocial`);
-    return false;
-  }
-
-  if (!deal.og_image) {
-    console.log(`⏭️ Skip ${deal.name}: missing image`);
+  if (!deal?.og_image) {
+    console.log(`⏭️ Skip ${deal?.name}: missing image`);
     return false;
   }
 
   if (!hasPriceInfo(deal)) {
-    console.log(`⏭️ Skip ${deal.name}: missing valid price info`);
+    console.log(`⏭️ Skip ${deal?.name}: missing valid price info`);
     return false;
   }
 
   if (Number(deal.discount_percent || 0) < minDiscount) {
-    console.log(`⏭️ Skip ${deal.name}: discount ${deal.discount_percent || 0}% below minimum ${minDiscount}%`);
+    console.log(
+      `⏭️ Skip ${deal.name}: discount ${deal.discount_percent || 0}% below minimum ${minDiscount}%`
+    );
     return false;
   }
 
-  if ((deal.score || 0) < minScore) {
-    console.log(`⏭️ Skip ${deal.name}: score ${(deal.score || 0)} below minimum ${minScore}`);
+  if (Number(deal.score || 0) < minScore) {
+    console.log(
+      `⏭️ Skip ${deal.name}: score ${deal.score || 0} below minimum ${minScore}`
+    );
     return false;
   }
 
@@ -139,7 +186,9 @@ function passesQualityGate(deal, settings) {
 async function ingestDeals(deals, settings) {
   const res = await fetch(INGEST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       deals,
       maxToSend: 2,
@@ -147,10 +196,10 @@ async function ingestDeals(deals, settings) {
     })
   });
 
-  const data = await res.json();
+  const data = await parseJsonResponse(res, "ingest");
   console.log("📡 Backend response:", data);
 
-  if (!res.ok || !data.success) {
+  if (!res.ok || !data?.success) {
     throw new Error("Failed to ingest deals to backend");
   }
 
@@ -159,15 +208,22 @@ async function ingestDeals(deals, settings) {
 
 async function loadAllDealsForSitemap() {
   const res = await fetch(ALL_DEALS_URL);
-  if (!res.ok) throw new Error(`Failed to load deals for sitemap: ${res.status}`);
-  const data = await res.json();
+  const data = await parseJsonResponse(res, "public-deals");
+
+  if (!res.ok) {
+    throw new Error(`Failed to load deals for sitemap: ${res.status}`);
+  }
+
   return data.items || [];
 }
 
 async function run() {
   console.log("🚀 Processing deals...");
 
+  await checkBackendHealth();
+
   const settings = await loadSettings();
+
   ensureShellPages();
   generateRobotsTxtIfMissing();
 
@@ -180,31 +236,41 @@ async function run() {
 
   for (const deal of rawDeals) {
     const existing = existingMap.get(deal.slug);
-  
+
     if (existing) {
       const changed = pricingChanged(existing, deal);
       const regen = !!existing.needs_regeneration;
-  
+
       if (!regen && !changed) {
         console.log(`⏭️ Skip existing unchanged: ${deal.name}`);
         continue;
       }
+
+      if (changed) {
+        console.log(`♻️ Reconsider changed pricing: ${deal.name}`);
+      }
+
+      if (regen) {
+        console.log(`♻️ Reconsider regeneration flagged: ${deal.name}`);
+      }
     }
-  
+
     const excludedBy = isExcludedDeal(deal);
     if (excludedBy) {
       console.log(`⏭️ Excluded by blocked term "${excludedBy}": ${deal.name}`);
       continue;
     }
-  
+
     if (!passesQualityGate(deal, settings)) {
       console.log(`⏭️ Failed quality gate: ${deal.name}`);
       continue;
     }
-  
-    console.log(`✅ Candidate accepted for enrichment: ${deal.name} | score=${deal.score} | discount=${deal.discount_percent}%`);
+
+    console.log(
+      `✅ Candidate accepted for enrichment: ${deal.name} | score=${deal.score} | discount=${deal.discount_percent}%`
+    );
     candidates.push(deal);
-  }}
+  }
 
   console.log(`✅ Candidates after pre-filtering: ${candidates.length}`);
 
@@ -229,19 +295,49 @@ async function run() {
     const finalDeal = {
       ...improved,
       ...aiContent,
-      source_key: deal.source_key,
-      source_name: deal.source_name,
-      source_logo_path: deal.source_logo_path,
-      source_home_url: deal.source_home_url,
-      source_deal_url: deal.source_deal_url,
-      og_image: localHeroImagePath || deal.og_image,
+
+      source: deal.source || improved.source || "unknown",
+      source_key: deal.source_key || improved.source_key || "",
+      source_name: deal.source_name || improved.source_name || "",
+      source_logo_path: deal.source_logo_path || improved.source_logo_path || "",
+      source_home_url: deal.source_home_url || improved.source_home_url || "",
+      source_deal_url: deal.source_deal_url || improved.source_deal_url || deal.url || "",
+
+      og_image: localHeroImagePath || deal.og_image || improved.og_image || "",
       local_hero_image_path: localHeroImagePath || "",
-      affiliateLink: deal.affiliateLink || deal.source_deal_url || deal.url || "",
-      quality_score: deal.score || 0,
+      stacksocial_url: deal.stacksocial_url || improved.stacksocial_url || "",
+      vendor_url: deal.vendor_url || improved.vendor_url || "",
+      current_price: deal.current_price ?? improved.current_price ?? null,
+      original_price: deal.original_price ?? improved.original_price ?? null,
+      discount_percent: deal.discount_percent ?? improved.discount_percent ?? null,
+      offer_type: deal.offer_type || improved.offer_type || "",
+      affiliateLink:
+        deal.affiliateLink ||
+        improved.affiliateLink ||
+        deal.source_deal_url ||
+        deal.url ||
+        "",
+
+      affiliate_url: improved.affiliate_url || "",
+      affiliate_detected: !!improved.affiliate_detected,
+      network_guess: improved.network_guess || "",
+
+      quality_score: Number(deal.score || improved.score || 0),
       has_required_assets: true,
       is_publishable: true,
       needs_regeneration: false
     };
+
+    console.log("🧪 Final deal before page/ingest:", {
+      name: finalDeal.name,
+      slug: finalDeal.slug,
+      source: finalDeal.source_key,
+      og_image: finalDeal.og_image,
+      source_logo_path: finalDeal.source_logo_path,
+      current_price: finalDeal.current_price,
+      original_price: finalDeal.original_price,
+      discount_percent: finalDeal.discount_percent
+    });
 
     generateDealPage(finalDeal);
     finalDeals.push(finalDeal);
@@ -251,7 +347,7 @@ async function run() {
   console.log(`✅ Final publishable deals this run: ${finalDeals.length}`);
 
   const sendCandidates = await ingestDeals(finalDeals, settings);
-  saveJson(path.join("data", "pending-telegram.json"), sendCandidates);
+  saveJson(PENDING_TELEGRAM_PATH, sendCandidates);
 
   const allDeals = await loadAllDealsForSitemap();
   generateSitemapFromDeals(allDeals);
@@ -260,7 +356,7 @@ async function run() {
   console.log("🏁 Done");
 }
 
-run().catch((err) => {
-  console.error("❌ processDeals fatal error:", err);
+run().catch((error) => {
+  console.error("❌ processDeals fatal error:", error);
   process.exit(1);
 });
