@@ -211,7 +211,6 @@ function scoreStackSocialDeal({
 
   return finalScore;
 }
-
 async function fetchHtml(url) {
   const res = await fetch(url, {
     headers: { "User-Agent": USER_AGENT }
