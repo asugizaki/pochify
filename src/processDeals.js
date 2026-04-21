@@ -6,10 +6,11 @@ import {
   generateRobotsTxtIfMissing,
   generateSitemapFromDeals
 } from "./generateDealPage.js";
-import { fetchStackSocialDeals } from "./sources/stackSocialSource.js";
+import { runSources } from "./runSources.js";
 import { enrichProduct } from "./enrichProduct.js";
 import { enhanceCopy } from "./copywriter.js";
 import { generateDealContent } from "./ai/generateDealContent.js";
+import { cacheRemoteImage } from "./assetCache.js";
 
 const BASE_URL = "https://go.pochify.com";
 const SETTINGS_URL = `${BASE_URL}/api/settings/public`;
@@ -30,25 +31,12 @@ function dedupeDeals(deals) {
   const map = new Map();
 
   for (const deal of deals) {
-    const key =
-      deal.brand_key ||
-      deal.slug ||
-      deal.vendor_url ||
-      deal.url ||
-      deal.stacksocial_url;
-
+    const key = deal.slug || deal.url || deal.source_deal_url;
     if (!key) continue;
 
     const existing = map.get(key);
-    if (!existing) {
+    if (!existing || (deal.score || 0) > (existing.score || 0)) {
       map.set(key, deal);
-      continue;
-    }
-
-    if ((deal.score || 0) > (existing.score || 0)) {
-      map.set(key, { ...existing, ...deal });
-    } else {
-      map.set(key, { ...deal, ...existing });
     }
   }
 
@@ -57,10 +45,7 @@ function dedupeDeals(deals) {
 
 async function loadSettings() {
   const res = await fetch(SETTINGS_URL);
-  if (!res.ok) {
-    throw new Error(`Failed to load settings: ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(`Failed to load settings: ${res.status}`);
   const data = await res.json();
   return data.settings || {};
 }
@@ -72,10 +57,7 @@ async function loadExistingDetails(slugs) {
     body: JSON.stringify({ slugs })
   });
 
-  if (!res.ok) {
-    throw new Error(`Failed to load existing details: ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(`Failed to load existing details: ${res.status}`);
   const data = await res.json();
   return new Map((data.items || []).map((item) => [item.slug, item]));
 }
@@ -87,44 +69,24 @@ function hasPriceInfo(deal) {
   );
 }
 
-function passesQualityGate(deal, settings) {
-  const minScore = Number(settings.minimum_quality_score || 5);
-  const minDiscount = Number(settings.minimum_discount_percent || 50);
-
-  if (deal.source !== "stacksocial") {
-    console.log(`⏭️ Skip ${deal.name}: not StackSocial`);
-    return false;
-  }
-
-  if (settings.require_images_for_publish && !deal.og_image) {
-    console.log(`⏭️ Skip ${deal.name}: missing image`);
-    return false;
-  }
-
-  if (!hasPriceInfo(deal)) {
-    console.log(`⏭️ Skip ${deal.name}: missing valid price info`);
-    return false;
-  }
-
-  if (Number(deal.discount_percent || 0) < minDiscount) {
-    console.log(`⏭️ Skip ${deal.name}: discount ${deal.discount_percent || 0}% below minimum ${minDiscount}%`);
-    return false;
-  }
-
-  if ((deal.score || 0) < minScore) {
-    console.log(`⏭️ Skip ${deal.name}: score ${(deal.score || 0)} below minimum ${minScore}`);
-    return false;
-  }
-
-  return true;
-}
-
 function pricingChanged(existing, deal) {
   return (
     Number(existing.current_price || 0) !== Number(deal.current_price || 0) ||
     Number(existing.original_price || 0) !== Number(deal.original_price || 0) ||
     Number(existing.discount_percent || 0) !== Number(deal.discount_percent || 0)
   );
+}
+
+function passesQualityGate(deal, settings) {
+  const minScore = Number(settings.minimum_quality_score || 5);
+  const minDiscount = Number(settings.minimum_discount_percent || 50);
+
+  if (!deal.og_image) return false;
+  if (!hasPriceInfo(deal)) return false;
+  if (Number(deal.discount_percent || 0) < minDiscount) return false;
+  if ((deal.score || 0) < minScore) return false;
+
+  return true;
 }
 
 async function ingestDeals(deals, settings) {
@@ -159,33 +121,15 @@ async function run() {
   console.log("🚀 Processing deals...");
 
   const settings = await loadSettings();
-  console.log("⚙️ Loaded settings:", settings);
-
   ensureShellPages();
   generateRobotsTxtIfMissing();
 
-  if (!settings.enable_stacksocial_source) {
-    console.log("ℹ️ StackSocial source disabled by feature flag");
-    return;
-  }
-
-  if (settings.enable_producthunt_source) {
-    console.log("ℹ️ Product Hunt is enabled in DB, but this flow intentionally ignores it for now.");
-  }
-
-  const rawDeals = dedupeDeals(
-    await fetchStackSocialDeals({
-      maxDeals: 40,
-      limitPerCollection: 50,
-      lifetimeScoreBonus: Number(settings.lifetime_score_bonus || 0),
-      enableScoringDebug: !!settings.enable_scoring_debug
-    })
-  );
-  console.log(`📥 StackSocial deals: ${rawDeals.length}`);
+  const rawDeals = dedupeDeals(await runSources(settings));
+  console.log(`📦 Total normalized deals: ${rawDeals.length}`);
 
   const existingMap = await loadExistingDetails(rawDeals.map((d) => d.slug));
 
-    const candidates = [];
+  const candidates = [];
   for (const deal of rawDeals) {
     const existing = existingMap.get(deal.slug);
 
@@ -194,25 +138,16 @@ async function run() {
       const regen = !!existing.needs_regeneration;
 
       if (!regen && !changed) {
-        console.log(`⏭️ Skip existing unchanged: ${deal.name} | slug=${deal.slug}`);
+        console.log(`⏭️ Skip existing unchanged: ${deal.name}`);
         continue;
-      }
-
-      if (changed) {
-        console.log(`♻️ Reconsider changed pricing: ${deal.name} | slug=${deal.slug}`);
-      }
-
-      if (regen) {
-        console.log(`♻️ Reconsider regeneration flagged: ${deal.name} | slug=${deal.slug}`);
       }
     }
 
     if (!passesQualityGate(deal, settings)) {
-      console.log(`⏭️ Failed quality gate: ${deal.name} | slug=${deal.slug} | score=${deal.score}`);
+      console.log(`⏭️ Failed quality gate: ${deal.name}`);
       continue;
     }
 
-    console.log(`✅ Candidate accepted for enrichment: ${deal.name} | slug=${deal.slug} | score=${deal.score}`);
     candidates.push(deal);
   }
 
@@ -221,46 +156,38 @@ async function run() {
   const finalDeals = [];
 
   for (const deal of candidates) {
-    const enriched = await enrichProduct(deal);
+    const localHeroImagePath = await cacheRemoteImage({
+      imageUrl: deal.og_image,
+      slug: deal.slug,
+      type: "deals"
+    });
+
+    const enriched = await enrichProduct({
+      ...deal,
+      og_image: localHeroImagePath || deal.og_image,
+      local_hero_image_path: localHeroImagePath || ""
+    });
+
     const improved = enhanceCopy(enriched);
     const aiContent = await generateDealContent(improved);
-  
+
     const finalDeal = {
       ...improved,
       ...aiContent,
-  
-      // preserve source-of-truth fields from StackSocial parser
-      og_image: deal.og_image || improved.og_image || "",
-      stacksocial_url: deal.stacksocial_url || improved.stacksocial_url || "",
-      current_price: deal.current_price ?? improved.current_price ?? null,
-      original_price: deal.original_price ?? improved.original_price ?? null,
-      discount_percent: deal.discount_percent ?? improved.discount_percent ?? null,
-      offer_type: deal.offer_type || improved.offer_type || "",
-      source: deal.source || improved.source || "stacksocial",
-      source_detail: deal.source_detail || improved.source_detail || "",
-      merchant: deal.merchant || improved.merchant || "stacksocial",
-      merchant_url: deal.merchant_url || improved.merchant_url || "",
-  
-      affiliate_url: "",
-      affiliate_detected: false,
-      network_guess: "",
-      affiliateLink: deal.stacksocial_url || deal.url || "",
-      quality_score: deal.score || improved.score || 0,
-      has_required_assets: Boolean(deal.og_image || improved.og_image),
+      source_key: deal.source_key,
+      source_name: deal.source_name,
+      source_logo_path: deal.source_logo_path,
+      source_home_url: deal.source_home_url,
+      source_deal_url: deal.source_deal_url,
+      og_image: localHeroImagePath || deal.og_image,
+      local_hero_image_path: localHeroImagePath || "",
+      affiliateLink: deal.affiliateLink || deal.source_deal_url || deal.url || "",
+      quality_score: deal.score || 0,
+      has_required_assets: true,
       is_publishable: true,
       needs_regeneration: false
     };
-  
-    console.log("🧪 Final deal before page/ingest:", {
-      name: finalDeal.name,
-      slug: finalDeal.slug,
-      og_image: finalDeal.og_image,
-      stacksocial_url: finalDeal.stacksocial_url,
-      current_price: finalDeal.current_price,
-      original_price: finalDeal.original_price,
-      discount_percent: finalDeal.discount_percent
-    });
-  
+
     generateDealPage(finalDeal);
     finalDeals.push(finalDeal);
     console.log(`📝 Generated page: docs/deals/${finalDeal.slug}.html`);
@@ -273,7 +200,6 @@ async function run() {
 
   const allDeals = await loadAllDealsForSitemap();
   generateSitemapFromDeals(allDeals);
-  console.log("🗺️ Generated sitemap");
 
   console.log(`📨 Pending Telegram deals: ${sendCandidates.length}`);
   console.log("🏁 Done");
