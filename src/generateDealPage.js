@@ -28,20 +28,6 @@ function listHtml(items = []) {
   return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
-function faqHtml(faq = []) {
-  if (!Array.isArray(faq) || !faq.length) return "";
-  return faq
-    .map(
-      (item) => `
-        <div style="margin-bottom:16px;">
-          <strong>${escapeHtml(item.q)}</strong>
-          <p>${escapeHtml(item.a)}</p>
-        </div>
-      `
-    )
-    .join("");
-}
-
 function priceBox(deal) {
   if (!deal.current_price && !deal.original_price && !deal.discount_percent && !deal.offer_type) {
     return "";
@@ -62,6 +48,36 @@ function heroImage(deal) {
   return `<img class="hero-image" src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />`;
 }
 
+function stickyDealCard(deal) {
+  const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
+
+  return `
+    <aside class="card" style="position:sticky; top:90px;">
+      ${deal.source_logo_path ? `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
+          <span style="color:#cbd5e1;font-size:14px;">${escapeHtml(deal.source_name || "")}</span>
+        </div>
+      ` : ""}
+
+      <h3 style="font-size:18px;line-height:1.35;margin-bottom:10px;">${escapeHtml(deal.name)}</h3>
+      ${priceBox(deal)}
+
+      <div class="cta-row" style="margin-top:16px;">
+        <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
+      </div>
+
+      <div style="margin-top:16px;">
+        ${shareButtonsHtml({
+          pageUrl: `${SITE_URL}/deals/${deal.slug}.html`,
+          title: deal.name,
+          summary: deal.hook || deal.description || ""
+        })}
+      </div>
+    </aside>
+  `;
+}
+
 function buildDealHtml(deal) {
   const title = deal.name || "Untitled Product";
   const description = deal.description || "A useful product worth checking out.";
@@ -69,108 +85,113 @@ function buildDealHtml(deal) {
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
 
   const bodyContent = `
-    ${shareButtonsHtml({
-      pageUrl,
-      title,
-      summary: deal.hook || description
-    })}
-
-    <div class="container narrow">
-      <div class="breadcrumbs">
-        <a href="/">Home</a> / <a href="/deals/">Deals</a> / ${escapeHtml(title)}
-      </div>
-
-      <div class="eyebrow">Pochify Pick</div>
-      <h1>${escapeHtml(title)}</h1>
-      <div class="sub">${escapeHtml(description)}</div>
-
-      ${heroImage(deal)}
-      ${priceBox(deal)}
-
-      <div class="card">
-        <h2>What this product is</h2>
-        <p>${escapeHtml(description)}</p>
-        ${Array.isArray(deal.overview_paragraphs) ? deal.overview_paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("") : ""}
-        <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Open deal on StackSocial</a>
-          <a class="secondary" href="/deals/">More deals</a>
+    <div class="container" style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;">
+      <main class="narrow" style="max-width:none;">
+        <div class="breadcrumbs">
+          <a href="/">Home</a> / <a href="/deals/">Deals</a> / ${escapeHtml(title)}
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Deal snapshot</h2>
+        <div class="eyebrow">Pochify Pick</div>
+        <h1>${escapeHtml(title)}</h1>
+        <div class="sub">${escapeHtml(description)}</div>
+
+        ${heroImage(deal)}
         ${priceBox(deal)}
-        <p style="margin-top:16px;">${escapeHtml(
-          deal.deal_summary ||
-          "This page summarizes the offer and sends you to the original StackSocial deal page to buy."
-        )}</p>
+
+        <div class="card">
+          <h2>What this product is</h2>
+          <p>${escapeHtml(description)}</p>
+          ${Array.isArray(deal.overview_paragraphs) ? deal.overview_paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("") : ""}
+        </div>
+
+        <div class="card">
+          <h2>Deal snapshot</h2>
+          ${priceBox(deal)}
+          ${deal.source_logo_path ? `
+            <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+              <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
+              <span style="color:#cbd5e1;font-size:14px;">Source: ${escapeHtml(deal.source_name || "")}</span>
+            </div>
+          ` : ""}
+          <p style="margin-top:16px;">${escapeHtml(
+            deal.deal_summary ||
+            "This page summarizes the offer and sends you to the original deal page to buy."
+          )}</p>
+        </div>
+
+        ${deal.audience ? `
+          <div class="card">
+            <h2>Who this looks best for</h2>
+            <p>${escapeHtml(deal.audience)}</p>
+          </div>
+        ` : ""}
+
+        ${Array.isArray(deal.feature_highlights) && deal.feature_highlights.length ? `
+          <div class="card">
+            <h2>Feature highlights</h2>
+            ${listHtml(deal.feature_highlights)}
+          </div>
+        ` : ""}
+
+        ${Array.isArray(deal.use_cases) && deal.use_cases.length ? `
+          <div class="card">
+            <h2>Where it may fit</h2>
+            ${listHtml(deal.use_cases)}
+          </div>
+        ` : ""}
+
+        <div class="card">
+          <h2>Why someone might use it</h2>
+          ${listHtml(
+            Array.isArray(deal.benefits) && deal.benefits.length
+              ? deal.benefits
+              : [
+                  "Could be useful if this category is relevant to your workflow",
+                  "Worth testing before committing long term",
+                  "May help save time depending on how you work"
+                ]
+          )}
+        </div>
+
+        <div class="card">
+          <h2>Get the deal</h2>
+          <div class="cta-row">
+            <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
+          </div>
+        </div>
+
+        ${footerHtml(SITE_URL)}
+      </main>
+
+      <div class="desktop-sticky-deal-card">
+        ${stickyDealCard(deal)}
       </div>
-
-      ${deal.audience ? `
-        <div class="card">
-          <h2>Who this looks best for</h2>
-          <p>${escapeHtml(deal.audience)}</p>
-        </div>
-      ` : ""}
-
-      ${Array.isArray(deal.feature_highlights) && deal.feature_highlights.length ? `
-        <div class="card">
-          <h2>Feature highlights</h2>
-          ${listHtml(deal.feature_highlights)}
-        </div>
-      ` : ""}
-
-      ${Array.isArray(deal.use_cases) && deal.use_cases.length ? `
-        <div class="card">
-          <h2>Where it may fit</h2>
-          ${listHtml(deal.use_cases)}
-        </div>
-      ` : ""}
-
-      <div class="card">
-        <h2>Why someone might use it</h2>
-        ${listHtml(
-          Array.isArray(deal.benefits) && deal.benefits.length
-            ? deal.benefits
-            : [
-                "Could be useful if this category is relevant to your workflow",
-                "Worth testing before committing long term",
-                "May help save time depending on how you work"
-              ]
-        )}
-      </div>
-
-      ${deal.why_now ? `
-        <div class="card">
-          <h2>Why it may be worth checking now</h2>
-          <p>${escapeHtml(deal.why_now)}</p>
-        </div>
-      ` : ""}
-
-      ${deal.caution ? `
-        <div class="card">
-          <h2>One thing to keep in mind</h2>
-          <p class="muted">${escapeHtml(deal.caution)}</p>
-        </div>
-      ` : ""}
-
-      <div class="card">
-        <h2>Get the deal</h2>
-        <p>This page summarizes the offer, but the purchase happens on StackSocial.</p>
-        <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Go to StackSocial deal</a>
-        </div>
-      </div>
-
-      ${Array.isArray(deal.faq) && deal.faq.length ? `
-        <div class="card">
-          <h2>FAQ</h2>
-          ${faqHtml(deal.faq)}
-        </div>
-      ` : ""}
-
-      ${footerHtml(SITE_URL)}
     </div>
+
+    <div class="container mobile-deal-bottom" style="display:none;">
+      <div class="card">
+        ${deal.source_logo_path ? `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
+            <span style="color:#cbd5e1;font-size:14px;">${escapeHtml(deal.source_name || "")}</span>
+          </div>
+        ` : ""}
+        ${priceBox(deal)}
+        <div class="cta-row">
+          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @media (max-width: 980px) {
+        .desktop-sticky-deal-card { display:none; }
+        .mobile-deal-bottom { display:block !important; }
+        .container[style*="grid-template-columns:minmax(0,1fr) 320px"] {
+          display:block !important;
+        }
+      }
+    </style>
   `;
 
   return layout({
@@ -185,6 +206,22 @@ function buildDealHtml(deal) {
       image: deal.og_image || ""
     }),
     bodyContent
+  });
+}
+
+function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
+  return layout({
+    title: `${title} | Pochify`,
+    description,
+    canonicalUrl: `${SITE_URL}${canonicalPath}`,
+    bodyContent: `
+      <div class="container narrow">
+        <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
+        <h1>${escapeHtml(title)}</h1>
+        <div class="card">${contentHtml}</div>
+        ${footerHtml(SITE_URL)}
+      </div>
+    `
   });
 }
 
@@ -205,20 +242,6 @@ function buildHomeShell() {
             <a href="/deals/" class="cta">Browse deals</a>
             <a href="https://t.me/pochify" class="secondary" target="_blank" rel="noopener noreferrer">Join Telegram</a>
           </div>
-          <div class="hero-stats">
-            <div class="hero-stat">
-              <strong>AI</strong>
-              <span>Tools for creators, builders, and teams</span>
-            </div>
-            <div class="hero-stat">
-              <strong>Lifetime</strong>
-              <span>One-time payment deals when available</span>
-            </div>
-            <div class="hero-stat">
-              <strong>Fast</strong>
-              <span>Quick price-first deal scanning</span>
-            </div>
-          </div>
         </section>
 
         <div class="section-header">
@@ -229,9 +252,7 @@ function buildHomeShell() {
           <a class="secondary" href="/deals/">View all deals</a>
         </div>
 
-        <div id="latestDeals" class="grid">
-          <div class="empty">Loading latest picks…</div>
-        </div>
+        <div id="latestDeals" class="grid"><div class="empty">Loading latest picks…</div></div>
 
         <div class="section-header">
           <div>
@@ -240,20 +261,27 @@ function buildHomeShell() {
           </div>
         </div>
 
-        <div id="topClickedDeals" class="grid">
-          <div class="empty">Loading top clicked picks…</div>
-        </div>
+        <div id="topClickedDeals" class="grid"><div class="empty">Loading top clicked picks…</div></div>
 
         ${footerHtml(SITE_URL)}
       </div>
 
       <script>
+        function sourceLogo(item) {
+          return item.source_logo_path
+            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="width:22px;height:22px;object-fit:contain;border-radius:6px;background:#fff;padding:2px;" />'
+            : '';
+        }
+
         function card(item) {
           return \`
             <a class="deal-card-link" href="/deals/\${item.slug}.html">
               <div class="card deal-card">
                 \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                <h3>\${item.name}</h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <h3>\${item.name}</h3>
+                  \${sourceLogo(item)}
+                </div>
                 <div class="card-price-row">
                   \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
                   \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
@@ -320,12 +348,21 @@ function buildDealsShell(title, category = "") {
       </div>
 
       <script>
+        function sourceLogo(item) {
+          return item.source_logo_path
+            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="width:22px;height:22px;object-fit:contain;border-radius:6px;background:#fff;padding:2px;" />'
+            : '';
+        }
+
         function card(item) {
           return \`
             <a class="deal-card-link" href="/deals/\${item.slug}.html">
               <div class="card deal-card">
                 \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                <h3>\${item.name}</h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <h3>\${item.name}</h3>
+                  \${sourceLogo(item)}
+                </div>
                 <div class="card-price-row">
                   \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
                   \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
@@ -356,22 +393,6 @@ function buildDealsShell(title, category = "") {
   });
 }
 
-function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
-  return layout({
-    title: `${title} | Pochify`,
-    description,
-    canonicalUrl: `${SITE_URL}${canonicalPath}`,
-    bodyContent: `
-      <div class="container narrow">
-        <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
-        <h1>${escapeHtml(title)}</h1>
-        <div class="card">${contentHtml}</div>
-        ${footerHtml(SITE_URL)}
-      </div>
-    `
-  });
-}
-
 export function ensureShellPages() {
   ensureSharedAssets();
 
@@ -389,36 +410,6 @@ export function ensureShellPages() {
       contentHtml: `
         <h2>What is Pochify?</h2>
         <p>Pochify curates discounted AI tools, SaaS products, and useful software picks.</p>
-        <h2>Do I buy through Pochify?</h2>
-        <p>No. Pochify summarizes the deal and links you to the original product or marketplace offer page.</p>
-        <h2>Are all listings affiliate links?</h2>
-        <p>No. During this phase, many links go directly to the source deal page while we focus on traffic and quality.</p>
-      `
-    })
-  );
-
-  writeIfMissing(
-    path.join("docs", "privacy.html"),
-    buildStaticPage({
-      title: "Privacy Policy",
-      description: "Privacy Policy for Pochify.",
-      canonicalPath: "/privacy.html",
-      contentHtml: `
-        <p>Pochify may collect limited technical information such as page views, click activity, user-agent data, and referring pages.</p>
-        <p>Pochify may use analytics services such as Google Analytics to measure site usage.</p>
-      `
-    })
-  );
-
-  writeIfMissing(
-    path.join("docs", "terms.html"),
-    buildStaticPage({
-      title: "Terms & Conditions",
-      description: "Terms and Conditions for Pochify.",
-      canonicalPath: "/terms.html",
-      contentHtml: `
-        <p>Pochify provides informational content about software products, tools, and offers for general informational purposes only.</p>
-        <p>Pochify does not guarantee that products, pricing, discounts, or offers will remain available or unchanged.</p>
       `
     })
   );
@@ -434,14 +425,11 @@ export function generateDealPage(deal) {
 
 export function generateRobotsTxtIfMissing() {
   const filePath = path.join("docs", "robots.txt");
-  writeIfMissing(
-    filePath,
-    `User-agent: *
+  writeIfMissing(filePath, `User-agent: *
 Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
-`
-  );
+`);
 }
 
 export function generateSitemapFromDeals(deals) {
@@ -451,9 +439,6 @@ export function generateSitemapFromDeals(deals) {
     `${SITE_URL}/deals/`,
     `${SITE_URL}/categories/ai.html`,
     `${SITE_URL}/categories/saas.html`,
-    `${SITE_URL}/faq.html`,
-    `${SITE_URL}/privacy.html`,
-    `${SITE_URL}/terms.html`,
     ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
   ];
 
