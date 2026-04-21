@@ -21,29 +21,25 @@ function dedupeBySlug(items) {
   return [...map.values()];
 }
 
-function isProductHref(href = "") {
-  if (!href) return false;
-  if (href.includes("#")) return false;
-  if (href.includes("/product-category/")) return false;
-  if (href.includes("/tag/")) return false;
-  if (href.includes("/cart")) return false;
-  if (href.includes("/checkout")) return false;
-  if (href.includes("/my-account")) return false;
-  if (href.includes("/login")) return false;
-  if (href.includes("/account")) return false;
+function isDefinitelyBlockedHref(href = "") {
+  const blocked = [
+    "/product-category/",
+    "/tag/",
+    "/cart",
+    "/checkout",
+    "/my-account",
+    "/login",
+    "/account",
+    "#"
+  ];
 
-  if (href.includes("/product/")) return true;
-
-  // Some DealMirror products can also be pretty permalinks under root.
-  if (/^https:\/\/dealmirror\.com\/[^/?#]+\/?$/.test(href)) return true;
-
-  return false;
+  return blocked.some((part) => href.includes(part));
 }
 
 function looksLikeRealTitle(title = "") {
   const value = cleanText(title);
   if (!value) return false;
-  if (value.length < 3) return false;
+  if (value.length < 2) return false;
 
   const blocked = [
     "add to cart",
@@ -59,10 +55,11 @@ function looksLikeRealTitle(title = "") {
   return !blocked.includes(value.toLowerCase());
 }
 
-function extractCardImage(wrapper, anchor) {
+function extractImage(wrapper, anchor) {
   const src =
     anchor.find("img").first().attr("src") ||
     anchor.find("img").first().attr("data-src") ||
+    anchor.find("img").first().attr("srcset") ||
     wrapper.find("img").first().attr("src") ||
     wrapper.find("img").first().attr("data-src") ||
     wrapper.find("img").first().attr("srcset") ||
@@ -71,38 +68,67 @@ function extractCardImage(wrapper, anchor) {
   return String(src).split(" ")[0];
 }
 
+function extractTitle(wrapper, anchor) {
+  return (
+    cleanText(anchor.find("h1,h2,h3,h4,h5").first().text()) ||
+    cleanText(wrapper.find("h1,h2,h3,h4,h5").first().text()) ||
+    cleanText(anchor.attr("title") || "") ||
+    cleanText(anchor.text())
+  );
+}
+
+function extractPrices(text = "") {
+  const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
+    parseMoneyString(m[1])
+  );
+
+  if (prices.length < 2) {
+    return {
+      currentPrice: null,
+      originalPrice: null,
+      discountPercent: null
+    };
+  }
+
+  const currentPrice = prices[prices.length - 1];
+  const originalPrice = prices[prices.length - 2];
+  const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
+
+  return {
+    currentPrice,
+    originalPrice,
+    discountPercent
+  };
+}
+
 function parseCategoryCandidates($, pageUrl) {
   const candidates = [];
+  const rawAnchors = [];
 
   $("a[href]").each((_, el) => {
     const anchor = $(el);
     const href = absoluteUrl(pageUrl, anchor.attr("href") || "");
-
-    if (!isProductHref(href)) return;
-
     const wrapper = anchor.closest("li, article, .product, .product-small, .product-type-simple, div");
-    const title =
-      cleanText(anchor.find("h2,h3,h4,h5").first().text()) ||
-      cleanText(wrapper.find("h2,h3,h4,h5").first().text()) ||
-      cleanText(anchor.text());
-
-    if (!looksLikeRealTitle(title)) return;
-
+    const title = extractTitle(wrapper, anchor);
     const text = cleanText(wrapper.text());
+    const imageUrl = extractImage(wrapper, anchor);
+    const { currentPrice, originalPrice, discountPercent } = extractPrices(text);
 
-    const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
-      parseMoneyString(m[1])
-    );
+    rawAnchors.push({
+      href,
+      title,
+      image: imageUrl,
+      currentPrice,
+      originalPrice,
+      discountPercent,
+      text: text.slice(0, 220)
+    });
 
-    if (prices.length < 2) return;
-
-    const currentPrice = prices[prices.length - 1];
-    const originalPrice = prices[prices.length - 2];
-    const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
-
-    if (!discountPercent) return;
-
-    const imageUrl = extractCardImage(wrapper, anchor);
+    if (!href) return;
+    if (isDefinitelyBlockedHref(href)) return;
+    if (!looksLikeRealTitle(title)) return;
+    if (!imageUrl) return;
+    if (!currentPrice || !originalPrice || !discountPercent) return;
 
     const description = cleanText(
       text
@@ -127,6 +153,12 @@ function parseCategoryCandidates($, pageUrl) {
       imageUrl,
       offerType
     });
+  });
+
+  console.log(`🟢 [DealMirror] Raw anchors inspected: ${rawAnchors.length}`);
+
+  rawAnchors.slice(0, 50).forEach((item, index) => {
+    console.log(`🟢 [DealMirror] Raw anchor ${index + 1}:`, item);
   });
 
   return dedupeBySlug(
