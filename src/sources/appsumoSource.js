@@ -7,42 +7,72 @@ import {
   detectChannel,
   parseMoneyString,
   computeDiscountPercent,
-  scoreDeal
+  scoreDeal,
+  absoluteUrl
 } from "./shared.js";
+
+function dedupeBySlug(items) {
+  const map = new Map();
+  for (const item of items) {
+    if (!item.slug) continue;
+    if (!map.has(item.slug)) map.set(item.slug, item);
+  }
+  return [...map.values()];
+}
+
+function isLikelyProductHref(href = "") {
+  return href.startsWith("/products/") || href.startsWith("https://appsumo.com/products/");
+}
 
 export async function fetchAppsumoDeals(pages = [], options = {}) {
   const sourceMeta = getSourceMeta("appsumo");
   const deals = [];
 
   for (const page of pages) {
+    console.log(`🟣 [AppSumo] Processing page: ${page.url}`);
+
     const html = await fetchHtml(page.url);
     const $ = cheerio.load(html);
 
     $("a[href]").each((_, el) => {
       const href = $(el).attr("href") || "";
-      const title = cleanText($(el).find("h3, h2, h4").first().text() || $(el).text());
+      if (!isLikelyProductHref(href)) return;
 
-      if (!href || !title) return;
-      if (!href.startsWith("/products/") && !href.startsWith("/")) return;
+      const title = cleanText($(el).text());
+      if (!title || title.length < 3) return;
 
-      const containerText = cleanText($(el).parent().text() || $(el).text());
-      const reviewsMatch = containerText.match(/(\d+)\s+reviews?/i);
-      const prices = [...containerText.matchAll(/\$([0-9]+(?:\.[0-9]{2})?)/g)].map((m) =>
+      const nextImg = $(el).nextAll("img").first();
+      const imageUrl =
+        nextImg.attr("src") ||
+        nextImg.attr("data-src") ||
+        nextImg.attr("srcset") ||
+        "";
+
+      const nextText = cleanText($(el).parent().text());
+
+      const descMatch = nextText.replace(title, "").trim();
+      const description = descMatch.slice(0, 220);
+
+      const reviewAnchor = $(el).parent().find('a[href]').filter((_, a) => {
+        return /reviews?/i.test(cleanText($(a).text()));
+      }).first();
+
+      const reviewText = cleanText(reviewAnchor.text());
+      const reviewMatch = reviewText.match(/(\d+)\s+reviews?/i);
+      const reviewCount = reviewMatch ? Number(reviewMatch[1]) : 0;
+
+      const prices = [...nextText.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
         parseMoneyString(m[1])
       );
 
       const currentPrice = prices[0] ?? null;
       const originalPrice = prices[1] ?? null;
       const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
-      const reviewCount = reviewsMatch ? Number(reviewsMatch[1]) : 0;
+      const offerType = nextText.toLowerCase().includes("lifetime") ? "lifetime" : "discount";
 
-      const description =
-        cleanText($(el).parent().find("p").first().text()) ||
-        cleanText($(el).parent().text()).replace(title, "").slice(0, 220);
+      const pageUrl = absoluteUrl(page.url, href);
 
-      const pageUrl = href.startsWith("http") ? href : `https://appsumo.com${href}`;
-
-      deals.push({
+      const built = {
         name: title,
         slug: slugify(title),
         brand_key: slugify(title),
@@ -58,7 +88,7 @@ export async function fetchAppsumoDeals(pages = [], options = {}) {
         source_deal_url: pageUrl,
         merchant: sourceMeta.name,
         merchant_url: pageUrl,
-        og_image: "",
+        og_image: imageUrl || "",
         channel: detectChannel(`${title} ${description}`),
         score: scoreDeal({
           name: title,
@@ -74,21 +104,26 @@ export async function fetchAppsumoDeals(pages = [], options = {}) {
         discount_percent: discountPercent,
         current_price: currentPrice,
         original_price: originalPrice,
-        offer_type: containerText.toLowerCase().includes("lifetime") ? "lifetime" : "discount",
+        offer_type: offerType,
         meta_title: `${title} Deal Review | Pochify`,
         meta_description: description.slice(0, 155)
+      };
+
+      console.log("🟣 [AppSumo] Candidate:", {
+        title: built.name,
+        href: built.url,
+        image: built.og_image,
+        current: built.current_price,
+        original: built.original_price,
+        discount: built.discount_percent,
+        reviews: built.review_count
       });
+
+      deals.push(built);
     });
   }
 
-  return dedupeBySlug(deals);
-}
-
-function dedupeBySlug(items) {
-  const map = new Map();
-  for (const item of items) {
-    if (!item.slug) continue;
-    if (!map.has(item.slug)) map.set(item.slug, item);
-  }
-  return [...map.values()];
+  const deduped = dedupeBySlug(deals);
+  console.log(`🟣 [AppSumo] Final deduped deals: ${deduped.length}`);
+  return deduped;
 }
