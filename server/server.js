@@ -135,6 +135,8 @@ app.post("/api/deals/existing-summaries", async (req, res) => {
 });
 
 app.get("/api/public/latest-deals", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit || 6), 50);
+
   let query = supabase
     .from("deals")
     .select(`
@@ -143,7 +145,7 @@ app.get("/api/public/latest-deals", async (req, res) => {
       current_price, original_price, discount_percent, offer_type
     `)
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(limit);
 
   query = publicStatusFilter(query);
 
@@ -152,7 +154,6 @@ app.get("/api/public/latest-deals", async (req, res) => {
 
   res.json({ items: data || [] });
 });
-
 app.get("/api/public/deals", async (req, res) => {
   const category = req.query.category || "";
   const limit = Math.min(Number(req.query.limit || 50), 1000);
@@ -217,6 +218,7 @@ app.get("/api/public/related-deals", async (req, res) => {
 
 app.get("/api/public/top-clicked", async (req, res) => {
   const days = Number(req.query.days || 7);
+  const limit = Math.min(Number(req.query.limit || 6), 50);
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: clicks, error: clickError } = await supabase
@@ -235,7 +237,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
 
   const topSlugs = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
+    .slice(0, limit)
     .map(([slug]) => slug);
 
   if (!topSlugs.length) {
