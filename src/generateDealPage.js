@@ -48,19 +48,27 @@ function heroImage(deal) {
   return `<img class="hero-image" src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />`;
 }
 
+function sourceLogoOnly(deal) {
+  if (!deal.source_logo_path) return "";
+  return `
+    <div style="display:flex;align-items:center;justify-content:flex-start;margin-top:14px;">
+      <img
+        src="${escapeHtml(deal.source_logo_path)}"
+        alt="${escapeHtml(deal.source_name || "Source")}"
+        style="height:36px;width:auto;display:block;"
+        loading="lazy"
+      />
+    </div>
+  `;
+}
+
 function stickyDealCard(deal) {
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
 
   return `
     <aside class="card" style="position:sticky; top:90px;">
-      ${deal.source_logo_path ? `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
-          <span style="color:#cbd5e1;font-size:14px;">${escapeHtml(deal.source_name || "")}</span>
-        </div>
-      ` : ""}
-
-      <h3 style="font-size:18px;line-height:1.35;margin-bottom:10px;">${escapeHtml(deal.name)}</h3>
+      ${sourceLogoOnly(deal)}
+      <h3 style="font-size:18px;line-height:1.35;margin:14px 0 10px;">${escapeHtml(deal.name)}</h3>
       ${priceBox(deal)}
 
       <div class="cta-row" style="margin-top:16px;">
@@ -97,6 +105,7 @@ function buildDealHtml(deal) {
 
         ${heroImage(deal)}
         ${priceBox(deal)}
+        ${sourceLogoOnly(deal)}
 
         <div class="card">
           <h2>What this product is</h2>
@@ -107,12 +116,7 @@ function buildDealHtml(deal) {
         <div class="card">
           <h2>Deal snapshot</h2>
           ${priceBox(deal)}
-          ${deal.source_logo_path ? `
-            <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-              <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
-              <span style="color:#cbd5e1;font-size:14px;">Source: ${escapeHtml(deal.source_name || "")}</span>
-            </div>
-          ` : ""}
+          ${sourceLogoOnly(deal)}
           <p style="margin-top:16px;">${escapeHtml(
             deal.deal_summary ||
             "This page summarizes the offer and sends you to the original deal page to buy."
@@ -170,12 +174,7 @@ function buildDealHtml(deal) {
 
     <div class="container mobile-deal-bottom" style="display:none;">
       <div class="card">
-        ${deal.source_logo_path ? `
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-            <img src="${escapeHtml(deal.source_logo_path)}" alt="${escapeHtml(deal.source_name || "Source")}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;" />
-            <span style="color:#cbd5e1;font-size:14px;">${escapeHtml(deal.source_name || "")}</span>
-          </div>
-        ` : ""}
+        ${sourceLogoOnly(deal)}
         ${priceBox(deal)}
         <div class="cta-row">
           <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
@@ -269,7 +268,7 @@ function buildHomeShell() {
       <script>
         function sourceLogo(item) {
           return item.source_logo_path
-            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="width:22px;height:22px;object-fit:contain;border-radius:6px;background:#fff;padding:2px;" />'
+            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
             : '';
         }
 
@@ -350,7 +349,7 @@ function buildDealsShell(title, category = "") {
       <script>
         function sourceLogo(item) {
           return item.source_logo_path
-            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="width:22px;height:22px;object-fit:contain;border-radius:6px;background:#fff;padding:2px;" />'
+            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
             : '';
         }
 
