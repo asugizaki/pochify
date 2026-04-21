@@ -552,6 +552,14 @@ app.post("/api/deals/existing-details", async (req, res) => {
   res.json({ items: data || [] });
 });
 
+app.get("/api/health", async (_req, res) => {
+  res.json({
+    ok: true,
+    service: "pochify-go",
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.listen(PORT, () => {
   console.log("🚀 Server running");
 });
