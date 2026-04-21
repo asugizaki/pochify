@@ -21,41 +21,11 @@ function dedupeBySlug(items) {
   return [...map.values()];
 }
 
-function isDefinitelyBlockedHref(href = "") {
-  const blocked = [
-    "/product-category/",
-    "/tag/",
-    "/cart",
-    "/checkout",
-    "/my-account",
-    "/login",
-    "/account",
-    "#"
-  ];
-
-  return blocked.some((part) => href.includes(part));
+function isProductHref(href = "") {
+  return href.includes("/product/");
 }
 
-function looksLikeRealTitle(title = "") {
-  const value = cleanText(title);
-  if (!value) return false;
-  if (value.length < 2) return false;
-
-  const blocked = [
-    "add to cart",
-    "view cart",
-    "checkout",
-    "my account",
-    "login",
-    "register",
-    "shop",
-    "home"
-  ];
-
-  return !blocked.includes(value.toLowerCase());
-}
-
-function extractImage(wrapper, anchor) {
+function extractCardImage(anchor, wrapper) {
   const src =
     anchor.find("img").first().attr("src") ||
     anchor.find("img").first().attr("data-src") ||
@@ -68,7 +38,7 @@ function extractImage(wrapper, anchor) {
   return String(src).split(" ")[0];
 }
 
-function extractTitle(wrapper, anchor) {
+function extractCardTitle(anchor, wrapper) {
   return (
     cleanText(anchor.find("h1,h2,h3,h4,h5").first().text()) ||
     cleanText(wrapper.find("h1,h2,h3,h4,h5").first().text()) ||
@@ -77,7 +47,7 @@ function extractTitle(wrapper, anchor) {
   );
 }
 
-function extractPrices(text = "") {
+function extractCardPrices(text = "") {
   const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
     parseMoneyString(m[1])
   );
@@ -103,30 +73,31 @@ function extractPrices(text = "") {
 
 function parseCategoryCandidates($, pageUrl) {
   const candidates = [];
-  const rawAnchors = [];
+  const productAnchors = [];
 
-  $("a[href]").each((_, el) => {
+  $('a[href*="/product/"]').each((_, el) => {
     const anchor = $(el);
     const href = absoluteUrl(pageUrl, anchor.attr("href") || "");
-    const wrapper = anchor.closest("li, article, .product, .product-small, .product-type-simple, div");
-    const title = extractTitle(wrapper, anchor);
+    const wrapper = anchor.closest("li.product, .product, article, li, div");
+    const title = extractCardTitle(anchor, wrapper);
     const text = cleanText(wrapper.text());
-    const imageUrl = extractImage(wrapper, anchor);
-    const { currentPrice, originalPrice, discountPercent } = extractPrices(text);
+    const imageUrl = extractCardImage(anchor, wrapper);
+    const { currentPrice, originalPrice, discountPercent } = extractCardPrices(text);
 
-    rawAnchors.push({
+    const rawItem = {
       href,
       title,
       image: imageUrl,
       currentPrice,
       originalPrice,
       discountPercent,
-      text: text.slice(0, 220)
-    });
+      text: text.slice(0, 260)
+    };
 
-    if (!href) return;
-    if (isDefinitelyBlockedHref(href)) return;
-    if (!looksLikeRealTitle(title)) return;
+    productAnchors.push(rawItem);
+
+    if (!isProductHref(href)) return;
+    if (!title || title.length < 3) return;
     if (!imageUrl) return;
     if (!currentPrice || !originalPrice || !discountPercent) return;
 
@@ -134,8 +105,11 @@ function parseCategoryCandidates($, pageUrl) {
       text
         .replace(title, "")
         .replace(/\$[0-9.,]+/g, " ")
-        .replace(/\badd to cart\b/gi, " ")
-        .replace(/\bsale!\b/gi, " ")
+        .replace(/\bSold By:\b/gi, " ")
+        .replace(/\bRated [0-9.]+ out of 5\b/gi, " ")
+        .replace(/\bOriginal price was:\b/gi, " ")
+        .replace(/\bCurrent price is:\b/gi, " ")
+        .replace(/\bSale!\b/gi, " ")
     ).slice(0, 220);
 
     const offerType =
@@ -155,10 +129,9 @@ function parseCategoryCandidates($, pageUrl) {
     });
   });
 
-  console.log(`🟢 [DealMirror] Raw anchors inspected: ${rawAnchors.length}`);
-
-  rawAnchors.slice(0, 50).forEach((item, index) => {
-    console.log(`🟢 [DealMirror] Raw anchor ${index + 1}:`, item);
+  console.log(`🟢 [DealMirror] Product href anchors found: ${productAnchors.length}`);
+  productAnchors.slice(0, 30).forEach((item, index) => {
+    console.log(`🟢 [DealMirror] Product anchor ${index + 1}:`, item);
   });
 
   return dedupeBySlug(
