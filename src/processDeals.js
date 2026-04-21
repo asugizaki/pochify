@@ -183,27 +183,95 @@ function passesQualityGate(deal, settings) {
   return true;
 }
 
+function compactDealForIngest(deal) {
+  return {
+    name: deal.name,
+    slug: deal.slug,
+    brand_key: deal.brand_key,
+    description: deal.description || "",
+    url: deal.url || "",
+    stacksocial_url: deal.stacksocial_url || null,
+    vendor_url: deal.vendor_url || null,
+    affiliateLink: deal.affiliateLink || "",
+    affiliate_url: deal.affiliate_url || "",
+    affiliate_detected: !!deal.affiliate_detected,
+    network_guess: deal.network_guess || "",
+    page_url: deal.page_url || `https://pochify.com/deals/${deal.slug}.html`,
+    source: deal.source || "",
+    source_key: deal.source_key || "",
+    source_name: deal.source_name || "",
+    source_logo_path: deal.source_logo_path || "",
+    source_home_url: deal.source_home_url || "",
+    source_deal_url: deal.source_deal_url || "",
+    channel: deal.channel || "general",
+    votes_count: deal.votes_count || 0,
+    score: deal.score || 0,
+    current_price: deal.current_price ?? null,
+    original_price: deal.original_price ?? null,
+    discount_percent: deal.discount_percent ?? null,
+    offer_type: deal.offer_type || "",
+    quality_score: deal.quality_score || deal.score || 0,
+    has_required_assets: !!deal.has_required_assets,
+    is_publishable: !!deal.is_publishable,
+    needs_regeneration: !!deal.needs_regeneration,
+    meta_title: deal.meta_title || "",
+    meta_description: deal.meta_description || "",
+    og_image: deal.og_image || "",
+    local_hero_image_path: deal.local_hero_image_path || "",
+    hook: deal.hook || "",
+    audience: deal.audience || "",
+    why_now: deal.why_now || "",
+    caution: deal.caution || ""
+  };
+}
+
 async function ingestDeals(deals, settings) {
-  const res = await fetch(INGEST_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      deals,
-      maxToSend: 2,
-      settings
-    })
-  });
+  const compactDeals = deals.map(compactDealForIngest);
+  const batchSize = 8;
+  const allSendCandidates = [];
 
-  const data = await parseJsonResponse(res, "ingest");
-  console.log("📡 Backend response:", data);
+  for (let i = 0; i < compactDeals.length; i += batchSize) {
+    const batch = compactDeals.slice(i, i + batchSize);
 
-  if (!res.ok || !data?.success) {
-    throw new Error("Failed to ingest deals to backend");
+    console.log(
+      `📦 Ingest batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(compactDeals.length / batchSize)} (${batch.length} deals)`
+    );
+
+    const res = await fetch(INGEST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deals: batch,
+        maxToSend: 2,
+        settings
+      })
+    });
+
+    const data = await parseJsonResponse(res, "ingest");
+    console.log("📡 Backend batch response:", data);
+
+    if (!res.ok || !data?.success) {
+      throw new Error("Failed to ingest deals to backend");
+    }
+
+    if (Array.isArray(data.sendCandidates)) {
+      allSendCandidates.push(...data.sendCandidates);
+    }
   }
 
-  return data.sendCandidates || [];
+  const deduped = [];
+  const seen = new Set();
+
+  for (const item of allSendCandidates) {
+    if (!item?.slug) continue;
+    if (seen.has(item.slug)) continue;
+    seen.add(item.slug);
+    deduped.push(item);
+  }
+
+  return deduped.slice(0, 2);
 }
 
 async function loadAllDealsForSitemap() {
@@ -301,7 +369,7 @@ async function run() {
       source_name: deal.source_name || improved.source_name || "",
       source_logo_path: deal.source_logo_path || improved.source_logo_path || "",
       source_home_url: deal.source_home_url || improved.source_home_url || "",
-      source_deal_url: deal.source_deal_url || improved.source_deal_url || deal.url || "",
+      source_deal_url: deal.source_deal_url || improved.source_deal_url || "",
 
       og_image: localHeroImagePath || deal.og_image || improved.og_image || "",
       local_hero_image_path: localHeroImagePath || "",
