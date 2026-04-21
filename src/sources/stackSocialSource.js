@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { alertAdmin } from "../alertAdmin.js";
+import { getSourceMeta } from "../sourceRegistry.js";
 
 const STACKSOCIAL_COLLECTIONS = [
   "https://www.stacksocial.com/collections/artificial-intelligence",
@@ -102,9 +103,7 @@ function extractJsonLd($) {
       } else {
         items.push(parsed);
       }
-    } catch {
-      // ignore malformed json-ld
-    }
+    } catch {}
   });
 
   return items;
@@ -126,34 +125,9 @@ function findProductJsonLd(jsonLdItems = []) {
   return null;
 }
 
-function extractVendorUrl($, pageUrl) {
-  const externalLinks = [];
-
-  $("a[href]").each((_, el) => {
-    const href = $(el).attr("href") || "";
-    const full = absoluteUrl(pageUrl, href);
-    if (!full) return;
-
-    const isExternal =
-      !full.includes("stacksocial.com") &&
-      !full.includes("stackcommerce.com") &&
-      !full.includes("facebook.com") &&
-      !full.includes("twitter.com") &&
-      !full.includes("linkedin.com") &&
-      !full.includes("instagram.com") &&
-      !full.includes("youtube.com");
-
-    if (isExternal) {
-      externalLinks.push(full);
-    }
-  });
-
-  return externalLinks[0] || "";
-}
-
 function buildStackSocialAffiliateUrl(stackSocialUrl) {
   const template = process.env.STACKSOCIAL_AFFILIATE_DEEPLINK_TEMPLATE || "";
-  if (!template) return "";
+  if (!template) return stackSocialUrl || "";
   return template.replace("{{url}}", encodeURIComponent(stackSocialUrl));
 }
 
@@ -172,24 +146,24 @@ function scoreStackSocialDeal({
 
   if (discountPercent && discountPercent >= 70) {
     score += 3;
-    reasons.push(`discount>=70:+3`);
+    reasons.push("discount>=70:+3");
   } else if (discountPercent && discountPercent >= 40) {
     score += 2;
-    reasons.push(`discount>=40:+2`);
+    reasons.push("discount>=40:+2");
   } else if (discountPercent && discountPercent >= 20) {
     score += 1;
-    reasons.push(`discount>=20:+1`);
+    reasons.push("discount>=20:+1");
   }
 
   if (reviewCount >= 100) {
     score += 3;
-    reasons.push(`reviews>=100:+3`);
+    reasons.push("reviews>=100:+3");
   } else if (reviewCount >= 20) {
     score += 2;
-    reasons.push(`reviews>=20:+2`);
+    reasons.push("reviews>=20:+2");
   } else if (reviewCount >= 5) {
     score += 1;
-    reasons.push(`reviews>=5:+1`);
+    reasons.push("reviews>=5:+1");
   }
 
   if (
@@ -197,12 +171,8 @@ function scoreStackSocialDeal({
     text.includes("lifetime subscription") ||
     text.includes("lifetime license")
   ) {
-    if (lifetimeScoreBonus) {
-      score += Number(lifetimeScoreBonus);
-      reasons.push(`lifetime:+${Number(lifetimeScoreBonus)}`);
-    } else {
-      reasons.push(`lifetime:+0`);
-    }
+    score += Number(lifetimeScoreBonus || 0);
+    reasons.push(`lifetime:+${Number(lifetimeScoreBonus || 0)}`);
   }
 
   if (
@@ -212,15 +182,18 @@ function scoreStackSocialDeal({
     text.includes("writing") ||
     text.includes("video") ||
     text.includes("image") ||
-    text.includes("voice")
+    text.includes("voice") ||
+    text.includes("speech") ||
+    text.includes("transcription") ||
+    text.includes("text-to-speech")
   ) {
     score += 2;
-    reasons.push(`ai_relevance:+2`);
+    reasons.push("ai_relevance:+2");
   }
 
   if (text.includes("bundle") || text.includes("course")) {
     score -= 2;
-    reasons.push(`bundle_or_course:-2`);
+    reasons.push("bundle_or_course:-2");
   }
 
   const finalScore = Math.max(1, Math.min(10, score));
@@ -230,7 +203,6 @@ function scoreStackSocialDeal({
       name,
       discountPercent,
       reviewCount,
-      lifetimeScoreBonus: Number(lifetimeScoreBonus || 0),
       reasons,
       rawScore: score,
       finalScore
@@ -242,9 +214,7 @@ function scoreStackSocialDeal({
 
 async function fetchHtml(url) {
   const res = await fetch(url, {
-    headers: {
-      "User-Agent": USER_AGENT
-    }
+    headers: { "User-Agent": USER_AGENT }
   });
 
   if (!res.ok) {
@@ -254,7 +224,7 @@ async function fetchHtml(url) {
   return await res.text();
 }
 
-async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 50) {
+async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 80) {
   const html = await fetchHtml(collectionUrl);
   const $ = cheerio.load(html);
 
@@ -269,10 +239,7 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 50) 
     if (!text) return;
 
     if (!dealMap.has(fullUrl)) {
-      dealMap.set(fullUrl, {
-        url: fullUrl,
-        anchorText: text
-      });
+      dealMap.set(fullUrl, { url: fullUrl, anchorText: text });
     }
   });
 
@@ -286,21 +253,6 @@ async function fetchCollectionDealLinks(collectionUrl, limitPerCollection = 50) 
   return links;
 }
 
-function firstSrcFromSrcset(srcset = "") {
-  return String(srcset)
-    .split(",")[0]
-    ?.trim()
-    .split(" ")[0]
-    ?.trim();
-}
-
-function pushCandidate(list, value, canonicalUrl) {
-  if (!value) return;
-  const url = absoluteUrl(canonicalUrl, value);
-  if (!url) return;
-  list.push(url);
-}
-
 function extractImageFromRawHtml(html) {
   const patterns = [
     /https:\/\/cdnp\d+\.stackassets\.com\/[^"'\\\s]+product_\d+_product_shots1\.(?:jpg|jpeg|png|webp)/i,
@@ -310,114 +262,10 @@ function extractImageFromRawHtml(html) {
 
   for (const pattern of patterns) {
     const match = html.match(pattern);
-    if (match?.[0]) {
-      return match[0];
-    }
+    if (match?.[0]) return match[0];
   }
 
   return "";
-}
-
-function extractImageFromActiveSlide($, canonicalUrl) {
-  const candidates = [];
-  const selectors = [
-    ".swiper-slide.swiper-slide-active img",
-    ".swiper-slide.swiper-slide-active source",
-    ".swiper-slide-active img",
-    ".swiper-slide-active source",
-    '[class*="swiper-slide"][class*="active"] img',
-    '[class*="swiper-slide"][class*="active"] source'
-  ];
-
-  for (const selector of selectors) {
-    $(selector).each((_, el) => {
-      pushCandidate(candidates, $(el).attr("src"), canonicalUrl);
-      pushCandidate(candidates, $(el).attr("data-src"), canonicalUrl);
-      pushCandidate(candidates, $(el).attr("data-lazy-src"), canonicalUrl);
-
-      const srcset =
-        $(el).attr("srcset") ||
-        $(el).attr("data-srcset") ||
-        $(el).attr("data-lazy-srcset") ||
-        "";
-      pushCandidate(candidates, firstSrcFromSrcset(srcset), canonicalUrl);
-    });
-  }
-
-  const preferred =
-    candidates.find((url) => url.includes("product_shots1")) ||
-    candidates.find((url) => url.includes("product_shots")) ||
-    candidates.find((url) => url.includes("product_")) ||
-    candidates[0] ||
-    "";
-
-  return preferred;
-}
-
-function extractDealImage(html, $, canonicalUrl, productJsonLd) {
-  const debug = {
-    rawHtmlImage: "",
-    structuredDataImage: "",
-    activeSlideImage: "",
-    metaImage: "",
-    finalImage: "",
-    allCandidates: []
-  };
-
-  const rawHtmlImage = extractImageFromRawHtml(html);
-  debug.rawHtmlImage = rawHtmlImage;
-  if (rawHtmlImage) {
-    debug.finalImage = safeUrl(rawHtmlImage);
-    return { image: safeUrl(rawHtmlImage), debug };
-  }
-
-  if (productJsonLd?.image) {
-    const images = Array.isArray(productJsonLd.image)
-      ? productJsonLd.image
-      : [productJsonLd.image];
-
-    const structured = images
-      .map((img) => absoluteUrl(canonicalUrl, img))
-      .find(Boolean);
-
-    debug.structuredDataImage = structured || "";
-    if (structured) {
-      debug.finalImage = safeUrl(structured);
-      return { image: safeUrl(structured), debug };
-    }
-  }
-
-  const activeSlideImage = extractImageFromActiveSlide($, canonicalUrl);
-  debug.activeSlideImage = activeSlideImage;
-  if (activeSlideImage) {
-    debug.finalImage = safeUrl(activeSlideImage);
-    return { image: safeUrl(activeSlideImage), debug };
-  }
-
-  const metaCandidates = [
-    $('meta[property="og:image"]').attr("content"),
-    $('meta[name="twitter:image"]').attr("content")
-  ]
-    .map((img) => absoluteUrl(canonicalUrl, img))
-    .filter(Boolean);
-
-  debug.allCandidates = metaCandidates;
-
-  const metaImage = metaCandidates.find((url) => {
-    const lower = url.toLowerCase();
-    return (
-      lower.includes("stackassets") ||
-      lower.endsWith(".jpg") ||
-      lower.endsWith(".jpeg") ||
-      lower.endsWith(".png") ||
-      lower.endsWith(".webp")
-    );
-  });
-
-  debug.metaImage = metaImage || "";
-  debug.finalImage = metaImage ? safeUrl(metaImage) : "";
-
-  return { image: metaImage ? safeUrl(metaImage) : "", debug };
 }
 
 function extractPricing($, productJsonLd, pageText) {
@@ -433,107 +281,19 @@ function extractPricing($, productJsonLd, pageText) {
       parseMoneyString(jsonOffer.highPrice);
   }
 
-  // 1. Label-based parsing from full page text (most reliable for StackSocial)
   const dealPriceMatch = pageText.match(/Deal Price\s*\$([0-9]+(?:\.[0-9]{2})?)/i);
   const suggestedPriceMatch = pageText.match(/Suggested Price\s*\$([0-9]+(?:\.[0-9]{2})?)/i);
   const offMatch = pageText.match(/(\d{1,3})%\s*Off/i);
 
-  if (dealPriceMatch?.[1]) {
-    currentPrice = parseMoneyString(dealPriceMatch[1]) ?? currentPrice;
-  }
-
-  if (suggestedPriceMatch?.[1]) {
-    originalPrice = parseMoneyString(suggestedPriceMatch[1]) ?? originalPrice;
-  }
-
-  if (offMatch?.[1]) {
-    discountPercent = parsePercentString(offMatch[1]) ?? discountPercent;
-  }
-
-  // 2. Fallback selectors if label-based parsing missed anything
-  if (!currentPrice) {
-    const saleSelectors = [
-      '[data-testid*="sale"]',
-      '[class*="sale-price"]',
-      '[class*="final-price"]',
-      '[class*="price"]'
-    ];
-
-    for (const selector of saleSelectors) {
-      const value = cleanText($(selector).first().text());
-      const parsed = parseMoneyString(value);
-      if (parsed) {
-        currentPrice = parsed;
-        break;
-      }
-    }
-  }
-
-  if (!originalPrice) {
-    const compareSelectors = [
-      '[class*="retail-price"]',
-      '[class*="original-price"]',
-      '[class*="compare-at"]',
-      "s",
-      "del"
-    ];
-
-    for (const selector of compareSelectors) {
-      const value = cleanText($(selector).first().text());
-      const parsed = parseMoneyString(value);
-      if (parsed && (!originalPrice || parsed > originalPrice)) {
-        originalPrice = parsed;
-      }
-    }
-  }
-
-  if (!discountPercent) {
-    const percentSelectors = [
-      '[class*="discount"]',
-      '[class*="savings"]',
-      "span",
-      "div"
-    ];
-
-    for (const selector of percentSelectors) {
-      const value = cleanText($(selector).text());
-      const parsed = parsePercentString(value);
-      if (parsed) {
-        discountPercent = parsed;
-        break;
-      }
-    }
-  }
-
-  // 3. Infer missing values if possible
-  if (!originalPrice && currentPrice && discountPercent) {
-    const inferred = currentPrice / (1 - discountPercent / 100);
-    if (Number.isFinite(inferred) && inferred > currentPrice) {
-      originalPrice = Number(inferred.toFixed(2));
-    }
-  }
+  if (dealPriceMatch?.[1]) currentPrice = parseMoneyString(dealPriceMatch[1]) ?? currentPrice;
+  if (suggestedPriceMatch?.[1]) originalPrice = parseMoneyString(suggestedPriceMatch[1]) ?? originalPrice;
+  if (offMatch?.[1]) discountPercent = parsePercentString(offMatch[1]) ?? discountPercent;
 
   if (!discountPercent && currentPrice && originalPrice) {
     discountPercent = computeDiscountPercent(currentPrice, originalPrice);
   }
 
-  // 4. Sanity cleanup
-  if (originalPrice && currentPrice && originalPrice <= currentPrice) {
-    originalPrice = null;
-  }
-
-  if (
-    discountPercent &&
-    (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100)
-  ) {
-    discountPercent = null;
-  }
-
-  return {
-    currentPrice,
-    originalPrice,
-    discountPercent
-  };
+  return { currentPrice, originalPrice, discountPercent };
 }
 
 async function fetchDealDetail(dealLink, options = {}) {
@@ -544,9 +304,7 @@ async function fetchDealDetail(dealLink, options = {}) {
 
   const canonicalUrl = safeUrl($('link[rel="canonical"]').attr("href") || dealLink.url);
   const ogTitle = cleanText($('meta[property="og:title"]').attr("content") || "");
-  const ogDescription = cleanText(
-    $('meta[property="og:description"]').attr("content") || ""
-  );
+  const ogDescription = cleanText($('meta[property="og:description"]').attr("content") || "");
   const h1 = cleanText($("h1").first().text());
   const pageText = cleanText($("body").text());
 
@@ -562,24 +320,13 @@ async function fetchDealDetail(dealLink, options = {}) {
     dealLink.anchorText ||
     "";
 
-  const imageResult = extractDealImage(html, $, canonicalUrl, productJsonLd);
-  const image = imageResult.image;
-
-  console.log("🖼️ StackSocial image debug:", {
-    deal: name,
-    url: dealLink.url,
-    rawHtmlImage: imageResult.debug.rawHtmlImage,
-    structuredDataImage: imageResult.debug.structuredDataImage,
-    activeSlideImage: imageResult.debug.activeSlideImage,
-    metaImage: imageResult.debug.metaImage,
-    finalImage: imageResult.debug.finalImage
-  });
+  const image = extractImageFromRawHtml(html);
 
   if (!image) {
     if (!imageFailureAlertSent) {
       imageFailureAlertSent = true;
       await alertAdmin(
-        `Pochify alert: StackSocial image extraction failed. Their product gallery structure may have changed and needs a parser update.\n\nExample: ${dealLink.url}`
+        `Pochify alert: StackSocial image extraction failed. Example: ${dealLink.url}`
       );
     }
     throw new Error("Missing valid image");
@@ -591,22 +338,12 @@ async function fetchDealDetail(dealLink, options = {}) {
     pageText
   );
 
-  console.log("💲 StackSocial pricing debug:", {
-    deal: name,
-    url: dealLink.url,
-    currentPrice,
-    originalPrice,
-    discountPercent
-  });
-
   const reviewMatch = pageText.match(/(\d+)\s+Reviews?/i);
   const reviewCount = reviewMatch ? Number.parseInt(reviewMatch[1], 10) : 0;
 
-  const vendorUrl = extractVendorUrl($, canonicalUrl);
+  const sourceMeta = getSourceMeta("stacksocial");
   const channel = detectChannel(`${name} ${description} ${canonicalUrl}`);
-  const offerType = /lifetime/i.test(`${name} ${description} ${pageText}`)
-    ? "lifetime"
-    : "discount";
+  const offerType = /lifetime/i.test(`${name} ${description} ${pageText}`) ? "lifetime" : "discount";
 
   const score = scoreStackSocialDeal({
     name,
@@ -618,25 +355,22 @@ async function fetchDealDetail(dealLink, options = {}) {
     enableScoringDebug: !!options.enableScoringDebug
   });
 
-  const brandKey = slugify(
-    vendorUrl
-      ? new URL(vendorUrl).hostname.replace(/^www\./, "")
-      : name
-  );
-
   return {
     name,
     slug: slugify(name),
-    brand_key: brandKey || slugify(name),
+    brand_key: slugify(name),
     description,
-    url: vendorUrl || canonicalUrl,
-    vendor_url: vendorUrl || "",
+    url: canonicalUrl,
+    vendor_url: canonicalUrl,
     stacksocial_url: canonicalUrl,
     affiliateLink: buildStackSocialAffiliateUrl(canonicalUrl),
     source: "stacksocial",
-    source_type: "merchant_collection",
-    source_detail: canonicalUrl,
-    merchant: "stacksocial",
+    source_key: sourceMeta.key,
+    source_name: sourceMeta.name,
+    source_logo_path: sourceMeta.logo_path,
+    source_home_url: sourceMeta.home_url,
+    source_deal_url: canonicalUrl,
+    merchant: sourceMeta.name,
     merchant_url: canonicalUrl,
     og_image: image,
     channel,
@@ -648,38 +382,25 @@ async function fetchDealDetail(dealLink, options = {}) {
     original_price: originalPrice,
     offer_type: offerType,
     meta_title: `${name} Deal Review | Pochify`,
-    meta_description: description.slice(0, 155),
-    raw_anchor_text: dealLink.anchorText
+    meta_description: description.slice(0, 155)
   };
 }
 
 export async function fetchStackSocialDeals(options = {}) {
-  const maxDeals = options.maxDeals || 80;
-  const limitPerCollection = options.limitPerCollection || 50;
+  const maxDeals = options.maxDeals || 120;
+  const limitPerCollection = options.limitPerCollection || 80;
 
   const allLinks = [];
 
   for (const collectionUrl of STACKSOCIAL_COLLECTIONS) {
     try {
-      console.log(`🔎 StackSocial collection: ${collectionUrl}`);
       const links = await fetchCollectionDealLinks(collectionUrl, limitPerCollection);
-      console.log(`📄 Found ${links.length} deal links from ${collectionUrl}`);
       allLinks.push(...links);
-      await sleep(300);
+      await sleep(200);
     } catch (error) {
       console.error(`❌ StackSocial collection failed: ${collectionUrl}`, error.message);
     }
   }
-
-  console.log(`📦 Total extracted links before dedupe: ${allLinks.length}`);
-
-  const texTalkyExtracted = allLinks.find(
-    (link) =>
-      link.url.includes("textalky-lifetime-subscription") ||
-      link.anchorText.toLowerCase().includes("textalky")
-  );
-
-  console.log("🧪 TexTalky in allLinks:", texTalkyExtracted || "NOT FOUND");
 
   const uniqueLinks = [];
   const seen = new Set();
@@ -693,55 +414,14 @@ export async function fetchStackSocialDeals(options = {}) {
 
   console.log(`🧹 Unique StackSocial deal links: ${uniqueLinks.length}`);
 
-  const texTalkyUnique = uniqueLinks.find(
-    (link) =>
-      link.url.includes("textalky-lifetime-subscription") ||
-      link.anchorText.toLowerCase().includes("textalky")
-  );
-
-  console.log("🧪 TexTalky in uniqueLinks:", texTalkyUnique || "NOT FOUND");
-
-  console.log("🔢 First 20 unique links to be parsed:");
-  uniqueLinks.slice(0, 20).forEach((link, index) => {
-    console.log(`   ${index + 1}. ${link.anchorText} | ${link.url}`);
-  });
-
   const parsedDeals = [];
 
-  for (const [index, link] of uniqueLinks.entries()) {
-    if (
-      link.url.includes("textalky-lifetime-subscription") ||
-      link.anchorText.toLowerCase().includes("textalky")
-    ) {
-      console.log(`🎯 TexTalky reached parse loop at position ${index + 1}`);
-    }
-
+  for (const link of uniqueLinks) {
     try {
       console.log(`🛠️ Parsing deal detail: ${link.anchorText} | ${link.url}`);
       const detail = await fetchDealDetail(link, options);
-
-      const titleText = `${detail.name} ${detail.description}`.toLowerCase();
-      const looksRelevant =
-        detail.channel === "ai" ||
-        titleText.includes("automation") ||
-        titleText.includes("productivity") ||
-        titleText.includes("writing") ||
-        titleText.includes("video") ||
-        titleText.includes("image") ||
-        titleText.includes("voice") ||
-        titleText.includes("speech") ||
-        titleText.includes("transcription") ||
-        titleText.includes("text-to-speech");
-
-      if (!looksRelevant) {
-        console.log(`⏭️ Dropped after parse (not relevant enough): ${detail.name}`);
-        continue;
-      }
-
-      console.log(`✅ Parsed + relevant: ${detail.name} | score=${detail.score}`);
       parsedDeals.push(detail);
-
-      await sleep(250);
+      await sleep(150);
     } catch (error) {
       console.error(`❌ StackSocial deal parse failed: ${link.url}`, error.message);
     }
@@ -755,8 +435,5 @@ export async function fetchStackSocialDeals(options = {}) {
     return (b.votes_count || 0) - (a.votes_count || 0);
   });
 
-  const deals = parsedDeals.slice(0, maxDeals);
-
-  console.log(`✅ Parsed StackSocial deals kept after sort: ${deals.length}`);
-  return deals;
+  return parsedDeals.slice(0, maxDeals);
 }
