@@ -77,14 +77,61 @@ function pricingChanged(existing, deal) {
   );
 }
 
+function isExcludedDeal(deal) {
+  const text = `${deal.name || ""} ${deal.description || ""}`.toLowerCase();
+
+  const blockedTerms = [
+    "bundle",
+    "course",
+    "training",
+    "masterclass",
+    "certification",
+    "pdf",
+    "microsoft",
+    "data plan",
+    "windows",
+    "vpn",
+    "mac",
+    "hosting",
+    "ad blocker",
+    "storage",
+    "streaming",
+    "cheat",
+    "password"
+  ];
+
+  const matched = blockedTerms.find((term) => text.includes(term));
+  return matched || "";
+}
+
 function passesQualityGate(deal, settings) {
   const minScore = Number(settings.minimum_quality_score || 5);
   const minDiscount = Number(settings.minimum_discount_percent || 50);
 
-  if (!deal.og_image) return false;
-  if (!hasPriceInfo(deal)) return false;
-  if (Number(deal.discount_percent || 0) < minDiscount) return false;
-  if ((deal.score || 0) < minScore) return false;
+  if (deal.source !== "stacksocial") {
+    console.log(`⏭️ Skip ${deal.name}: not StackSocial`);
+    return false;
+  }
+
+  if (!deal.og_image) {
+    console.log(`⏭️ Skip ${deal.name}: missing image`);
+    return false;
+  }
+
+  if (!hasPriceInfo(deal)) {
+    console.log(`⏭️ Skip ${deal.name}: missing valid price info`);
+    return false;
+  }
+
+  if (Number(deal.discount_percent || 0) < minDiscount) {
+    console.log(`⏭️ Skip ${deal.name}: discount ${deal.discount_percent || 0}% below minimum ${minDiscount}%`);
+    return false;
+  }
+
+  if ((deal.score || 0) < minScore) {
+    console.log(`⏭️ Skip ${deal.name}: score ${(deal.score || 0)} below minimum ${minScore}`);
+    return false;
+  }
 
   return true;
 }
@@ -130,26 +177,34 @@ async function run() {
   const existingMap = await loadExistingDetails(rawDeals.map((d) => d.slug));
 
   const candidates = [];
+
   for (const deal of rawDeals) {
     const existing = existingMap.get(deal.slug);
-
+  
     if (existing) {
       const changed = pricingChanged(existing, deal);
       const regen = !!existing.needs_regeneration;
-
+  
       if (!regen && !changed) {
         console.log(`⏭️ Skip existing unchanged: ${deal.name}`);
         continue;
       }
     }
-
+  
+    const excludedBy = isExcludedDeal(deal);
+    if (excludedBy) {
+      console.log(`⏭️ Excluded by blocked term "${excludedBy}": ${deal.name}`);
+      continue;
+    }
+  
     if (!passesQualityGate(deal, settings)) {
       console.log(`⏭️ Failed quality gate: ${deal.name}`);
       continue;
     }
-
+  
+    console.log(`✅ Candidate accepted for enrichment: ${deal.name} | score=${deal.score} | discount=${deal.discount_percent}%`);
     candidates.push(deal);
-  }
+  }}
 
   console.log(`✅ Candidates after pre-filtering: ${candidates.length}`);
 
