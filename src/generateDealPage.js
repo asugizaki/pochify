@@ -74,14 +74,6 @@ function stickyDealCard(deal) {
       <div class="cta-row" style="margin-top:16px;">
         <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
       </div>
-
-      <div style="margin-top:16px;">
-        ${shareButtonsHtml({
-          pageUrl: `${SITE_URL}/deals/${deal.slug}.html`,
-          title: deal.name,
-          summary: deal.hook || deal.description || ""
-        })}
-      </div>
     </aside>
   `;
 }
@@ -93,6 +85,12 @@ function buildDealHtml(deal) {
   const ctaUrl = `${TRACKING_BASE}/${deal.slug}`;
 
   const bodyContent = `
+    ${shareButtonsHtml({
+      pageUrl,
+      title,
+      summary: deal.hook || deal.description || ""
+    })}
+
     <div class="container" style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;">
       <main class="narrow" style="max-width:none;">
         <div class="breadcrumbs">
@@ -172,20 +170,9 @@ function buildDealHtml(deal) {
       </div>
     </div>
 
-    <div class="container mobile-deal-bottom" style="display:none;">
-      <div class="card">
-        ${sourceLogoOnly(deal)}
-        ${priceBox(deal)}
-        <div class="cta-row">
-          <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
-        </div>
-      </div>
-    </div>
-
     <style>
       @media (max-width: 980px) {
         .desktop-sticky-deal-card { display:none; }
-        .mobile-deal-bottom { display:block !important; }
         .container[style*="grid-template-columns:minmax(0,1fr) 320px"] {
           display:block !important;
         }
