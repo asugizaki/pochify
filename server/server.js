@@ -163,7 +163,8 @@ app.get("/api/public/deals", async (req, res) => {
     .from("deals")
     .select(`
       name, slug, description, hook, og_image, click_count, score, channel, created_at,
-      current_price, original_price, discount_percent, offer_type
+      current_price, original_price, discount_percent, offer_type,
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url
     `)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -249,7 +250,8 @@ app.get("/api/public/top-clicked", async (req, res) => {
     .from("deals")
     .select(`
       name, slug, description, hook, og_image, click_count, score,
-      current_price, original_price, discount_percent, offer_type
+      current_price, original_price, discount_percent, offer_type,
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url
     `)
     .in("slug", topSlugs);
 
