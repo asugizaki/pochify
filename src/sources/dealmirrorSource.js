@@ -8,7 +8,8 @@ import {
   parseMoneyString,
   computeDiscountPercent,
   scoreDeal,
-  absoluteUrl
+  absoluteUrl,
+  sleep
 } from "./shared.js";
 
 function dedupeBySlug(items) {
@@ -20,21 +21,282 @@ function dedupeBySlug(items) {
   return [...map.values()];
 }
 
-function isLikelyProductHref(href = "") {
+function isProductHref(href = "") {
   if (!href) return false;
+  if (href.includes("#")) return false;
   if (href.includes("/product-category/")) return false;
   if (href.includes("/tag/")) return false;
   if (href.includes("/cart")) return false;
-  if (href.includes("/login")) return false;
   if (href.includes("/checkout")) return false;
   if (href.includes("/my-account")) return false;
+  if (href.includes("/login")) return false;
+  if (href.includes("/account")) return false;
+
   if (href.includes("/product/")) return true;
-  return /^https:\/\/dealmirror\.com\/[^/?#]+\/?$/.test(href);
+
+  // Some DealMirror products can also be pretty permalinks under root.
+  if (/^https:\/\/dealmirror\.com\/[^/?#]+\/?$/.test(href)) return true;
+
+  return false;
+}
+
+function looksLikeRealTitle(title = "") {
+  const value = cleanText(title);
+  if (!value) return false;
+  if (value.length < 3) return false;
+
+  const blocked = [
+    "add to cart",
+    "view cart",
+    "checkout",
+    "my account",
+    "login",
+    "register",
+    "shop",
+    "home"
+  ];
+
+  return !blocked.includes(value.toLowerCase());
+}
+
+function extractCardImage(wrapper, anchor) {
+  const src =
+    anchor.find("img").first().attr("src") ||
+    anchor.find("img").first().attr("data-src") ||
+    wrapper.find("img").first().attr("src") ||
+    wrapper.find("img").first().attr("data-src") ||
+    wrapper.find("img").first().attr("srcset") ||
+    "";
+
+  return String(src).split(" ")[0];
+}
+
+function parseCategoryCandidates($, pageUrl) {
+  const candidates = [];
+
+  $("a[href]").each((_, el) => {
+    const anchor = $(el);
+    const href = absoluteUrl(pageUrl, anchor.attr("href") || "");
+
+    if (!isProductHref(href)) return;
+
+    const wrapper = anchor.closest("li, article, .product, .product-small, .product-type-simple, div");
+    const title =
+      cleanText(anchor.find("h2,h3,h4,h5").first().text()) ||
+      cleanText(wrapper.find("h2,h3,h4,h5").first().text()) ||
+      cleanText(anchor.text());
+
+    if (!looksLikeRealTitle(title)) return;
+
+    const text = cleanText(wrapper.text());
+
+    const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
+      parseMoneyString(m[1])
+    );
+
+    if (prices.length < 2) return;
+
+    const currentPrice = prices[prices.length - 1];
+    const originalPrice = prices[prices.length - 2];
+    const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
+
+    if (!discountPercent) return;
+
+    const imageUrl = extractCardImage(wrapper, anchor);
+
+    const description = cleanText(
+      text
+        .replace(title, "")
+        .replace(/\$[0-9.,]+/g, " ")
+        .replace(/\badd to cart\b/gi, " ")
+        .replace(/\bsale!\b/gi, " ")
+    ).slice(0, 220);
+
+    const offerType =
+      text.toLowerCase().includes("lifetime") || text.toLowerCase().includes("ltd")
+        ? "lifetime"
+        : "discount";
+
+    candidates.push({
+      href,
+      title,
+      description,
+      currentPrice,
+      originalPrice,
+      discountPercent,
+      imageUrl,
+      offerType
+    });
+  });
+
+  return dedupeBySlug(
+    candidates.map((item) => ({
+      slug: slugify(item.title),
+      ...item
+    }))
+  );
+}
+
+function extractDetailHeroImage($) {
+  const ogImage =
+    $('meta[property="og:image"]').attr("content") ||
+    $('meta[name="twitter:image"]').attr("content") ||
+    "";
+
+  if (ogImage) return ogImage;
+
+  const galleryImage =
+    $(".woocommerce-product-gallery__image img").first().attr("src") ||
+    $(".woocommerce-product-gallery__image img").first().attr("data-src") ||
+    $(".woocommerce-product-gallery__wrapper img").first().attr("src") ||
+    $(".woocommerce-product-gallery__wrapper img").first().attr("data-src") ||
+    $("img.wp-post-image").first().attr("src") ||
+    $("img.wp-post-image").first().attr("data-src") ||
+    $("main img").first().attr("src") ||
+    "";
+
+  return String(galleryImage).split(" ")[0];
+}
+
+function extractDetailTitle($, fallback = "") {
+  return (
+    cleanText($("h1.product_title").first().text()) ||
+    cleanText($("main h1").first().text()) ||
+    fallback
+  );
+}
+
+function extractDetailDescription($, fallback = "") {
+  return (
+    cleanText($('meta[name="description"]').attr("content") || "") ||
+    cleanText($(".woocommerce-product-details__short-description").first().text()) ||
+    cleanText($(".entry-summary p").first().text()) ||
+    fallback
+  );
+}
+
+function extractDetailPricing($, fallbackCurrent = null, fallbackOriginal = null) {
+  const bodyText = cleanText($("body").text());
+
+  let currentPrice =
+    parseMoneyString($(".price ins .woocommerce-Price-amount").first().text()) ||
+    parseMoneyString($(".price .woocommerce-Price-amount").first().text()) ||
+    fallbackCurrent;
+
+  let originalPrice =
+    parseMoneyString($(".price del .woocommerce-Price-amount").first().text()) ||
+    fallbackOriginal;
+
+  if ((!currentPrice || !originalPrice) && bodyText) {
+    const prices = [...bodyText.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
+      parseMoneyString(m[1])
+    );
+
+    if (!currentPrice && prices.length > 0) currentPrice = prices[prices.length - 1];
+    if (!originalPrice && prices.length > 1) originalPrice = prices[prices.length - 2];
+  }
+
+  return { currentPrice, originalPrice };
+}
+
+async function enrichFromDetail(candidate, sourceMeta, options = {}) {
+  console.log(`🟢 [DealMirror] Processing detail page: ${candidate.href}`);
+
+  const html = await fetchHtml(candidate.href);
+  const $ = cheerio.load(html);
+
+  const title = extractDetailTitle($, candidate.title);
+  const description = extractDetailDescription($, candidate.description || "");
+  const heroImage = extractDetailHeroImage($) || candidate.imageUrl || "";
+
+  const { currentPrice, originalPrice } = extractDetailPricing(
+    $,
+    candidate.currentPrice,
+    candidate.originalPrice
+  );
+
+  const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
+  const bodyText = cleanText($("body").text());
+  const offerType =
+    bodyText.toLowerCase().includes("lifetime") || bodyText.toLowerCase().includes("ltd")
+      ? "lifetime"
+      : candidate.offerType || "discount";
+
+  const built = {
+    name: title,
+    slug: slugify(title),
+    brand_key: slugify(title),
+    description,
+    url: candidate.href,
+    vendor_url: candidate.href,
+    affiliateLink: candidate.href,
+    source: "dealmirror",
+    source_key: sourceMeta.key,
+    source_name: sourceMeta.name,
+    source_logo_path: sourceMeta.logo_path,
+    source_home_url: sourceMeta.home_url,
+    source_deal_url: candidate.href,
+    merchant: sourceMeta.name,
+    merchant_url: candidate.href,
+    og_image: heroImage,
+    channel: detectChannel(`${title} ${description}`),
+    score: scoreDeal({
+      name: title,
+      description,
+      discountPercent,
+      reviewCount: 0,
+      sourceUrl: candidate.href,
+      lifetimeScoreBonus: Number(options.lifetimeScoreBonus || 0),
+      enableScoringDebug: !!options.enableScoringDebug
+    }),
+    votes_count: 0,
+    review_count: 0,
+    discount_percent: discountPercent,
+    current_price: currentPrice,
+    original_price: originalPrice,
+    offer_type: offerType,
+    meta_title: `${title} Deal Review | Pochify`,
+    meta_description: description.slice(0, 155)
+  };
+
+  console.log("🟢 [DealMirror] Candidate:", {
+    title: built.name,
+    href: built.url,
+    image: built.og_image,
+    current: built.current_price,
+    original: built.original_price,
+    discount: built.discount_percent
+  });
+
+  return built;
+}
+
+async function mapLimit(items, limit, mapper) {
+  const results = [];
+  let index = 0;
+
+  async function worker() {
+    while (index < items.length) {
+      const currentIndex = index++;
+      try {
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      } catch (error) {
+        console.error(`❌ [DealMirror] Detail parse failed for index ${currentIndex}:`, error.message);
+        results[currentIndex] = null;
+      }
+      await sleep(100);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
+  await Promise.all(workers);
+
+  return results.filter(Boolean);
 }
 
 export async function fetchDealmirrorDeals(pages = [], options = {}) {
   const sourceMeta = getSourceMeta("dealmirror");
-  const deals = [];
+  const categoryCandidates = [];
 
   for (const page of pages) {
     console.log(`🟢 [DealMirror] Processing page: ${page.url}`);
@@ -42,98 +304,36 @@ export async function fetchDealmirrorDeals(pages = [], options = {}) {
     const html = await fetchHtml(page.url);
     const $ = cheerio.load(html);
 
-    $("a[href]").each((_, el) => {
-      const href = absoluteUrl(page.url, $(el).attr("href") || "");
-      if (!isLikelyProductHref(href)) return;
+    const candidates = parseCategoryCandidates($, page.url);
 
-      const wrapper = $(el).closest("li, article, div");
-      const imageUrl =
-        $(el).find("img").first().attr("src") ||
-        $(el).find("img").first().attr("data-src") ||
-        wrapper.find("img").first().attr("src") ||
-        wrapper.find("img").first().attr("data-src") ||
-        "";
-
-      const title =
-        cleanText($(el).find("h2,h3,h4,h5").first().text()) ||
-        cleanText(wrapper.find("h2,h3,h4,h5").first().text()) ||
-        cleanText($(el).text());
-
-      if (!title || title.length < 3) return;
-
-      const text = cleanText(wrapper.text());
-      const prices = [...text.matchAll(/\$([0-9]+(?:\.[0-9]{1,2})?)/g)].map((m) =>
-        parseMoneyString(m[1])
-      );
-
-      if (prices.length < 2) return;
-
-      const currentPrice = prices[prices.length - 1];
-      const originalPrice = prices[prices.length - 2];
-      const discountPercent = computeDiscountPercent(currentPrice, originalPrice);
-
-      if (!discountPercent) return;
-
-      const description = cleanText(
-        text
-          .replace(title, "")
-          .replace(/\$[0-9.,]+/g, " ")
-          .replace(/\bAdd to Cart\b/gi, " ")
-      ).slice(0, 220);
-
-      const built = {
-        name: title,
-        slug: slugify(title),
-        brand_key: slugify(title),
-        description,
-        url: href,
-        vendor_url: href,
-        affiliateLink: href,
-        source: "dealmirror",
-        source_key: sourceMeta.key,
-        source_name: sourceMeta.name,
-        source_logo_path: sourceMeta.logo_path,
-        source_home_url: sourceMeta.home_url,
-        source_deal_url: href,
-        merchant: sourceMeta.name,
-        merchant_url: href,
-        og_image: imageUrl || "",
-        channel: detectChannel(`${title} ${description}`),
-        score: scoreDeal({
-          name: title,
-          description,
-          discountPercent,
-          reviewCount: 0,
-          sourceUrl: href,
-          lifetimeScoreBonus: Number(options.lifetimeScoreBonus || 0),
-          enableScoringDebug: !!options.enableScoringDebug
-        }),
-        votes_count: 0,
-        review_count: 0,
-        discount_percent: discountPercent,
-        current_price: currentPrice,
-        original_price: originalPrice,
-        offer_type: text.toLowerCase().includes("lifetime") || text.toLowerCase().includes("ltd")
-          ? "lifetime"
-          : "discount",
-        meta_title: `${title} Deal Review | Pochify`,
-        meta_description: description.slice(0, 155)
-      };
-
-      console.log("🟢 [DealMirror] Candidate:", {
-        title: built.name,
-        href: built.url,
-        image: built.og_image,
-        current: built.current_price,
-        original: built.original_price,
-        discount: built.discount_percent
+    for (const candidate of candidates) {
+      console.log("🟢 [DealMirror] Category candidate:", {
+        title: candidate.title,
+        href: candidate.href,
+        image: candidate.imageUrl,
+        current: candidate.currentPrice,
+        original: candidate.originalPrice,
+        discount: candidate.discountPercent
       });
+    }
 
-      deals.push(built);
-    });
+    categoryCandidates.push(...candidates);
   }
 
-  const deduped = dedupeBySlug(deals);
-  console.log(`🟢 [DealMirror] Final deduped deals: ${deduped.length}`);
-  return deduped;
+  const dedupedCategory = dedupeBySlug(
+    categoryCandidates.map((item) => ({
+      slug: item.slug,
+      ...item
+    }))
+  );
+
+  console.log(`🟢 [DealMirror] Category candidates after dedupe: ${dedupedCategory.length}`);
+
+  const detailed = await mapLimit(dedupedCategory, 4, async (candidate) =>
+    enrichFromDetail(candidate, sourceMeta, options)
+  );
+
+  const finalDeals = dedupeBySlug(detailed);
+  console.log(`🟢 [DealMirror] Final deduped deals: ${finalDeals.length}`);
+  return finalDeals;
 }
