@@ -226,25 +226,68 @@ function parseCategoryCandidates($, pageUrl) {
   return dedupeBySlug(candidates);
 }
 
-function extractDetailHeroImage($) {
-  const ogImage =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[name="twitter:image"]').attr("content") ||
-    "";
+function isLikelyLogoImage(url = "") {
+  const value = String(url).toLowerCase();
 
-  if (ogImage) return ogImage;
+  return (
+    value.includes("dealmirror-logo") ||
+    value.includes("dealmirrror-logo") ||
+    value.includes("/logo") ||
+    value.includes("site-logo") ||
+    value.includes("cropped-")
+  );
+}
 
-  const galleryImage =
-    $(".woocommerce-product-gallery__image img").first().attr("src") ||
-    $(".woocommerce-product-gallery__image img").first().attr("data-src") ||
-    $(".woocommerce-product-gallery__wrapper img").first().attr("src") ||
-    $(".woocommerce-product-gallery__wrapper img").first().attr("data-src") ||
-    $("img.wp-post-image").first().attr("src") ||
-    $("img.wp-post-image").first().attr("data-src") ||
-    $("main img").first().attr("src") ||
-    "";
+function pickFirstNonLogo(urls = []) {
+  for (const url of urls) {
+    if (!url) continue;
+    const clean = String(url).split(" ")[0];
+    if (!clean) continue;
+    if (isLikelyLogoImage(clean)) continue;
+    return clean;
+  }
+  return "";
+}
 
-  return String(galleryImage).split(" ")[0];
+function extractDetailHeroImage($, fallback = "") {
+  const galleryCandidates = [
+    $(".woocommerce-product-gallery__image img").first().attr("src"),
+    $(".woocommerce-product-gallery__image img").first().attr("data-src"),
+    $(".woocommerce-product-gallery__wrapper img").first().attr("src"),
+    $(".woocommerce-product-gallery__wrapper img").first().attr("data-src"),
+    $("img.wp-post-image").first().attr("src"),
+    $("img.wp-post-image").first().attr("data-src")
+  ];
+
+  const contentCandidates = [
+    $(".entry-summary img").first().attr("src"),
+    $("main img").first().attr("src")
+  ];
+
+  const metaCandidates = [
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content")
+  ];
+
+  const chosenGallery = pickFirstNonLogo(galleryCandidates);
+  const chosenContent = pickFirstNonLogo(contentCandidates);
+  const chosenMeta = pickFirstNonLogo(metaCandidates);
+  const chosenFallback = !isLikelyLogoImage(fallback) ? fallback : "";
+
+  const finalImage = chosenGallery || chosenContent || chosenMeta || chosenFallback || "";
+
+  console.log("🟢 [DealMirror] Detail image debug:", {
+    galleryCandidates,
+    contentCandidates,
+    metaCandidates,
+    fallback,
+    chosenGallery,
+    chosenContent,
+    chosenMeta,
+    finalImage
+  });
+
+  return finalImage;
 }
 
 function extractDetailTitle($, fallback = "") {
@@ -292,7 +335,7 @@ async function enrichFromDetail(candidate, sourceMeta, options = {}) {
 
   const title = extractDetailTitle($, candidate.title);
   const description = extractDetailDescription($, candidate.description || "");
-  const heroImage = extractDetailHeroImage($) || candidate.imageUrl || "";
+  const heroImage = extractDetailHeroImage($, candidate.imageUrl || "");
 
   const { currentPrice, originalPrice } = extractDetailPricing(
     $,
