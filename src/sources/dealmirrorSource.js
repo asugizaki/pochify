@@ -25,10 +25,14 @@ function isProductHref(href = "") {
   return href.includes("/product/");
 }
 
-function normalizeDealMirrorImage(url = "") {
+function toLargeImage(url = "") {
   const clean = String(url).split(" ")[0].trim();
   if (!clean) return "";
   return clean.replace(/-\d{2,4}x\d{2,4}(?=\.(jpg|jpeg|png|webp))/i, "");
+}
+
+function toCardImage(url = "") {
+  return String(url).split(" ")[0].trim();
 }
 
 function extractCardImage(anchor, wrapper) {
@@ -41,7 +45,7 @@ function extractCardImage(anchor, wrapper) {
     wrapper.find("img").first().attr("srcset") ||
     "";
 
-  return normalizeDealMirrorImage(src);
+  return toCardImage(src);
 }
 
 function extractCardTitle(anchor, wrapper) {
@@ -94,7 +98,7 @@ function mergeCategoryEntries(entries) {
     const existing = byHref.get(entry.href) || {
       href: entry.href,
       title: "",
-      imageUrl: "",
+      cardImage: "",
       textParts: [],
       currentPrice: null,
       originalPrice: null,
@@ -105,8 +109,8 @@ function mergeCategoryEntries(entries) {
       existing.title = entry.title;
     }
 
-    if (!existing.imageUrl && entry.imageUrl) {
-      existing.imageUrl = entry.imageUrl;
+    if (!existing.cardImage && entry.cardImage) {
+      existing.cardImage = entry.cardImage;
     }
 
     if (entry.text) {
@@ -135,7 +139,8 @@ function mergeCategoryEntries(entries) {
     return {
       href: item.href,
       title: item.title,
-      imageUrl: item.imageUrl,
+      cardImage: item.cardImage,
+      heroImage: item.cardImage ? toLargeImage(item.cardImage) : "",
       text: mergedText,
       currentPrice: item.currentPrice || mergedPrices.currentPrice,
       originalPrice: item.originalPrice || mergedPrices.originalPrice,
@@ -153,13 +158,13 @@ function parseCategoryCandidates($, pageUrl) {
     const wrapper = anchor.closest("li.product, .product, article, li, div");
     const title = extractCardTitle(anchor, wrapper);
     const text = cleanText(wrapper.text());
-    const imageUrl = extractCardImage(anchor, wrapper);
+    const cardImage = extractCardImage(anchor, wrapper);
     const { currentPrice, originalPrice, discountPercent } = extractCardPrices(text);
 
     rawEntries.push({
       href,
       title,
-      imageUrl,
+      cardImage,
       text,
       currentPrice,
       originalPrice,
@@ -167,37 +172,11 @@ function parseCategoryCandidates($, pageUrl) {
     });
   });
 
-  console.log(`🟢 [DealMirror] Product href anchors found: ${rawEntries.length}`);
-  rawEntries.slice(0, 30).forEach((item, index) => {
-    console.log(`🟢 [DealMirror] Product anchor ${index + 1}:`, {
-      href: item.href,
-      title: item.title,
-      image: item.imageUrl,
-      currentPrice: item.currentPrice,
-      originalPrice: item.originalPrice,
-      discountPercent: item.discountPercent,
-      text: item.text.slice(0, 260)
-    });
-  });
-
   const merged = mergeCategoryEntries(rawEntries);
-
-  console.log(`🟢 [DealMirror] Product entries after href merge: ${merged.length}`);
-  merged.slice(0, 20).forEach((item, index) => {
-    console.log(`🟢 [DealMirror] Merged entry ${index + 1}:`, {
-      href: item.href,
-      title: item.title,
-      image: item.imageUrl,
-      currentPrice: item.currentPrice,
-      originalPrice: item.originalPrice,
-      discountPercent: item.discountPercent,
-      text: item.text.slice(0, 260)
-    });
-  });
 
   const candidates = merged
     .filter((item) => item.href && item.title && item.title.length >= 3)
-    .filter((item) => item.imageUrl)
+    .filter((item) => item.cardImage || item.heroImage)
     .filter((item) => item.currentPrice && item.originalPrice && item.discountPercent)
     .map((item) => {
       const description = cleanText(
@@ -223,7 +202,8 @@ function parseCategoryCandidates($, pageUrl) {
         currentPrice: item.currentPrice,
         originalPrice: item.originalPrice,
         discountPercent: item.discountPercent,
-        imageUrl: item.imageUrl,
+        cardImage: item.cardImage || item.heroImage,
+        heroImage: item.heroImage || item.cardImage,
         offerType,
         slug: slugify(item.title)
       };
@@ -247,7 +227,7 @@ function isLikelyLogoImage(url = "") {
 function pickFirstNonLogo(urls = []) {
   for (const url of urls) {
     if (!url) continue;
-    const clean = normalizeDealMirrorImage(String(url).split(" ")[0]);
+    const clean = String(url).split(" ")[0];
     if (!clean) continue;
     if (isLikelyLogoImage(clean)) continue;
     return clean;
@@ -278,22 +258,9 @@ function extractDetailHeroImage($, fallback = "") {
   const chosenGallery = pickFirstNonLogo(galleryCandidates);
   const chosenContent = pickFirstNonLogo(contentCandidates);
   const chosenMeta = pickFirstNonLogo(metaCandidates);
-  const chosenFallback = !isLikelyLogoImage(fallback) ? normalizeDealMirrorImage(fallback) : "";
+  const chosenFallback = !isLikelyLogoImage(fallback) ? fallback : "";
 
-  const finalImage = chosenGallery || chosenContent || chosenMeta || chosenFallback || "";
-
-  console.log("🟢 [DealMirror] Detail image debug:", {
-    galleryCandidates,
-    contentCandidates,
-    metaCandidates,
-    fallback,
-    chosenGallery,
-    chosenContent,
-    chosenMeta,
-    finalImage
-  });
-
-  return finalImage;
+  return toLargeImage(chosenGallery || chosenContent || chosenMeta || chosenFallback || "");
 }
 
 function extractDetailTitle($, fallback = "") {
@@ -341,7 +308,8 @@ async function enrichFromDetail(candidate, sourceMeta, options = {}) {
 
   const title = extractDetailTitle($, candidate.title);
   const description = extractDetailDescription($, candidate.description || "");
-  const heroImage = extractDetailHeroImage($, candidate.imageUrl || "");
+  const heroImage = extractDetailHeroImage($, candidate.heroImage || candidate.cardImage || "");
+  const cardImage = candidate.cardImage || heroImage;
 
   const { currentPrice, originalPrice } = extractDetailPricing(
     $,
@@ -373,6 +341,7 @@ async function enrichFromDetail(candidate, sourceMeta, options = {}) {
     merchant: sourceMeta.name,
     merchant_url: candidate.href,
     og_image: heroImage,
+    card_image: cardImage,
     channel: detectChannel(`${title} ${description}`),
     score: scoreDeal({
       name: title,
@@ -396,7 +365,8 @@ async function enrichFromDetail(candidate, sourceMeta, options = {}) {
   console.log("🟢 [DealMirror] Candidate:", {
     title: built.name,
     href: built.url,
-    image: built.og_image,
+    card_image: built.card_image,
+    hero_image: built.og_image,
     current: built.current_price,
     original: built.original_price,
     discount: built.discount_percent
@@ -439,18 +409,6 @@ export async function fetchDealmirrorDeals(pages = [], options = {}) {
     const $ = cheerio.load(html);
 
     const candidates = parseCategoryCandidates($, page.url);
-
-    for (const candidate of candidates) {
-      console.log("🟢 [DealMirror] Category candidate:", {
-        title: candidate.title,
-        href: candidate.href,
-        image: candidate.imageUrl,
-        current: candidate.currentPrice,
-        original: candidate.originalPrice,
-        discount: candidate.discountPercent
-      });
-    }
-
     categoryCandidates.push(...candidates);
   }
 
