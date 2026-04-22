@@ -164,7 +164,7 @@ app.get("/api/public/latest-deals", async (req, res) => {
     .select(`
       name, slug, description, hook, og_image, page_url, click_count, votes_count, score,
       created_at, channel, current_price, original_price, discount_percent, offer_type,
-      source_key, source_name, source_logo_path, source_home_url, source_deal_url
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url, card_image
     `)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -186,7 +186,7 @@ app.get("/api/public/deals", async (req, res) => {
     .select(`
       name, slug, description, hook, og_image, click_count, score, channel, created_at,
       current_price, original_price, discount_percent, offer_type,
-      source_key, source_name, source_logo_path, source_home_url, source_deal_url
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url, card_image
     `)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -221,7 +221,7 @@ app.get("/api/public/related-deals", async (req, res) => {
     .from("deals")
     .select(`
       name, slug, description, hook, og_image, score, click_count, channel,
-      current_price, original_price, discount_percent, offer_type
+      current_price, original_price, discount_percent, offer_type, card_image
     `)
     .neq("slug", slug)
     .order("click_count", { ascending: false })
@@ -273,7 +273,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
     .select(`
       name, slug, description, hook, og_image, click_count, score,
       current_price, original_price, discount_percent, offer_type,
-      source_key, source_name, source_logo_path, source_home_url, source_deal_url
+      source_key, source_name, source_logo_path, source_home_url, source_deal_url, card_image
     `)
     .in("slug", topSlugs);
 
