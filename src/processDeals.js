@@ -343,8 +343,8 @@ async function run() {
 
     const enriched = await enrichProduct({
       ...deal,
-      og_image: localHeroImagePath || deal.og_image,
-      local_hero_image_path: localHeroImagePath || ""
+      og_image: localHeroImagePath || deal.og_image || improved.og_image || "",
+      card_image: deal.card_image || improved.card_image || deal.og_image || improved.og_image || "",
     });
 
     const improved = enhanceCopy(enriched);
