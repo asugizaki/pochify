@@ -263,7 +263,7 @@ function buildHomeShell() {
           return \`
             <a class="deal-card-link" href="/deals/\${item.slug}.html">
               <div class="card deal-card">
-                \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
+                \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
                   <h3>\${item.name}</h3>
                   \${sourceLogo(item)}
