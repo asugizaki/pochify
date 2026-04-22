@@ -25,6 +25,12 @@ function isProductHref(href = "") {
   return href.includes("/product/");
 }
 
+function normalizeDealMirrorImage(url = "") {
+  const clean = String(url).split(" ")[0].trim();
+  if (!clean) return "";
+  return clean.replace(/-\d{2,4}x\d{2,4}(?=\.(jpg|jpeg|png|webp))/i, "");
+}
+
 function extractCardImage(anchor, wrapper) {
   const src =
     anchor.find("img").first().attr("src") ||
@@ -35,7 +41,7 @@ function extractCardImage(anchor, wrapper) {
     wrapper.find("img").first().attr("srcset") ||
     "";
 
-  return String(src).split(" ")[0];
+  return normalizeDealMirrorImage(src);
 }
 
 function extractCardTitle(anchor, wrapper) {
@@ -241,7 +247,7 @@ function isLikelyLogoImage(url = "") {
 function pickFirstNonLogo(urls = []) {
   for (const url of urls) {
     if (!url) continue;
-    const clean = String(url).split(" ")[0];
+    const clean = normalizeDealMirrorImage(String(url).split(" ")[0]);
     if (!clean) continue;
     if (isLikelyLogoImage(clean)) continue;
     return clean;
@@ -272,7 +278,7 @@ function extractDetailHeroImage($, fallback = "") {
   const chosenGallery = pickFirstNonLogo(galleryCandidates);
   const chosenContent = pickFirstNonLogo(contentCandidates);
   const chosenMeta = pickFirstNonLogo(metaCandidates);
-  const chosenFallback = !isLikelyLogoImage(fallback) ? fallback : "";
+  const chosenFallback = !isLikelyLogoImage(fallback) ? normalizeDealMirrorImage(fallback) : "";
 
   const finalImage = chosenGallery || chosenContent || chosenMeta || chosenFallback || "";
 
