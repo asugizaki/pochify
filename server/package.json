@@ -4,9 +4,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "regenerate:outdated": "node src/regenerateOutdatedDeals.js",
-    "regenerate:all": "node src/regenerateAllDeals.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
