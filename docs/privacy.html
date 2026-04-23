@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Privacy Policy | Pochify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Privacy policy for Pochify." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/privacy.html" />
+  <meta property="og:title" content="Privacy Policy | Pochify" />
+  <meta property="og:description" content="Privacy policy for Pochify." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/privacy.html" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2QCX91NDD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-W2QCX91NDD');
+    </script>
+  
+  
+</head>
+<body>
+  
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/"><img src="/assets/pochify_logo.png" alt="Pochify" /></a>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
+          <a href="/deals/">Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  
+  
+      <div class="container narrow">
+        <div class="breadcrumbs"><a href="/">Home</a> / Privacy Policy</div>
+        <h1>Privacy Policy</h1>
+        <div class="card">
+        <p>Pochify may collect basic analytics, referral click data, and standard technical information needed to operate and improve the site.</p>
+        <p>We do not sell personal information. Third-party services such as analytics providers or external deal platforms may also process data according to their own policies.</p>
+        <p>By using Pochify, you agree to the use of cookies or similar technologies where applicable for analytics and site performance.</p>
+      </div>
+        
+    <div class="footer">
+      <p><a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
+      <p class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </p>
+    </div>
+  
+      </div>
+    
+  
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || "Link copied");
+        } catch {
+          alert("Could not copy link");
+        }
+      }
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FAQ | Pochify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Frequently asked questions about how Pochify works." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pochify.com/faq.html" />
+  <meta property="og:title" content="FAQ | Pochify" />
+  <meta property="og:description" content="Frequently asked questions about how Pochify works." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pochify.com/faq.html" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2QCX91NDD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-W2QCX91NDD');
+    </script>
+  
+  
+</head>
+<body>
+  
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/"><img src="/assets/pochify_logo.png" alt="Pochify" /></a>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+        <nav class="nav-links" id="siteNav">
+          <a href="/deals/">Deals</a>
+          <a href="/categories/ai.html">AI</a>
+          <a href="/categories/saas.html">SaaS</a>
+          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+      </div>
+    </header>
+  
+  
+      <div class="container narrow">
+        <div class="breadcrumbs"><a href="/">Home</a> / FAQ</div>
+        <h1>FAQ</h1>
+        <div class="card">
+        <h2>What is Pochify?</h2>
+        <p>Pochify curates discounted AI tools, SaaS products, and useful software picks.</p>
+
+        <h2>How are deals chosen?</h2>
+        <p>Pochify reviews software deals and highlights offers that meet pricing and quality thresholds.</p>
+
+        <h2>Do prices change?</h2>
+        <p>Yes. Prices and discounts can change at any time on the original seller’s site.</p>
+      </div>
+        
+    <div class="footer">
+      <p><a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
+      <p class="footer-links">
+        <a href="/faq.html">FAQ</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms & Conditions</a>
+      </p>
+    </div>
+  
+      </div>
+    
+  
+    <script>
+      function toggleMenu() {
+        const nav = document.getElementById("siteNav");
+        if (nav) nav.classList.toggle("open");
+      }
+
+      async function copyText(text, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert(label || "Link copied");
+        } catch {
+          alert("Could not copy link");
+        }
+      }
+    </script>
+  
+</body>
+</html>
