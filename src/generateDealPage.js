@@ -3,7 +3,6 @@ import path from "path";
 import {
   escapeHtml,
   layout,
-  footerHtml,
   shareButtonsHtml,
   structuredArticleData,
   ensureSharedAssets
@@ -21,6 +20,11 @@ function writeIfMissing(filePath, content) {
   if (!fs.existsSync(filePath)) {
     fs.writeFileSync(filePath, content, "utf8");
   }
+}
+
+function writeFile(filePath, content) {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, content, "utf8");
 }
 
 function listHtml(items = []) {
@@ -70,7 +74,6 @@ function stickyDealCard(deal) {
       ${sourceLogoOnly(deal)}
       <h3 style="font-size:18px;line-height:1.35;margin:14px 0 10px;">${escapeHtml(deal.name)}</h3>
       ${priceBox(deal)}
-
       <div class="cta-row" style="margin-top:16px;">
         <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
       </div>
@@ -161,8 +164,6 @@ function buildDealHtml(deal) {
             <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
           </div>
         </div>
-
-        ${footerHtml(SITE_URL)}
       </main>
 
       <div class="desktop-sticky-deal-card">
@@ -205,7 +206,6 @@ function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
         <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
         <h1>${escapeHtml(title)}</h1>
         <div class="card">${contentHtml}</div>
-        ${footerHtml(SITE_URL)}
       </div>
     `
   });
@@ -249,63 +249,61 @@ function buildHomeShell() {
 
         <div id="topClickedDeals" class="grid"><div class="empty">Loading top clicked picks…</div></div>
 
-        ${footerHtml(SITE_URL)}
+        <script>
+          function sourceLogo(item) {
+            return item.source_logo_path
+              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+              : '';
+          }
+
+          function card(item) {
+            return \`
+              <a class="deal-card-link" href="/deals/\${item.slug}.html">
+                <div class="card deal-card">
+                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <h3>\${item.name}</h3>
+                    \${sourceLogo(item)}
+                  </div>
+                  <div class="card-price-row">
+                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+                  </div>
+                </div>
+              </a>
+            \`;
+          }
+
+          async function loadLatestDeals() {
+            const container = document.getElementById("latestDeals");
+            try {
+              const res = await fetch("https://go.pochify.com/api/public/latest-deals?limit=16");
+              const data = await res.json();
+              const items = data.items || [];
+              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No picks yet.</div>';
+            } catch {
+              container.innerHTML = '<div class="empty">Latest picks are temporarily unavailable.</div>';
+            }
+          }
+
+          async function loadTopClickedDeals() {
+            const container = document.getElementById("topClickedDeals");
+            try {
+              const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7&limit=8");
+              const data = await res.json();
+              const items = data.items || [];
+              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
+            } catch {
+              container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
+            }
+          }
+
+          loadLatestDeals();
+          loadTopClickedDeals();
+        </script>
       </div>
-
-      <script>
-        function sourceLogo(item) {
-          return item.source_logo_path
-            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-            : '';
-        }
-
-        function card(item) {
-          return \`
-            <a class="deal-card-link" href="/deals/\${item.slug}.html">
-              <div class="card deal-card">
-                \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <h3>\${item.name}</h3>
-                  \${sourceLogo(item)}
-                </div>
-                <div class="card-price-row">
-                  \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                  \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                  \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                  \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                </div>
-              </div>
-            </a>
-          \`;
-        }
-
-        async function loadLatestDeals() {
-          const container = document.getElementById("latestDeals");
-          try {
-            const res = await fetch("https://go.pochify.com/api/public/latest-deals?limit=16");
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No picks yet.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Latest picks are temporarily unavailable.</div>';
-          }
-        }
-
-        async function loadTopClickedDeals() {
-          const container = document.getElementById("topClickedDeals");
-          try {
-            const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7&limit=8");
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
-          }
-        }
-
-        loadLatestDeals();
-        loadTopClickedDeals();
-      </script>
     `
   });
 }
@@ -330,51 +328,49 @@ function buildDealsShell(title, category = "") {
 
         <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
 
-        ${footerHtml(SITE_URL)}
-      </div>
-
-      <script>
-        function sourceLogo(item) {
-          return item.source_logo_path
-            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-            : '';
-        }
-
-        function card(item) {
-          return \`
-            <a class="deal-card-link" href="/deals/\${item.slug}.html">
-              <div class="card deal-card">
-                \${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <h3>\${item.name}</h3>
-                  \${sourceLogo(item)}
-                </div>
-                <div class="card-price-row">
-                  \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                  \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                  \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                  \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                </div>
-              </div>
-            </a>
-          \`;
-        }
-
-        async function loadDeals() {
-          const container = document.getElementById("dealsGrid");
-          const url = "https://go.pochify.com/api/public/deals?limit=40${category ? `&category=${category}` : ""}";
-          try {
-            const res = await fetch(url);
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+        <script>
+          function sourceLogo(item) {
+            return item.source_logo_path
+              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+              : '';
           }
-        }
 
-        loadDeals();
-      </script>
+          function card(item) {
+            return \`
+              <a class="deal-card-link" href="/deals/\${item.slug}.html">
+                <div class="card deal-card">
+                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <h3>\${item.name}</h3>
+                    \${sourceLogo(item)}
+                  </div>
+                  <div class="card-price-row">
+                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+                  </div>
+                </div>
+              </a>
+            \`;
+          }
+
+          async function loadDeals() {
+            const container = document.getElementById("dealsGrid");
+            const url = "https://go.pochify.com/api/public/deals?limit=40${category ? `&category=${category}` : ""}";
+            try {
+              const res = await fetch(url);
+              const data = await res.json();
+              const items = data.items || [];
+              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
+            } catch {
+              container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+            }
+          }
+
+          loadDeals();
+        </script>
+      </div>
     `
   });
 }
@@ -434,6 +430,70 @@ export function ensureShellPages() {
     })
   );
 
+  ensureDir(path.join("docs", "partials"));
+  ensureDir(path.join("docs", "assets"));
+
+  writeFile(
+    path.join("docs", "partials", "header.html"),
+    `<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="/">
+      <img src="/assets/pochify_logo.png" alt="Pochify" />
+    </a>
+    <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+    <nav class="nav-links" id="siteNav">
+      <a href="/deals/">Deals</a>
+      <a href="/categories/ai.html">AI</a>
+      <a href="/categories/saas.html">SaaS</a>
+      <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
+    </nav>
+  </div>
+</header>`
+  );
+
+  writeFile(
+    path.join("docs", "partials", "footer.html"),
+    `<div class="container">
+  <div class="footer">
+    <p><a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
+    <p class="footer-links">
+      <a href="/faq.html">FAQ</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms & Conditions</a>
+    </p>
+  </div>
+</div>`
+  );
+
+  writeFile(
+    path.join("docs", "assets", "layout.js"),
+    `async function injectPartial(targetId, url) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(\`Failed to load \${url}\`);
+    el.innerHTML = await res.text();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function toggleMenu() {
+  const nav = document.getElementById("siteNav");
+  if (nav) nav.classList.toggle("open");
+}
+
+async function initLayout() {
+  await injectPartial("site-header", "/partials/header.html");
+  await injectPartial("site-footer", "/partials/footer.html");
+}
+
+initLayout();
+window.toggleMenu = toggleMenu;`
+  );
+
   console.log("📄 Ensured static pages exist:", [
     "docs/faq.html",
     "docs/privacy.html",
@@ -456,6 +516,7 @@ Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `);
+  console.log("🤖 Ensured robots.txt exists");
 }
 
 export function generateSitemapFromDeals(deals) {
@@ -465,6 +526,9 @@ export function generateSitemapFromDeals(deals) {
     `${SITE_URL}/deals/`,
     `${SITE_URL}/categories/ai.html`,
     `${SITE_URL}/categories/saas.html`,
+    `${SITE_URL}/faq.html`,
+    `${SITE_URL}/privacy.html`,
+    `${SITE_URL}/terms.html`,
     ...deals.map((d) => `${SITE_URL}/deals/${d.slug}.html`)
   ];
 
@@ -474,4 +538,5 @@ ${urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n")}
 </urlset>`;
 
   fs.writeFileSync(path.join("docs", "sitemap.xml"), xml, "utf8");
+  console.log("🗺️ Generated sitemap");
 }
