@@ -114,7 +114,7 @@ async function run() {
   await updateLayoutVersions(successSlugs);
   await generateSitemapFromDeals(deals);
 
-  console.log("🏁 Full regeneration complete");
+  console.log("🏁 Full regeneration complete ");
 }
 
 run().catch((error) => {
