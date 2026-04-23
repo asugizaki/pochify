@@ -9,6 +9,7 @@
     "regenerate:all": "node src/regenerateAllDeals.js"
   },
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "@supabase/supabase-js": "^2.49.8",
   }
 }
