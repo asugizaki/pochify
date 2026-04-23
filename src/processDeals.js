@@ -355,50 +355,53 @@ async function run() {
     const finalDeal = {
       ...improved,
       ...aiContent,
-
+  
       source: deal.source || improved.source || "unknown",
       source_key: deal.source_key || improved.source_key || "",
       source_name: deal.source_name || improved.source_name || "",
       source_logo_path: deal.source_logo_path || improved.source_logo_path || "",
       source_home_url: deal.source_home_url || improved.source_home_url || "",
       source_deal_url: deal.source_deal_url || improved.source_deal_url || "",
-
+  
       og_image: localHeroImagePath || deal.og_image || improved.og_image || "",
       local_hero_image_path: localHeroImagePath || "",
+      card_image: deal.card_image || improved.card_image || deal.og_image || improved.og_image || "",
+      local_card_image_path: improved.local_card_image_path || "",
+  
       stacksocial_url: deal.stacksocial_url || improved.stacksocial_url || "",
       vendor_url: deal.vendor_url || improved.vendor_url || "",
       current_price: deal.current_price ?? improved.current_price ?? null,
       original_price: deal.original_price ?? improved.original_price ?? null,
       discount_percent: deal.discount_percent ?? improved.discount_percent ?? null,
       offer_type: deal.offer_type || improved.offer_type || "",
+  
       affiliateLink:
         deal.affiliateLink ||
         improved.affiliateLink ||
         deal.source_deal_url ||
         deal.url ||
         "",
-
+  
       affiliate_url: improved.affiliate_url || "",
       affiliate_detected: !!improved.affiliate_detected,
       network_guess: improved.network_guess || "",
-
+  
       quality_score: Number(deal.score || improved.score || 0),
       has_required_assets: true,
       is_publishable: true,
       needs_regeneration: false
     };
-
+  
     console.log("🧪 Final deal before page/ingest:", {
       name: finalDeal.name,
       slug: finalDeal.slug,
-      source: finalDeal.source_key,
+      card_image: finalDeal.card_image,
       og_image: finalDeal.og_image,
-      source_logo_path: finalDeal.source_logo_path,
       current_price: finalDeal.current_price,
       original_price: finalDeal.original_price,
       discount_percent: finalDeal.discount_percent
     });
-
+  
     generateDealPage(finalDeal);
     finalDeals.push(finalDeal);
     console.log(`📝 Generated page: docs/deals/${finalDeal.slug}.html`);
