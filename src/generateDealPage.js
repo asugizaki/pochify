@@ -396,9 +396,49 @@ export function ensureShellPages() {
       contentHtml: `
         <h2>What is Pochify?</h2>
         <p>Pochify curates discounted AI tools, SaaS products, and useful software picks.</p>
+
+        <h2>How are deals chosen?</h2>
+        <p>Pochify reviews software deals and highlights offers that meet pricing and quality thresholds.</p>
+
+        <h2>Do prices change?</h2>
+        <p>Yes. Prices and discounts can change at any time on the original seller’s site.</p>
       `
     })
   );
+
+  writeIfMissing(
+    path.join("docs", "privacy.html"),
+    buildStaticPage({
+      title: "Privacy Policy",
+      description: "Privacy policy for Pochify.",
+      canonicalPath: "/privacy.html",
+      contentHtml: `
+        <p>Pochify may collect basic analytics, referral click data, and standard technical information needed to operate and improve the site.</p>
+        <p>We do not sell personal information. Third-party services such as analytics providers or external deal platforms may also process data according to their own policies.</p>
+        <p>By using Pochify, you agree to the use of cookies or similar technologies where applicable for analytics and site performance.</p>
+      `
+    })
+  );
+
+  writeIfMissing(
+    path.join("docs", "terms.html"),
+    buildStaticPage({
+      title: "Terms and Conditions",
+      description: "Terms and conditions for Pochify.",
+      canonicalPath: "/terms.html",
+      contentHtml: `
+        <p>Pochify provides informational summaries of third-party software deals. We do not guarantee availability, pricing accuracy, or seller fulfillment.</p>
+        <p>All purchases are made on third-party websites and are subject to those providers’ policies, warranties, and refund terms.</p>
+        <p>Pochify may earn referral commissions from qualifying clicks or purchases.</p>
+      `
+    })
+  );
+
+  console.log("📄 Ensured static pages exist:", [
+    "docs/faq.html",
+    "docs/privacy.html",
+    "docs/terms.html"
+  ]);
 }
 
 export function generateDealPage(deal) {
