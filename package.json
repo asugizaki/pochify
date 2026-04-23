@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "pipeline": "node src/processDeals.js",
-    "send:telegram": "node src/sendTelegramDeals.js"
+    "send:telegram": "node src/sendTelegramDeals.js",
+    "regenerate:outdated": "node src/regenerateOutdatedDeals.js",
+    "regenerate:all": "node src/regenerateAllDeals.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0"
