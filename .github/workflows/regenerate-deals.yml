@@ -31,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Debug package.json
+        run: cat package.json
+
+      - name: List scripts
+        run: npm run
+
       - name: Run regeneration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
