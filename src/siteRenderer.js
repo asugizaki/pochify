@@ -30,22 +30,6 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function iconX() {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22H16.9l-4.94-6.94L5.88 22H2.76l7.24-8.28L.8 2h6.46l4.46 6.3L18.9 2zm-1.1 18h1.74L6.22 3.9H4.36L17.8 20z"/></svg>`;
-}
-
-function iconLinkedIn() {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 1 0 5.3 6.94 1.97 1.97 0 0 0 5.25 3zM20.44 12.77c0-3.43-1.83-5.02-4.27-5.02-1.97 0-2.85 1.08-3.34 1.84V8.5H9.45c.04.72 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.38 1.91-1.38 1.35 0 1.89 1.03 1.89 2.54V20h3.38v-7.23z"/></svg>`;
-}
-
-function iconFacebook() {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.25c-1.23 0-1.61.76-1.61 1.55V12h2.74l-.44 2.89h-2.3v6.99A10 10 0 0 0 22 12z"/></svg>`;
-}
-
-function iconLink() {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l5-5a3 3 0 0 0-4.24-4.24l-1.88 1.88a1 1 0 1 0 1.41 1.41l1.88-1.88a1 1 0 1 1 1.41 1.41l-5 5z"/><path fill="currentColor" d="M13.41 10.59a1 1 0 0 0-1.41-1.41l-5 5a3 3 0 0 0 4.24 4.24l1.88-1.88a1 1 0 1 0-1.41-1.41l-1.88 1.88a1 1 0 1 1-1.41-1.41l5-5z"/></svg>`;
-}
-
 export function googleAnalyticsTag() {
   const measurementId = process.env.GA_MEASUREMENT_ID || "";
   if (!measurementId) return "";
@@ -109,7 +93,9 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: 
   gap: 16px;
 }
 
-.brand { color: var(--text); text-decoration: none; font-weight: bold; font-size: 22px; }
+.brand { color: var(--text); text-decoration: none; font-weight: bold; font-size: 22px; display:inline-flex; align-items:center; }
+.brand img { height: 50px; width: auto; display: block; }
+
 .menu-toggle {
   display: none;
   background: transparent;
@@ -262,37 +248,6 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   z-index: 1;
 }
 
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.hero-stat {
-  background: rgba(15,23,42,0.72);
-  border: 1px solid #273449;
-  border-radius: 16px;
-  padding: 16px;
-  min-width: 0;
-}
-
-.hero-stat strong {
-  display: block;
-  font-size: 22px;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.hero-stat span {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
-  display: block;
-}
-
 .section-header {
   display: flex;
   align-items: center;
@@ -377,14 +332,6 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   font-size: 14px;
 }
 
-.inline-link {
-  display: inline-block;
-  margin-top: 12px;
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: bold;
-}
-
 .floating-share {
   position: fixed;
   left: 18px;
@@ -412,7 +359,8 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   padding: 0;
 }
 
-.floating-share svg {
+.floating-share svg,
+.mobile-share svg {
   width: 18px;
   height: 18px;
 }
@@ -444,23 +392,9 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   .nav-wrap { flex-wrap: wrap; }
   h1 { font-size: 34px; }
   .price-current { font-size: 28px; }
-
-  .hero-panel {
-    padding: 24px;
-  }
-
-  .hero-title {
-    font-size: 34px;
-    max-width: none;
-  }
-
-  .hero-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
+  .hero-panel { padding: 24px; }
+  .hero-title { font-size: 34px; max-width: none; }
+  .grid { grid-template-columns: 1fr; }
 
   .floating-share {
     display: none;
@@ -497,55 +431,15 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
     text-decoration: none;
     padding: 0;
   }
-
-  .mobile-share svg {
-    width: 18px;
-    height: 18px;
-  }
 }
   `.trim();
 
   fs.writeFileSync(cssPath, css, "utf8");
 }
 
-export function navHtml() {
-  return `
-    <header class="site-header">
-      <div class="nav-wrap">
-        <a class="brand" href="/"><img src="/assets/pochify_logo.png" alt="Pochify" /></a>
-        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
-        <nav class="nav-links" id="siteNav">
-          <a href="/deals/">Deals</a>
-          <a href="/categories/ai.html">AI</a>
-          <a href="/categories/saas.html">SaaS</a>
-          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
-        </nav>
-      </div>
-    </header>
-  `;
-}
-
-export function footerHtml(siteUrl) {
-  return `
-    <div class="footer">
-      <p><a href="${siteUrl}">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
-      <p class="footer-links">
-        <a href="/faq.html">FAQ</a>
-        <a href="/privacy.html">Privacy Policy</a>
-        <a href="/terms.html">Terms & Conditions</a>
-      </p>
-    </div>
-  `;
-}
-
 export function sharedScripts() {
   return `
     <script>
-      function toggleMenu() {
-        const nav = document.getElementById("siteNav");
-        if (nav) nav.classList.toggle("open");
-      }
-
       async function copyText(text, label) {
         try {
           await navigator.clipboard.writeText(text);
@@ -555,6 +449,7 @@ export function sharedScripts() {
         }
       }
     </script>
+    <script src="/assets/layout.js"></script>
   `;
 }
 
@@ -588,28 +483,28 @@ export function layout({
   ${extraHead}
 </head>
 <body>
-  ${includeNav ? navHtml() : ""}
+  ${includeNav ? `<div id="site-header"></div>` : ""}
   ${bodyContent}
+  <div id="site-footer"></div>
   ${includeFooterScripts ? sharedScripts() : ""}
 </body>
 </html>`;
 }
 
-export function dealCardHtml(deal) {
-  return `
-    <a class="deal-card-link" href="/deals/${deal.slug}.html">
-      <div class="card deal-card">
-        ${deal.og_image ? `<img src="${escapeHtml(deal.og_image)}" alt="${escapeHtml(deal.name)}" loading="lazy" />` : ""}
-        <h3>${escapeHtml(deal.name)}</h3>
-        <div class="card-price-row">
-          ${deal.current_price ? `<span class="card-price-current">$${escapeHtml(String(deal.current_price))}</span>` : ""}
-          ${deal.original_price ? `<span class="card-price-old">$${escapeHtml(String(deal.original_price))}</span>` : ""}
-          ${deal.discount_percent ? `<span class="badge badge-sale">${escapeHtml(String(deal.discount_percent))}% off</span>` : ""}
-          ${deal.offer_type === "lifetime" ? `<span class="badge">Lifetime deal</span>` : ""}
-        </div>
-      </div>
-    </a>
-  `;
+function iconX() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22H16.9l-4.94-6.94L5.88 22H2.76l7.24-8.28L.8 2h6.46l4.46 6.3L18.9 2zm-1.1 18h1.74L6.22 3.9H4.36L17.8 20z"/></svg>`;
+}
+
+function iconLinkedIn() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 1 0 5.3 6.94 1.97 1.97 0 0 0 5.25 3zM20.44 12.77c0-3.43-1.83-5.02-4.27-5.02-1.97 0-2.85 1.08-3.34 1.84V8.5H9.45c.04.72 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.38 1.91-1.38 1.35 0 1.89 1.03 1.89 2.54V20h3.38v-7.23z"/></svg>`;
+}
+
+function iconFacebook() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.25c-1.23 0-1.61.76-1.61 1.55V12h2.74l-.44 2.89h-2.3v6.99A10 10 0 0 0 22 12z"/></svg>`;
+}
+
+function iconLink() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l5-5a3 3 0 0 0-4.24-4.24l-1.88 1.88a1 1 0 1 0 1.41 1.41l1.88-1.88a1 1 0 1 1 1.41 1.41l-5 5z"/><path fill="currentColor" d="M13.41 10.59a1 1 0 0 0-1.41-1.41l-5 5a3 3 0 0 0 4.24 4.24l1.88-1.88a1 1 0 1 0-1.41-1.41l-1.88 1.88a1 1 0 1 1-1.41-1.41l5-5z"/></svg>`;
 }
 
 export function shareButtonsHtml({ pageUrl, title, summary }) {
