@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <title>SaaS Tools</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browse discounted AI tools and software deals from Pochify." />
+  <meta name="description" content="Browse discounted AI tools, SaaS products, lifetime software deals, and productivity software discounts from Pochify." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://pochify.com/categories/saas.html" />
   <meta property="og:title" content="SaaS Tools" />
-  <meta property="og:description" content="Browse discounted AI tools and software deals from Pochify." />
+  <meta property="og:description" content="Browse discounted AI tools, SaaS products, lifetime software deals, and productivity software discounts from Pochify." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://pochify.com/categories/saas.html" />
   
@@ -26,20 +26,7 @@
   
 </head>
 <body>
-  
-    <header class="site-header">
-      <div class="nav-wrap">
-        <a class="brand" href="/"><img src="/assets/pochify_logo.png" alt="Pochify" /></a>
-        <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
-        <nav class="nav-links" id="siteNav">
-          <a href="/deals/">Deals</a>
-          <a href="/categories/ai.html">AI</a>
-          <a href="/categories/saas.html">SaaS</a>
-          <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
-        </nav>
-      </div>
-    </header>
-  
+  <div id="site-header"></div>
   
       <div class="container">
         <div class="breadcrumbs">
@@ -47,72 +34,71 @@
         </div>
 
         <h1>SaaS Tools</h1>
-        <div class="sub">Browse the latest high-quality deal pages from Pochify.</div>
+        <div class="sub">Browse the latest high-quality software deal pages from Pochify.</div>
+
+        <div class="card">
+          <h2>SaaS Software Deals</h2>
+          <p>
+            Browse curated software discounts, lifetime deals, and limited-time offers.
+            Pochify highlights deals with clear pricing, useful product categories, and source links
+            so you can compare offers faster.
+          </p>
+          <p>
+            Looking for more specific picks? Visit our
+            <a href="/best-ai-deals.html">Best AI Deals</a> page for curated AI software discounts.
+          </p>
+        </div>
 
         <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
 
         
-    <div class="footer">
-      <p><a href="https://pochify.com">Pochify</a> curates AI tools, SaaS products, and useful software finds.</p>
-      <p class="footer-links">
-        <a href="/faq.html">FAQ</a>
-        <a href="/privacy.html">Privacy Policy</a>
-        <a href="/terms.html">Terms & Conditions</a>
-      </p>
-    </div>
-  
-      </div>
-
-      <script>
-        function sourceLogo(item) {
-          return item.source_logo_path
-            ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-            : '';
-        }
-
-        function card(item) {
-          return `
-            <a class="deal-card-link" href="/deals/${item.slug}.html">
-              <div class="card deal-card">
-                ${item.og_image ? '<img src="' + item.og_image + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <h3>${item.name}</h3>
-                  ${sourceLogo(item)}
-                </div>
-                <div class="card-price-row">
-                  ${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                  ${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                  ${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                  ${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                </div>
-              </div>
-            </a>
-          `;
-        }
-
-        async function loadDeals() {
-          const container = document.getElementById("dealsGrid");
-          const url = "https://go.pochify.com/api/public/deals?limit=40&category=saas";
-          try {
-            const res = await fetch(url);
-            const data = await res.json();
-            const items = data.items || [];
-            container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
-          } catch {
-            container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
-          }
-        }
-
-        loadDeals();
-      </script>
-    
-  
     <script>
-      function toggleMenu() {
-        const nav = document.getElementById("siteNav");
-        if (nav) nav.classList.toggle("open");
+      function sourceLogo(item) {
+        return item.source_logo_path
+          ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+          : '';
       }
 
+      function card(item) {
+        var image = item.card_image || item.og_image || '';
+        return ''
+          + '<a class="deal-card-link" href="/deals/' + item.slug + '.html">'
+          + '  <div class="card deal-card">'
+          +      (image ? '<img src="' + image + '" alt="' + item.name + '" loading="lazy" />' : '')
+          + '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+          + '      <h3>' + item.name + '</h3>'
+          +        sourceLogo(item)
+          + '    </div>'
+          + '    <div class="card-price-row">'
+          +        (item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : '')
+          +        (item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : '')
+          +        (item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : '')
+          +        (item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : '')
+          + '    </div>'
+          + '  </div>'
+          + '</a>';
+      }
+
+      async function loadDealsIntoGrid() {
+        var container = document.getElementById("dealsGrid");
+        try {
+          var res = await fetch("https://go.pochify.com/api/public/deals?limit=40&category=saas");
+          var data = await res.json();
+          var items = data.items || [];
+          container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
+        } catch {
+          container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+        }
+      }
+
+      loadDealsIntoGrid();
+    </script>
+  
+      </div>
+    
+  <div id="site-footer"></div>
+  
+    <script>
       async function copyText(text, label) {
         try {
           await navigator.clipboard.writeText(text);
@@ -122,6 +108,7 @@
         }
       }
     </script>
+    <script src="/assets/layout.js"></script>
   
 </body>
 </html>

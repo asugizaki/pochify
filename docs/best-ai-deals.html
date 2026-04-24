@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <title>Best AI Software Deals &amp; Lifetime AI Tool Discounts | Pochify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browse curated AI software deals, lifetime AI tool discounts, and discounted automation, writing, image, voice, and productivity tools." />
+  <meta name="description" content="Browse curated AI software deals, lifetime AI tool discounts, automation apps, writing tools, image tools, voice tools, and productivity software offers." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://pochify.com/best-ai-deals.html" />
   <meta property="og:title" content="Best AI Software Deals &amp; Lifetime AI Tool Discounts | Pochify" />
-  <meta property="og:description" content="Browse curated AI software deals, lifetime AI tool discounts, and discounted automation, writing, image, voice, and productivity tools." />
+  <meta property="og:description" content="Browse curated AI software deals, lifetime AI tool discounts, automation apps, writing tools, image tools, voice tools, and productivity software offers." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://pochify.com/best-ai-deals.html" />
   
@@ -84,47 +84,49 @@
           </ul>
         </div>
 
-        <script>
-          function sourceLogo(item) {
-            return item.source_logo_path
-              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-              : '';
-          }
+        
+    <script>
+      function sourceLogo(item) {
+        return item.source_logo_path
+          ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+          : '';
+      }
 
-          function card(item) {
-            return `
-              <a class="deal-card-link" href="/deals/${item.slug}.html">
-                <div class="card deal-card">
-                  ${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                    <h3>${item.name}</h3>
-                    ${sourceLogo(item)}
-                  </div>
-                  <div class="card-price-row">
-                    ${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                    ${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                    ${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                    ${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                  </div>
-                </div>
-              </a>
-            `;
-          }
+      function card(item) {
+        var image = item.card_image || item.og_image || '';
+        return ''
+          + '<a class="deal-card-link" href="/deals/' + item.slug + '.html">'
+          + '  <div class="card deal-card">'
+          +      (image ? '<img src="' + image + '" alt="' + item.name + '" loading="lazy" />' : '')
+          + '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+          + '      <h3>' + item.name + '</h3>'
+          +        sourceLogo(item)
+          + '    </div>'
+          + '    <div class="card-price-row">'
+          +        (item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : '')
+          +        (item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : '')
+          +        (item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : '')
+          +        (item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : '')
+          + '    </div>'
+          + '  </div>'
+          + '</a>';
+      }
 
-          async function loadTopAiDeals() {
-            const container = document.getElementById("topAiDeals");
-            try {
-              const res = await fetch("https://go.pochify.com/api/public/deals?category=ai&limit=24");
-              const data = await res.json();
-              const items = data.items || [];
-              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No AI deals found.</div>';
-            } catch {
-              container.innerHTML = '<div class="empty">AI deals are temporarily unavailable.</div>';
-            }
-          }
+      async function loadDealsIntoGrid() {
+        var container = document.getElementById("topAiDeals");
+        try {
+          var res = await fetch("https://go.pochify.com/api/public/deals?category=ai&limit=24");
+          var data = await res.json();
+          var items = data.items || [];
+          container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
+        } catch {
+          container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+        }
+      }
 
-          loadTopAiDeals();
-        </script>
+      loadDealsIntoGrid();
+    </script>
+  
       </div>
     
   <div id="site-footer"></div>
