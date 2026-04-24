@@ -318,7 +318,7 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   line-height: 1.45;
   margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
