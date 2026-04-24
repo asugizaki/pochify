@@ -98,16 +98,40 @@ function dealCardScript(fetchUrl, targetId) {
           : '';
       }
 
+      function escapeText(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function shortDescription(item) {
+        var text = item.description || item.meta_description || item.hook || "";
+        text = String(text).replace(/\\s+/g, " ").trim();
+
+        if (!text) return "";
+
+        var maxLength = 115;
+        if (text.length <= maxLength) return escapeText(text);
+
+        return escapeText(text.slice(0, maxLength).trim()) + "...";
+      }
+
       function card(item) {
         var image = item.card_image || item.og_image || '';
+        var description = shortDescription(item);
+
         return ''
           + '<a class="deal-card-link" href="/deals/' + item.slug + '.html">'
           + '  <div class="card deal-card">'
-          +      (image ? '<img src="' + image + '" alt="' + item.name + '" loading="lazy" />' : '')
+          +      (image ? '<img src="' + image + '" alt="' + escapeText(item.name) + '" loading="lazy" />' : '')
           + '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
-          + '      <h3>' + item.name + '</h3>'
+          + '      <h3>' + escapeText(item.name) + '</h3>'
           +        sourceLogo(item)
           + '    </div>'
+          +      (description ? '<p class="deal-card-description">' + description + '</p>' : '')
           + '    <div class="card-price-row">'
           +        (item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : '')
           +        (item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : '')
