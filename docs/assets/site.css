@@ -260,6 +260,17 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   color: var(--text);
 }
 
+.deal-card-description {
+  color: var(--muted) !important;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .card-price-row {
   display: flex;
   align-items: center;
