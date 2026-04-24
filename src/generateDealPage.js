@@ -196,6 +196,115 @@ function buildDealHtml(deal) {
   });
 }
 
+function buildTopAiDealsShell() {
+  return layout({
+    title: "Best AI Software Deals & Lifetime AI Tool Discounts | Pochify",
+    description:
+      "Browse curated AI software deals, lifetime AI tool discounts, and discounted automation, writing, image, voice, and productivity tools.",
+    canonicalUrl: `${SITE_URL}/best-ai-deals.html`,
+    bodyContent: `
+      <div class="container">
+        <div class="breadcrumbs">
+          <a href="/">Home</a> / Best AI Deals
+        </div>
+
+        <section class="hero-panel">
+          <div class="eyebrow">Curated AI Deals</div>
+          <h1 class="hero-title">Best AI software deals worth checking today.</h1>
+          <p class="hero-copy">
+            Discover discounted AI tools, lifetime AI subscriptions, writing assistants,
+            automation platforms, voice tools, image tools, and productivity software deals.
+          </p>
+        </section>
+
+        <div class="card">
+          <h2>AI Software Deals, Lifetime AI Tools & Discounted Automation Apps</h2>
+          <p>
+            This page tracks curated AI software deals from multiple deal platforms.
+            Pochify focuses on offers with meaningful discounts, useful product categories,
+            and clear pricing so you can quickly compare AI tools before buying.
+          </p>
+          <p>
+            You’ll find AI writing tools, AI content generators, AI voice tools,
+            AI automation apps, transcription software, image tools, chatbot builders,
+            and other productivity-focused AI products.
+          </p>
+          <p>
+            Many AI tools use recurring monthly pricing, so lifetime AI deals and large
+            software discounts can be especially attractive if the product fits your workflow.
+            Always review the original deal page before purchasing because pricing,
+            plan limits, and availability can change.
+          </p>
+        </div>
+
+        <div class="section-header">
+          <div>
+            <h2 style="margin:0;">Top AI deals</h2>
+            <p>Curated AI software discounts and lifetime AI tool offers.</p>
+          </div>
+          <a class="secondary" href="/categories/ai.html">View all AI deals</a>
+        </div>
+
+        <div id="topAiDeals" class="grid">
+          <div class="empty">Loading AI deals…</div>
+        </div>
+
+        <div class="card">
+          <h2>How Pochify chooses AI deals</h2>
+          <ul>
+            <li>Meaningful discount, usually 50% off or better</li>
+            <li>Clear pricing and source deal page</li>
+            <li>Product image available for better review quality</li>
+            <li>Useful AI or SaaS category fit</li>
+          </ul>
+        </div>
+
+        <script>
+          function sourceLogo(item) {
+            return item.source_logo_path
+              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+              : '';
+          }
+
+          function card(item) {
+            return \`
+              <a class="deal-card-link" href="/deals/\${item.slug}.html">
+                <div class="card deal-card">
+                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <h3>\${item.name}</h3>
+                    \${sourceLogo(item)}
+                  </div>
+                  <div class="card-price-row">
+                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
+                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
+                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
+                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
+                  </div>
+                </div>
+              </a>
+            \`;
+          }
+
+          async function loadTopAiDeals() {
+            const container = document.getElementById("topAiDeals");
+            try {
+              const res = await fetch("https://go.pochify.com/api/public/deals?category=ai&limit=24");
+              const data = await res.json();
+              const items = data.items || [];
+              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No AI deals found.</div>';
+            } catch {
+              container.innerHTML = '<div class="empty">AI deals are temporarily unavailable.</div>';
+            }
+          }
+
+          loadTopAiDeals();
+        </script>
+      </div>
+    `
+  });
+}
+
 function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
   return layout({
     title: `${title} | Pochify`,
@@ -382,6 +491,7 @@ export function ensureShellPages() {
   writeIfMissing(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"));
   writeIfMissing(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"));
   writeIfMissing(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"));
+  writeIfMissing(path.join("docs", "best-ai-deals.html"), buildTopAiDealsShell());
 
   writeIfMissing(
     path.join("docs", "faq.html"),
@@ -443,6 +553,7 @@ export function ensureShellPages() {
     <button class="menu-toggle" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
     <nav class="nav-links" id="siteNav">
       <a href="/deals/">Deals</a>
+      <a href="/best-ai-deals.html">Top AI Deals</a>
       <a href="/categories/ai.html">AI</a>
       <a href="/categories/saas.html">SaaS</a>
       <a href="https://t.me/pochify" target="_blank" rel="noopener">Telegram</a>
