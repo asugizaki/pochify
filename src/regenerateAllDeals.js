@@ -89,7 +89,7 @@ async function run() {
   console.log("🔄 Regenerating all deal pages from DB...");
   console.log(`🧱 Current layout version: ${CURRENT_LAYOUT_VERSION}`);
 
-  ensureShellPages();
+  ensureShellPages({ force: true });
   generateRobotsTxtIfMissing();
 
   const deals = await fetchAllDeals();
