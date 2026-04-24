@@ -22,6 +22,14 @@ function writeIfMissing(filePath, content) {
   }
 }
 
+function writeStaticPage(filePath, content, { force = false } = {}) {
+  if (force) {
+    writeFile(filePath, content);
+  } else {
+    writeIfMissing(filePath, content);
+  }
+}
+
 function writeFile(filePath, content) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, content, "utf8");
@@ -509,16 +517,21 @@ function buildDealsShell(title, category = "") {
   });
 }
 
-export function ensureShellPages() {
+export function ensureShellPages({ force = false } = {}) {
   ensureSharedAssets();
 
-  writeIfMissing(path.join("docs", "index.html"), buildHomeShell());
-  writeIfMissing(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"));
-  writeIfMissing(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"));
-  writeIfMissing(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"));
-  writeIfMissing(path.join("docs", "best-ai-deals.html"), buildTopAiDealsShell());
+  writeStaticPage(path.join("docs", "index.html"), buildHomeShell(), { force });
+  writeStaticPage(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"), { force });
+  writeStaticPage(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"), { force });
+  writeStaticPage(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"), { force });
 
-  writeIfMissing(
+  writeStaticPage(
+    path.join("docs", "best-ai-deals.html"),
+    buildTopAiDealsShell(),
+    { force }
+  );
+
+  writeStaticPage(
     path.join("docs", "faq.html"),
     buildStaticPage({
       title: "FAQ",
@@ -534,10 +547,11 @@ export function ensureShellPages() {
         <h2>Do prices change?</h2>
         <p>Yes. Prices and discounts can change at any time on the original seller’s site.</p>
       `
-    })
+    }),
+    { force }
   );
 
-  writeIfMissing(
+  writeStaticPage(
     path.join("docs", "privacy.html"),
     buildStaticPage({
       title: "Privacy Policy",
@@ -548,10 +562,11 @@ export function ensureShellPages() {
         <p>We do not sell personal information. Third-party services such as analytics providers or external deal platforms may also process data according to their own policies.</p>
         <p>By using Pochify, you agree to the use of cookies or similar technologies where applicable for analytics and site performance.</p>
       `
-    })
+    }),
+    { force }
   );
 
-  writeIfMissing(
+  writeStaticPage(
     path.join("docs", "terms.html"),
     buildStaticPage({
       title: "Terms and Conditions",
@@ -562,7 +577,8 @@ export function ensureShellPages() {
         <p>All purchases are made on third-party websites and are subject to those providers’ policies, warranties, and refund terms.</p>
         <p>Pochify may earn referral commissions from qualifying clicks or purchases.</p>
       `
-    })
+    }),
+    { force }
   );
 
   ensureDir(path.join("docs", "partials"));
@@ -614,6 +630,23 @@ export function ensureShellPages() {
   } catch (error) {
     console.error(error);
   }
+}
+
+function toggleMenu() {
+  const nav = document.getElementById("siteNav");
+  if (nav) nav.classList.toggle("open");
+}
+
+async function initLayout() {
+  await injectPartial("site-header", "/partials/header.html");
+  await injectPartial("site-footer", "/partials/footer.html");
+}
+
+initLayout();
+window.toggleMenu = toggleMenu;`
+  );
+
+  console.log(force ? "📄 Regenerated static pages" : "📄 Ensured static pages exist");
 }
 
 function toggleMenu() {
