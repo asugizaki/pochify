@@ -287,7 +287,7 @@ h2, h3 { margin-top: 0; margin-bottom: 12px; }
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
 }
 
 .deal-card-link:hover .deal-card {
