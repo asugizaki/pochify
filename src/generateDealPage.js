@@ -22,17 +22,17 @@ function writeIfMissing(filePath, content) {
   }
 }
 
+function writeFile(filePath, content) {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, content, "utf8");
+}
+
 function writeStaticPage(filePath, content, { force = false } = {}) {
   if (force) {
     writeFile(filePath, content);
   } else {
     writeIfMissing(filePath, content);
   }
-}
-
-function writeFile(filePath, content) {
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, content, "utf8");
 }
 
 function listHtml(items = []) {
@@ -86,6 +86,52 @@ function stickyDealCard(deal) {
         <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
       </div>
     </aside>
+  `;
+}
+
+function dealCardScript(fetchUrl, targetId) {
+  return `
+    <script>
+      function sourceLogo(item) {
+        return item.source_logo_path
+          ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
+          : '';
+      }
+
+      function card(item) {
+        var image = item.card_image || item.og_image || '';
+        return ''
+          + '<a class="deal-card-link" href="/deals/' + item.slug + '.html">'
+          + '  <div class="card deal-card">'
+          +      (image ? '<img src="' + image + '" alt="' + item.name + '" loading="lazy" />' : '')
+          + '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+          + '      <h3>' + item.name + '</h3>'
+          +        sourceLogo(item)
+          + '    </div>'
+          + '    <div class="card-price-row">'
+          +        (item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : '')
+          +        (item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : '')
+          +        (item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : '')
+          +        (item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : '')
+          + '    </div>'
+          + '  </div>'
+          + '</a>';
+      }
+
+      async function loadDealsIntoGrid() {
+        var container = document.getElementById("${targetId}");
+        try {
+          var res = await fetch("${fetchUrl}");
+          var data = await res.json();
+          var items = data.items || [];
+          container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
+        } catch {
+          container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
+        }
+      }
+
+      loadDealsIntoGrid();
+    </script>
   `;
 }
 
@@ -171,6 +217,10 @@ function buildDealHtml(deal) {
           <div class="cta-row">
             <a class="cta" href="${ctaUrl}" target="_blank" rel="nofollow sponsored noopener noreferrer">Get Deal</a>
           </div>
+          <p style="margin-top:16px;">
+            Looking for more software discounts? Browse more <a href="/categories/ai.html">AI deals</a>
+            or view all <a href="/deals/">software deals</a>.
+          </p>
         </div>
       </main>
 
@@ -204,11 +254,146 @@ function buildDealHtml(deal) {
   });
 }
 
+function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
+  return layout({
+    title: `${title} | Pochify`,
+    description,
+    canonicalUrl: `${SITE_URL}${canonicalPath}`,
+    bodyContent: `
+      <div class="container narrow">
+        <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
+        <h1>${escapeHtml(title)}</h1>
+        <div class="card">${contentHtml}</div>
+      </div>
+    `
+  });
+}
+
+function buildHomeShell() {
+  return layout({
+    title: "Pochify — Software Deals, AI Tool Discounts & Lifetime SaaS Offers",
+    description: "Discover discounted AI tools, SaaS products, lifetime software deals, automation apps, and productivity software offers.",
+    canonicalUrl: `${SITE_URL}/`,
+    bodyContent: `
+      <div class="container">
+        <section class="hero-panel">
+          <div class="eyebrow">Fresh software deals</div>
+          <h1 class="hero-title">Find better tools without paying full price.</h1>
+          <p class="hero-copy">
+            Pochify surfaces discounted AI tools, SaaS products, and lifetime software deals worth checking before they disappear.
+          </p>
+          <div class="cta-row">
+            <a href="/deals/" class="cta">Browse deals</a>
+            <a href="/best-ai-deals.html" class="secondary">Top AI Deals</a>
+          </div>
+        </section>
+
+        <div class="card">
+          <h2>Software Deals, AI Tool Discounts & Lifetime SaaS Offers</h2>
+          <p>
+            Pochify helps you discover software deals from multiple sources, including AI tools,
+            SaaS products, lifetime subscriptions, productivity apps, automation platforms,
+            and discounted business software.
+          </p>
+          <p>
+            Instead of browsing separate marketplaces one by one, Pochify summarizes pricing,
+            discount percentage, deal source, and product details in one place.
+          </p>
+        </div>
+
+        <div class="section-header">
+          <div>
+            <h2 style="margin:0;">Latest picks</h2>
+            <p>Newest high-quality software deals on Pochify.</p>
+          </div>
+          <a class="secondary" href="/deals/">View all deals</a>
+        </div>
+
+        <div id="latestDeals" class="grid"><div class="empty">Loading latest picks…</div></div>
+
+        <div class="section-header">
+          <div>
+            <h2 style="margin:0;">Top clicked this week</h2>
+            <p>What visitors are opening the most.</p>
+          </div>
+        </div>
+
+        <div id="topClickedDeals" class="grid"><div class="empty">Loading top clicked picks…</div></div>
+
+        ${dealCardScript("https://go.pochify.com/api/public/latest-deals?limit=16", "latestDeals")}
+
+        <script>
+          async function loadTopClickedDeals() {
+            var container = document.getElementById("topClickedDeals");
+            try {
+              var res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7&limit=8");
+              var data = await res.json();
+              var items = data.items || [];
+              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
+            } catch {
+              container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
+            }
+          }
+          loadTopClickedDeals();
+        </script>
+      </div>
+    `
+  });
+}
+
+function buildDealsShell(title, category = "") {
+  const canonicalUrl = category
+    ? `${SITE_URL}/categories/${category}.html`
+    : `${SITE_URL}/deals/`;
+
+  const heading =
+    category === "ai"
+      ? "AI Software Deals"
+      : category === "saas"
+        ? "SaaS Software Deals"
+        : "Software Deals";
+
+  const fetchUrl = `https://go.pochify.com/api/public/deals?limit=40${category ? `&category=${category}` : ""}`;
+
+  return layout({
+    title,
+    description: "Browse discounted AI tools, SaaS products, lifetime software deals, and productivity software discounts from Pochify.",
+    canonicalUrl,
+    bodyContent: `
+      <div class="container">
+        <div class="breadcrumbs">
+          <a href="/">Home</a> / ${category ? `<a href="/deals/">Deals</a> / ${escapeHtml(category.toUpperCase())}` : "Deals"}
+        </div>
+
+        <h1>${escapeHtml(title)}</h1>
+        <div class="sub">Browse the latest high-quality software deal pages from Pochify.</div>
+
+        <div class="card">
+          <h2>${heading}</h2>
+          <p>
+            Browse curated software discounts, lifetime deals, and limited-time offers.
+            Pochify highlights deals with clear pricing, useful product categories, and source links
+            so you can compare offers faster.
+          </p>
+          <p>
+            Looking for more specific picks? Visit our
+            <a href="/best-ai-deals.html">Best AI Deals</a> page for curated AI software discounts.
+          </p>
+        </div>
+
+        <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
+
+        ${dealCardScript(fetchUrl, "dealsGrid")}
+      </div>
+    `
+  });
+}
+
 function buildTopAiDealsShell() {
   return layout({
     title: "Best AI Software Deals & Lifetime AI Tool Discounts | Pochify",
     description:
-      "Browse curated AI software deals, lifetime AI tool discounts, and discounted automation, writing, image, voice, and productivity tools.",
+      "Browse curated AI software deals, lifetime AI tool discounts, automation apps, writing tools, image tools, voice tools, and productivity software offers.",
     canonicalUrl: `${SITE_URL}/best-ai-deals.html`,
     bodyContent: `
       <div class="container">
@@ -267,251 +452,7 @@ function buildTopAiDealsShell() {
           </ul>
         </div>
 
-        <script>
-          function sourceLogo(item) {
-            return item.source_logo_path
-              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-              : '';
-          }
-
-          function card(item) {
-            return \`
-              <a class="deal-card-link" href="/deals/\${item.slug}.html">
-                <div class="card deal-card">
-                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                    <h3>\${item.name}</h3>
-                    \${sourceLogo(item)}
-                  </div>
-                  <div class="card-price-row">
-                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                  </div>
-                </div>
-              </a>
-            \`;
-          }
-
-          async function loadTopAiDeals() {
-            const container = document.getElementById("topAiDeals");
-            try {
-              const res = await fetch("https://go.pochify.com/api/public/deals?category=ai&limit=24");
-              const data = await res.json();
-              const items = data.items || [];
-              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No AI deals found.</div>';
-            } catch {
-              container.innerHTML = '<div class="empty">AI deals are temporarily unavailable.</div>';
-            }
-          }
-
-          loadTopAiDeals();
-        </script>
-      </div>
-    `
-  });
-}
-
-function buildStaticPage({ title, description, canonicalPath, contentHtml }) {
-  return layout({
-    title: `${title} | Pochify`,
-    description,
-    canonicalUrl: `${SITE_URL}${canonicalPath}`,
-    bodyContent: `
-      <div class="container narrow">
-        <div class="breadcrumbs"><a href="/">Home</a> / ${escapeHtml(title)}</div>
-        <h1>${escapeHtml(title)}</h1>
-        <div class="card">${contentHtml}</div>
-      </div>
-    `
-  });
-}
-
-function buildHomeShell() {
-  return layout({
-    title: "Pochify — Find software deals worth your time",
-    description: "Discover discounted AI tools, SaaS products, and useful software deals with pricing context and clean breakdowns.",
-    canonicalUrl: `${SITE_URL}/`,
-    bodyContent: `
-      <div class="container">
-        <section class="hero-panel">
-          <div class="eyebrow">Fresh software deals</div>
-          <h1 class="hero-title">Find better tools without paying full price.</h1>
-          <p class="hero-copy">
-            Pochify surfaces discounted AI tools, SaaS products, and lifetime software deals worth checking before they disappear.
-          </p>
-          <div class="cta-row">
-            <a href="/deals/" class="cta">Browse deals</a>
-            <a href="https://t.me/pochify" class="secondary" target="_blank" rel="noopener noreferrer">Join Telegram</a>
-          </div>
-        </section>
-
-        <div class="card">
-          <h2>Software Deals, AI Tool Discounts & Lifetime SaaS Offers</h2>
-          <p>
-            Pochify helps you discover software deals from multiple sources, including AI tools,
-            SaaS products, lifetime subscriptions, productivity apps, automation platforms,
-            and discounted business software.
-          </p>
-          <p>
-            Instead of browsing separate marketplaces one by one, Pochify summarizes pricing,
-            discount percentage, deal source, and product details in one place.
-          </p>
-        </div>
-
-        <div class="section-header">
-          <div>
-            <h2 style="margin:0;">Latest picks</h2>
-            <p>Newest high-quality pages on Pochify.</p>
-          </div>
-          <a class="secondary" href="/deals/">View all deals</a>
-        </div>
-
-        <div id="latestDeals" class="grid"><div class="empty">Loading latest picks…</div></div>
-
-        <div class="section-header">
-          <div>
-            <h2 style="margin:0;">Top clicked this week</h2>
-            <p>What visitors are opening the most.</p>
-          </div>
-        </div>
-
-        <div id="topClickedDeals" class="grid"><div class="empty">Loading top clicked picks…</div></div>
-
-        <script>
-          function sourceLogo(item) {
-            return item.source_logo_path
-              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-              : '';
-          }
-
-          function card(item) {
-            return \`
-              <a class="deal-card-link" href="/deals/\${item.slug}.html">
-                <div class="card deal-card">
-                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                    <h3>\${item.name}</h3>
-                    \${sourceLogo(item)}
-                  </div>
-                  <div class="card-price-row">
-                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                  </div>
-                </div>
-              </a>
-            \`;
-          }
-
-          async function loadLatestDeals() {
-            const container = document.getElementById("latestDeals");
-            try {
-              const res = await fetch("https://go.pochify.com/api/public/latest-deals?limit=16");
-              const data = await res.json();
-              const items = data.items || [];
-              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No picks yet.</div>';
-            } catch {
-              container.innerHTML = '<div class="empty">Latest picks are temporarily unavailable.</div>';
-            }
-          }
-
-          async function loadTopClickedDeals() {
-            const container = document.getElementById("topClickedDeals");
-            try {
-              const res = await fetch("https://go.pochify.com/api/public/top-clicked?days=7&limit=8");
-              const data = await res.json();
-              const items = data.items || [];
-              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No top clicked data yet.</div>';
-            } catch {
-              container.innerHTML = '<div class="empty">Top clicked picks are temporarily unavailable.</div>';
-            }
-          }
-
-          loadLatestDeals();
-          loadTopClickedDeals();
-        </script>
-      </div>
-    `
-  });
-}
-
-function buildDealsShell(title, category = "") {
-  const canonicalUrl = category
-    ? `${SITE_URL}/categories/${category}.html`
-    : `${SITE_URL}/deals/`;
-
-  return layout({
-    title,
-    description: "Browse discounted AI tools and software deals from Pochify.",
-    canonicalUrl,
-    bodyContent: `
-      <div class="container">
-        <div class="breadcrumbs">
-          <a href="/">Home</a> / ${category ? `<a href="/deals/">Deals</a> / ${escapeHtml(category.toUpperCase())}` : "Deals"}
-        </div>
-
-        <h1>${escapeHtml(title)}</h1>
-
-        <div class="card">
-          <h2>${category === "ai" ? "AI Software Deals" : category === "saas" ? "SaaS Software Deals" : "Software Deals"}</h2>
-          <p>
-            Browse curated software discounts, lifetime deals, and limited-time offers.
-            Pochify highlights deals with clear pricing, useful product categories, and source links
-            so you can compare offers faster.
-          </p>
-          <p>
-            Looking for more specific picks? Visit our
-            <a href="/best-ai-deals.html">Best AI Deals</a> page for curated AI software discounts.
-          </p>
-        </div>
-
-        <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
-
-        <script>
-          function sourceLogo(item) {
-            return item.source_logo_path
-              ? '<img src="' + item.source_logo_path + '" alt="' + (item.source_name || 'Source') + '" style="height:22px;width:auto;display:block;" />'
-              : '';
-          }
-
-          function card(item) {
-            return \`
-              <a class="deal-card-link" href="/deals/\${item.slug}.html">
-                <div class="card deal-card">
-                  \${(item.card_image || item.og_image) ? '<img src="' + (item.card_image || item.og_image) + '" alt="' + item.name + '" loading="lazy" />' : ''}
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                    <h3>\${item.name}</h3>
-                    \${sourceLogo(item)}
-                  </div>
-                  <div class="card-price-row">
-                    \${item.current_price ? '<span class="card-price-current">$' + item.current_price + '</span>' : ''}
-                    \${item.original_price ? '<span class="card-price-old">$' + item.original_price + '</span>' : ''}
-                    \${item.discount_percent ? '<span class="badge badge-sale">' + item.discount_percent + '% off</span>' : ''}
-                    \${item.offer_type === 'lifetime' ? '<span class="badge">Lifetime deal</span>' : ''}
-                  </div>
-                </div>
-              </a>
-            \`;
-          }
-
-          async function loadDeals() {
-            const container = document.getElementById("dealsGrid");
-            const url = "https://go.pochify.com/api/public/deals?limit=40${category ? `&category=${category}` : ""}";
-            try {
-              const res = await fetch(url);
-              const data = await res.json();
-              const items = data.items || [];
-              container.innerHTML = items.length ? items.map(card).join("") : '<div class="empty">No deals found.</div>';
-            } catch {
-              container.innerHTML = '<div class="empty">Deals are temporarily unavailable.</div>';
-            }
-          }
-
-          loadDeals();
-        </script>
+        ${dealCardScript("https://go.pochify.com/api/public/deals?category=ai&limit=24", "topAiDeals")}
       </div>
     `
   });
@@ -524,12 +465,7 @@ export function ensureShellPages({ force = false } = {}) {
   writeStaticPage(path.join("docs", "deals", "index.html"), buildDealsShell("Deals"), { force });
   writeStaticPage(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"), { force });
   writeStaticPage(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"), { force });
-
-  writeStaticPage(
-    path.join("docs", "best-ai-deals.html"),
-    buildTopAiDealsShell(),
-    { force }
-  );
+  writeStaticPage(path.join("docs", "best-ai-deals.html"), buildTopAiDealsShell(), { force });
 
   writeStaticPage(
     path.join("docs", "faq.html"),
@@ -649,27 +585,6 @@ window.toggleMenu = toggleMenu;`
   console.log(force ? "📄 Regenerated static pages" : "📄 Ensured static pages exist");
 }
 
-function toggleMenu() {
-  const nav = document.getElementById("siteNav");
-  if (nav) nav.classList.toggle("open");
-}
-
-async function initLayout() {
-  await injectPartial("site-header", "/partials/header.html");
-  await injectPartial("site-footer", "/partials/footer.html");
-}
-
-initLayout();
-window.toggleMenu = toggleMenu;`
-  );
-
-  console.log("📄 Ensured static pages exist:", [
-    "docs/faq.html",
-    "docs/privacy.html",
-    "docs/terms.html"
-  ]);
-}
-
 export function generateDealPage(deal) {
   ensureSharedAssets();
   const filePath = path.join("docs", "deals", `${deal.slug}.html`);
@@ -693,9 +608,9 @@ export function generateSitemapFromDeals(deals) {
   const urls = [
     `${SITE_URL}/`,
     `${SITE_URL}/deals/`,
-    `${SITE_URL}/best-ai-deals.html`,
     `${SITE_URL}/categories/ai.html`,
     `${SITE_URL}/categories/saas.html`,
+    `${SITE_URL}/best-ai-deals.html`,
     `${SITE_URL}/faq.html`,
     `${SITE_URL}/privacy.html`,
     `${SITE_URL}/terms.html`,
