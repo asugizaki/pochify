@@ -113,7 +113,7 @@ function dealCardScript(fetchUrl, targetId) {
 
         if (!text) return "";
 
-        var maxLength = 115;
+        var maxLength = 220;
         if (text.length <= maxLength) return escapeText(text);
 
         return escapeText(text.slice(0, maxLength).trim()) + "...";
