@@ -339,6 +339,19 @@ function buildHomeShell() {
           </div>
         </section>
 
+        <div class="card">
+          <h2>Software Deals, AI Tool Discounts & Lifetime SaaS Offers</h2>
+          <p>
+            Pochify helps you discover software deals from multiple sources, including AI tools,
+            SaaS products, lifetime subscriptions, productivity apps, automation platforms,
+            and discounted business software.
+          </p>
+          <p>
+            Instead of browsing separate marketplaces one by one, Pochify summarizes pricing,
+            discount percentage, deal source, and product details in one place.
+          </p>
+        </div>
+
         <div class="section-header">
           <div>
             <h2 style="margin:0;">Latest picks</h2>
@@ -433,7 +446,19 @@ function buildDealsShell(title, category = "") {
         </div>
 
         <h1>${escapeHtml(title)}</h1>
-        <div class="sub">Browse the latest high-quality deal pages from Pochify.</div>
+
+        <div class="card">
+          <h2>${category === "ai" ? "AI Software Deals" : category === "saas" ? "SaaS Software Deals" : "Software Deals"}</h2>
+          <p>
+            Browse curated software discounts, lifetime deals, and limited-time offers.
+            Pochify highlights deals with clear pricing, useful product categories, and source links
+            so you can compare offers faster.
+          </p>
+          <p>
+            Looking for more specific picks? Visit our
+            <a href="/best-ai-deals.html">Best AI Deals</a> page for curated AI software discounts.
+          </p>
+        </div>
 
         <div id="dealsGrid" class="grid"><div class="empty">Loading deals…</div></div>
 
@@ -635,6 +660,7 @@ export function generateSitemapFromDeals(deals) {
   const urls = [
     `${SITE_URL}/`,
     `${SITE_URL}/deals/`,
+    `${SITE_URL}/best-ai-deals.html`,
     `${SITE_URL}/categories/ai.html`,
     `${SITE_URL}/categories/saas.html`,
     `${SITE_URL}/faq.html`,
