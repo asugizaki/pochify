@@ -452,6 +452,10 @@ function buildTopAiDealsShell() {
             Always review the original deal page before purchasing because pricing,
             plan limits, and availability can change.
           </p>
+          <p style="margin-top:10px;">
+            🚨 Many AI deals expire quickly. Join our Telegram to get alerts:
+            <a href="https://t.me/pochify">Get deal alerts</a>
+          </p>
         </div>
 
         <div class="section-header">
@@ -482,6 +486,100 @@ function buildTopAiDealsShell() {
   });
 }
 
+function buildBestAiToolsPage() {
+  return layout({
+    title: "Best AI Tools Deals (2026) – Lifetime & Discounted AI Software | Pochify",
+    description: "Discover the best AI tool deals, lifetime AI subscriptions, and discounted AI software for writing, automation, voice, and productivity.",
+    canonicalUrl: `${SITE_URL}/best-ai-tools-deals.html`,
+    bodyContent: `
+      <div class="container">
+        <div class="breadcrumbs"><a href="/">Home</a> / Best AI Tools Deals</div>
+
+        <h1>Best AI Tools Deals (Updated)</h1>
+        <p>
+          This page highlights high-quality AI software deals including lifetime AI tools,
+          writing assistants, automation platforms, and productivity apps.
+        </p>
+
+        <div class="card">
+          <h2>What you’ll find</h2>
+          <ul>
+            <li>Lifetime AI tool deals</li>
+            <li>Discounted AI writing tools</li>
+            <li>Automation & workflow tools</li>
+            <li>Voice, image, and chatbot AI apps</li>
+          </ul>
+        </div>
+
+        <div id="aiDealsGrid" class="grid">
+          <div class="empty">Loading AI deals…</div>
+        </div>
+
+        ${dealCardScript("https://go.pochify.com/api/public/deals?category=ai&limit=24", "aiDealsGrid")}
+
+        <div class="card">
+          <h2>How to choose an AI tool</h2>
+          <p>
+            Focus on your workflow first. Writing tools, automation tools, and voice tools all serve
+            different purposes. Lifetime deals can be valuable if the product is stable and actively maintained.
+          </p>
+        </div>
+      </div>
+    `
+  });
+}
+
+function buildLifetimeDealsPage() {
+  return layout({
+    title: "Best Lifetime Software Deals (2026) | Pochify",
+    description: "Browse lifetime software deals and one-time purchase SaaS tools with high discounts.",
+    canonicalUrl: `${SITE_URL}/best-lifetime-software-deals.html`,
+    bodyContent: `
+      <div class="container">
+        <div class="breadcrumbs"><a href="/">Home</a> / Lifetime Deals</div>
+
+        <h1>Best Lifetime Software Deals</h1>
+
+        <p>
+          Lifetime deals allow you to pay once and use software without recurring subscriptions.
+          This page tracks high-quality lifetime SaaS deals worth considering.
+        </p>
+
+        <div id="lifetimeDeals" class="grid">
+          <div class="empty">Loading deals…</div>
+        </div>
+
+        ${dealCardScript("https://go.pochify.com/api/public/deals?offer_type=lifetime&limit=24", "lifetimeDeals")}
+      </div>
+    `
+  });
+}
+
+function buildCheapAiToolsPage() {
+  return layout({
+    title: "Cheap AI Tools & Budget AI Software Deals | Pochify",
+    description: "Find affordable AI tools, discounted AI apps, and budget-friendly automation software.",
+    canonicalUrl: `${SITE_URL}/cheap-ai-tools.html`,
+    bodyContent: `
+      <div class="container">
+        <div class="breadcrumbs"><a href="/">Home</a> / Cheap AI Tools</div>
+
+        <h1>Cheap AI Tools & Budget AI Software</h1>
+
+        <p>
+          Looking for affordable AI tools? This page focuses on low-cost AI software and discounted deals.
+        </p>
+
+        <div id="cheapAiDeals" class="grid">
+          <div class="empty">Loading deals…</div>
+        </div>
+
+        ${dealCardScript("https://go.pochify.com/api/public/deals?category=ai&limit=24", "cheapAiDeals")}
+      </div>
+    `
+  });
+}
+
 export function ensureShellPages({ force = false } = {}) {
   ensureSharedAssets();
 
@@ -490,6 +588,9 @@ export function ensureShellPages({ force = false } = {}) {
   writeStaticPage(path.join("docs", "categories", "ai.html"), buildDealsShell("AI Tools", "ai"), { force });
   writeStaticPage(path.join("docs", "categories", "saas.html"), buildDealsShell("SaaS Tools", "saas"), { force });
   writeStaticPage(path.join("docs", "best-ai-deals.html"), buildTopAiDealsShell(), { force });
+  writeStaticPage(path.join("docs", "best-ai-tools-deals.html"), buildBestAiToolsPage(), { force });
+  writeStaticPage(path.join("docs", "best-lifetime-software-deals.html"), buildLifetimeDealsPage(), { force });
+  writeStaticPage(path.join("docs", "cheap-ai-tools.html"), buildCheapAiToolsPage(), { force });
 
   writeStaticPage(
     path.join("docs", "faq.html"),
@@ -634,6 +735,9 @@ export function generateSitemapFromDeals(deals) {
     `${SITE_URL}/deals/`,
     `${SITE_URL}/categories/ai.html`,
     `${SITE_URL}/categories/saas.html`,
+    `${SITE_URL}/best-ai-tools-deals.html`,
+    `${SITE_URL}/best-lifetime-software-deals.html`,
+    `${SITE_URL}/cheap-ai-tools.html`,
     `${SITE_URL}/best-ai-deals.html`,
     `${SITE_URL}/faq.html`,
     `${SITE_URL}/privacy.html`,
