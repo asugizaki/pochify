@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import * as cheerio from "cheerio";
-import { generateDealPage } from "./generateDealPage.js";
 
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -217,8 +216,6 @@ export async function createManualDeal(input) {
     .upsert(deal, { onConflict: "slug" });
 
   if (error) throw error;
-
-  generateDealPage(deal);
 
   return deal;
 }
