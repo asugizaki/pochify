@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-//import { createManualDeal } from "../src/manualDealService.js";
+import { createManualDeal } from "../src/manualDealService.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
