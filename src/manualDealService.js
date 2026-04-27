@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as cheerio from "cheerio";
 import { generateDealPage } from "./generateDealPage.js";
 
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
