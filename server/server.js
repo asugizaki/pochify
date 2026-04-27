@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { createManualDeal } from "./manualDealService.js";
+import { triggerRegenerateWorkflow } from "./githubWorkflowService.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -598,76 +599,66 @@ app.get("/api/source-pages", async (_req, res) => {
   res.json({ items: data || [] });
 });
 
-app.get("/admin/manual-deals", requireAdmin, (_req, res) => {
-  res.type("html").send(`
-<!doctype html>
-<html>
-<head>
-  <title>Create Manual Deal</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#0b1220; color:#e5e7eb; padding:30px; }
-    form { max-width:760px; margin:auto; background:#111827; padding:24px; border-radius:16px; border:1px solid #1f2937; }
-    label { display:block; margin-top:14px; font-weight:bold; }
-    input, textarea, select { width:100%; margin-top:6px; padding:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; }
-    button { margin-top:20px; padding:14px 22px; border:0; border-radius:12px; background:#22c55e; color:#04130a; font-weight:bold; cursor:pointer; }
-    a { color:#93c5fd; }
-  </style>
-</head>
-<body>
-  <form method="post" action="/api/admin/manual-deals">
-    <h1>Create Manual Deal</h1>
+app.post(
+  "/api/admin/manual-deals",
+  requireAdmin,
+  express.urlencoded({ extended: true }),
+  async (req, res) => {
+    try {
+      const deal = await createManualDeal({
+        name: req.body.name,
+        affiliate_url: req.body.affiliate_url,
+        current_price: req.body.current_price,
+        original_price: req.body.original_price,
+        description: req.body.description,
+        image_url: req.body.image_url,
+        category: req.body.category,
+        offer_type: req.body.offer_type,
+        affiliate_network: req.body.affiliate_network,
+        use_ai: req.body.use_ai === "true"
+      });
 
-    <label>Name</label>
-    <input name="name" placeholder="Example: Jasper AI" />
+      let workflowResult = null;
 
-    <label>Affiliate URL</label>
-    <input name="affiliate_url" required placeholder="https://..." />
+      try {
+        workflowResult = await triggerRegenerateWorkflow({ mode: "all" });
+      } catch (workflowError) {
+        console.error("❌ Failed to trigger regeneration workflow:", workflowError);
+        workflowResult = {
+          triggered: false,
+          reason: workflowError.message
+        };
+      }
 
-    <label>Current price</label>
-    <input name="current_price" placeholder="49" />
+      res.type("html").send(`
+        <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
+          <h1>✅ Deal created</h1>
+          <p><strong>${deal.name}</strong></p>
+          <p>Slug: <code>${deal.slug}</code></p>
 
-    <label>Original price</label>
-    <input name="original_price" placeholder="99" />
+          ${
+            workflowResult?.triggered
+              ? `<p>🚀 Regeneration workflow triggered. The page should publish after GitHub Actions finishes.</p>`
+              : `<p>⚠️ Deal saved, but regeneration was not triggered: ${workflowResult?.reason || "unknown reason"}</p>`
+          }
 
-    <label>Description</label>
-    <textarea name="description" rows="4" placeholder="Brief product description"></textarea>
-
-    <label>Image URL optional</label>
-    <input name="image_url" placeholder="https://..." />
-
-    <label>Category</label>
-    <select name="category">
-      <option value="ai">AI</option>
-      <option value="saas">SaaS</option>
-      <option value="general">General</option>
-    </select>
-
-    <label>Offer type</label>
-    <select name="offer_type">
-      <option value="discount">Discount</option>
-      <option value="lifetime">Lifetime</option>
-    </select>
-
-    <label>Affiliate Network</label>
-    <select name="affiliate_network">
-      <option value="direct">Direct</option>
-      <option value="partnerstack">PartnerStack</option>
-      <option value="rewardful">Rewardful</option>
-      <option value="impact">Impact</option>
-      <option value="stacksocial">StackSocial</option>
-    </select>
-
-    <label>
-      <input type="checkbox" name="use_ai" value="true" checked style="width:auto;" />
-      Generate improved content with OpenAI
-    </label>
-
-    <button type="submit">Create Deal</button>
-  </form>
-</body>
-</html>
-`);
-});
+          <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${deal.slug}.html" target="_blank">View deal page</a></p>
+          <p><a style="color:#93c5fd;" href="/admin/manual-deals">Create another</a></p>
+          <p><a style="color:#93c5fd;" href="/admin">Back to admin</a></p>
+        </body>
+      `);
+    } catch (error) {
+      console.error("❌ Manual deal create failed:", error);
+      res.status(500).type("html").send(`
+        <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
+          <h1>❌ Failed</h1>
+          <pre>${String(error.message || error)}</pre>
+          <p><a style="color:#93c5fd;" href="/admin/manual-deals">Back</a></p>
+        </body>
+      `);
+    }
+  }
+);
 
 app.post("/api/admin/manual-deals", requireAdmin, express.urlencoded({ extended: true }), async (req, res) => {
   try {
