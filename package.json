@@ -7,7 +7,8 @@
     "send:telegram": "node src/sendTelegramDeals.js",
     "regenerate:outdated": "node src/regenerateOutdatedDeals.js",
     "regenerate:all": "node src/regenerateAllDeals.js",
-    "create:deal": "node src/createManualDeal.js"
+    "create:deal": "node src/createManualDeal.js",
+    "create:manual-deal": "node src/createManualDeal.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
