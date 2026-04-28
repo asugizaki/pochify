@@ -146,6 +146,42 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#39;");
 }
 
+function adminLayout({ title, active = "", body = "" }) {
+  const navItem = (href, label, key) => `
+    <a href="${href}" style="
+      color:${active === key ? "#ffffff" : "#93c5fd"};
+      font-weight:${active === key ? "700" : "400"};
+      text-decoration:none;
+      padding:10px 12px;
+      border-radius:10px;
+      background:${active === key ? "#1f2937" : "transparent"};
+    ">${label}</a>
+  `;
+
+  return `
+<!doctype html>
+<html>
+<head>
+  <title>${escapeHtml(title)} | Pochify Admin</title>
+</head>
+<body style="font-family:Arial;background:#0b1220;color:#e5e7eb;margin:0;">
+  <nav style="background:#111827;border-bottom:1px solid #1f2937;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <strong style="margin-right:12px;">Pochify Admin</strong>
+      ${navItem("/admin", "Dashboard", "dashboard")}
+      ${navItem("/admin/manual-deals", "Manual Deals", "manual-deals")}
+    </div>
+    <a href="/logout" style="color:#fca5a5;text-decoration:none;font-weight:700;">Logout</a>
+  </nav>
+
+  <main style="max-width:1000px;margin:40px auto;padding:0 20px;">
+    ${body}
+  </main>
+</body>
+</html>
+`;
+}
+
 app.get("/", (_req, res) => {
   res.send("Pochify backend running 🚀");
 });
@@ -578,91 +614,96 @@ app.get("/admin", requireAdmin, async (_req, res) => {
   const { count: dealsCount = 0 } = await supabase.from("deals").select("*", { count: "exact", head: true });
   const { count: clickCount = 0 } = await supabase.from("click_events").select("*", { count: "exact", head: true });
 
-  res.send(`
-    <div style="font-family:Arial;max-width:1000px;margin:40px auto;color:#e5e7eb;background:#0b1220;padding:20px">
+  res.send(adminLayout({
+    title: "Dashboard",
+    active: "dashboard",
+    body: `
       <h1>Pochify Admin</h1>
-      <p>Deals: ${dealsCount}</p>
-      <p>Clicks: ${clickCount}</p>
-      <p><a href="/admin/manual-deals" style="color:#93c5fd">Create manual affiliate deal</a></p>
-      <pre style="background:#111827;padding:16px;border-radius:12px;overflow:auto">${escapeHtml(JSON.stringify(settings, null, 2))}</pre>
-      <p><a href="/logout" style="color:#93c5fd">Logout</a></p>
-    </div>
-  `);
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:24px 0;">
+        <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;">
+          <div style="color:#94a3b8;">Deals</div>
+          <div style="font-size:32px;font-weight:700;">${dealsCount}</div>
+        </div>
+
+        <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;">
+          <div style="color:#94a3b8;">Clicks</div>
+          <div style="font-size:32px;font-weight:700;">${clickCount}</div>
+        </div>
+      </div>
+
+      <p>
+        <a href="/admin/manual-deals" style="color:#93c5fd;">Create manual affiliate deal</a>
+      </p>
+
+      <h2>Settings</h2>
+      <pre style="background:#111827;padding:16px;border-radius:12px;overflow:auto;border:1px solid #1f2937;">${escapeHtml(JSON.stringify(settings, null, 2))}</pre>
+    `
+  }));
 });
 
 app.get("/admin/manual-deals", requireAdmin, (_req, res) => {
-  res.type("html").send(`
-<!doctype html>
-<html>
-<head>
-  <title>Create Manual Deal</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#0b1220; color:#e5e7eb; padding:30px; }
-    form { max-width:760px; margin:auto; background:#111827; padding:24px; border-radius:16px; border:1px solid #1f2937; }
-    label { display:block; margin-top:14px; font-weight:bold; }
-    input, textarea, select { width:100%; margin-top:6px; padding:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; }
-    button { margin-top:20px; padding:14px 22px; border:0; border-radius:12px; background:#22c55e; color:#04130a; font-weight:bold; cursor:pointer; }
-    a { color:#93c5fd; }
-    .hint { color:#94a3b8; font-size:14px; line-height:1.5; }
-  </style>
-</head>
-<body>
-  <form method="post" action="/api/admin/manual-deals">
-    <h1>Create Manual Deal</h1>
-    <p class="hint">Paste a direct SaaS affiliate offer here. After saving, Pochify will automatically trigger the GitHub regeneration workflow.</p>
+  res.type("html").send(adminLayout({
+    title: "Manual Deals",
+    active: "manual-deals",
+    body: `
+      <form method="post" action="/api/admin/manual-deals" style="max-width:760px;background:#111827;padding:24px;border-radius:16px;border:1px solid #1f2937;">
+        <h1>Create Manual Deal</h1>
+        <p style="color:#94a3b8;line-height:1.5;">
+          Paste a direct SaaS affiliate offer here. After saving, Pochify will automatically trigger the GitHub regeneration workflow.
+        </p>
 
-    <label>Name</label>
-    <input name="name" placeholder="Example: Jasper AI" />
+        <label style="display:block;margin-top:14px;font-weight:bold;">Name</label>
+        <input name="name" placeholder="Example: Jasper AI" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;" />
 
-    <label>Affiliate URL</label>
-    <input name="affiliate_url" required placeholder="https://..." />
+        <label style="display:block;margin-top:14px;font-weight:bold;">Affiliate URL</label>
+        <input name="affiliate_url" required placeholder="https://..." style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;" />
 
-    <label>Current price</label>
-    <input name="current_price" placeholder="49" />
+        <label style="display:block;margin-top:14px;font-weight:bold;">Current price</label>
+        <input name="current_price" placeholder="49" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;" />
 
-    <label>Original price</label>
-    <input name="original_price" placeholder="99" />
+        <label style="display:block;margin-top:14px;font-weight:bold;">Original price</label>
+        <input name="original_price" placeholder="99" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;" />
 
-    <label>Description</label>
-    <textarea name="description" rows="4" placeholder="Brief product description"></textarea>
+        <label style="display:block;margin-top:14px;font-weight:bold;">Description</label>
+        <textarea name="description" rows="4" placeholder="Brief product description" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;"></textarea>
 
-    <label>Image URL optional</label>
-    <input name="image_url" placeholder="https://..." />
+        <label style="display:block;margin-top:14px;font-weight:bold;">Image URL optional</label>
+        <input name="image_url" placeholder="https://..." style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;" />
 
-    <label>Category</label>
-    <select name="category">
-      <option value="ai">AI</option>
-      <option value="saas">SaaS</option>
-      <option value="general">General</option>
-    </select>
+        <label style="display:block;margin-top:14px;font-weight:bold;">Category</label>
+        <select name="category" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;">
+          <option value="ai">AI</option>
+          <option value="saas">SaaS</option>
+          <option value="general">General</option>
+        </select>
 
-    <label>Offer type</label>
-    <select name="offer_type">
-      <option value="discount">Discount</option>
-      <option value="lifetime">Lifetime</option>
-    </select>
+        <label style="display:block;margin-top:14px;font-weight:bold;">Offer type</label>
+        <select name="offer_type" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;">
+          <option value="discount">Discount</option>
+          <option value="lifetime">Lifetime</option>
+        </select>
 
-    <label>Affiliate Network</label>
-    <select name="affiliate_network">
-      <option value="direct">Direct</option>
-      <option value="partnerstack">PartnerStack</option>
-      <option value="rewardful">Rewardful</option>
-      <option value="impact">Impact</option>
-      <option value="stacksocial">StackSocial</option>
-    </select>
+        <label style="display:block;margin-top:14px;font-weight:bold;">Affiliate Network</label>
+        <select name="affiliate_network" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;">
+          <option value="direct">Direct</option>
+          <option value="partnerstack">PartnerStack</option>
+          <option value="rewardful">Rewardful</option>
+          <option value="impact">Impact</option>
+          <option value="stacksocial">StackSocial</option>
+        </select>
 
-    <label style="display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" name="use_ai" value="true" checked style="width:auto;margin:0;" />
-      Generate improved content with OpenAI
-    </label>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:bold;">
+          <input type="checkbox" name="use_ai" value="true" checked />
+          Generate improved content with OpenAI
+        </label>
 
-    <button type="submit">Create Deal</button>
-
-    <p class="hint"><a href="/admin">Back to admin</a></p>
-  </form>
-</body>
-</html>
-`);
+        <button type="submit" style="margin-top:20px;padding:14px 22px;border:0;border-radius:12px;background:#22c55e;color:#04130a;font-weight:bold;cursor:pointer;">
+          Create Deal
+        </button>
+      </form>
+    `
+  }));
 });
 
 app.post("/api/admin/manual-deals", requireAdmin, async (req, res) => {
@@ -692,33 +733,38 @@ app.post("/api/admin/manual-deals", requireAdmin, async (req, res) => {
       };
     }
 
-    res.type("html").send(`
-      <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
+    res.type("html").send(adminLayout({
+      title: "Deal Created",
+      active: "manual-deals",
+      body: `
         <h1>✅ Deal created</h1>
-        <p><strong>${escapeHtml(deal.name)}</strong></p>
-        <p>Slug: <code>${escapeHtml(deal.slug)}</code></p>
-
-        ${
-          workflowResult?.triggered
-            ? `<p>🚀 Regeneration workflow triggered. The page should publish after GitHub Actions finishes.</p>`
-            : `<p>⚠️ Deal saved, but regeneration was not triggered: ${escapeHtml(workflowResult?.reason || "unknown reason")}</p>`
-        }
-
-        <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${escapeHtml(deal.slug)}.html" target="_blank">View deal page</a></p>
-        <p><a style="color:#93c5fd;" href="/admin/manual-deals">Create another</a></p>
-        <p><a style="color:#93c5fd;" href="/admin">Back to admin</a></p>
-      </body>
-    `);
+        <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:24px;">
+          <p><strong>${escapeHtml(deal.name)}</strong></p>
+          <p>Slug: <code>${escapeHtml(deal.slug)}</code></p>
+    
+          ${
+            workflowResult?.triggered
+              ? `<p>🚀 Regeneration workflow triggered. The page should publish after GitHub Actions finishes.</p>`
+              : `<p>⚠️ Deal saved, but regeneration was not triggered: ${escapeHtml(workflowResult?.reason || "unknown reason")}</p>`
+          }
+    
+          <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${escapeHtml(deal.slug)}.html" target="_blank">View deal page</a></p>
+          <p><a style="color:#93c5fd;" href="/admin/manual-deals">Create another</a></p>
+        </div>
+      `
+    }));
   } catch (error) {
     console.error("❌ Manual deal create failed:", error);
 
-    res.status(500).type("html").send(`
-      <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
+    res.status(500).type("html").send(adminLayout({
+      title: "Manual Deal Failed",
+      active: "manual-deals",
+      body: `
         <h1>❌ Failed</h1>
-        <pre>${escapeHtml(error.message || String(error))}</pre>
+        <pre style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;overflow:auto;">${escapeHtml(error.message || String(error))}</pre>
         <p><a style="color:#93c5fd;" href="/admin/manual-deals">Back</a></p>
-      </body>
-    `);
+      `
+    }));
   }
 });
 
