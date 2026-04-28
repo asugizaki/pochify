@@ -18,10 +18,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
@@ -50,8 +47,10 @@ function verifySessionValue(value = "") {
   try {
     const [encoded, sig] = value.split(".");
     if (!encoded || !sig) return null;
+
     const expected = crypto.createHmac("sha256", SESSION_SECRET).update(encoded).digest("base64url");
     if (sig !== expected) return null;
+
     const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
     return payload?.u ? payload : null;
   } catch {
@@ -61,10 +60,16 @@ function verifySessionValue(value = "") {
 
 function requireAdmin(req, res, next) {
   const session = verifySessionValue(req.cookies?.pochify_admin_session || "");
+
   if (!session) {
+    if (req.path.startsWith("/api/")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const nextUrl = encodeURIComponent(req.originalUrl || "/admin");
     return res.redirect(`/login?next=${nextUrl}`);
   }
+
   req.adminUser = session.u;
   next();
 }
@@ -132,27 +137,41 @@ function publicStatusFilter(query) {
   return query.in("status", ["ready_to_post", "posted", "active"]);
 }
 
-app.get("/", (req, res) => {
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+app.get("/", (_req, res) => {
   res.send("Pochify backend running 🚀");
 });
 
-app.get("/api/settings/public", async (req, res) => {
+app.get("/api/health", async (_req, res) => {
+  res.json({
+    ok: true,
+    service: "pochify-go",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/api/settings/public", async (_req, res) => {
   res.json({ settings: await getPublicSettings() });
 });
 
-app.post("/api/deals/existing-summaries", async (req, res) => {
-  const slugs = req.body?.slugs || [];
-  if (!Array.isArray(slugs) || !slugs.length) {
-    return res.json({ items: [] });
-  }
-
+app.get("/api/source-pages", async (_req, res) => {
   const { data, error } = await supabase
-    .from("deals")
-    .select("slug, needs_regeneration, page_generated_at, content_generated_at, status")
-    .in("slug", slugs);
+    .from("source_pages")
+    .select("source_key, page_type, page_name, url, is_enabled, sort_order")
+    .eq("is_enabled", true)
+    .order("source_key", { ascending: true })
+    .order("sort_order", { ascending: true });
 
   if (error) {
-    return res.status(500).json({ error });
+    return res.status(500).json({ error: "Failed to load source pages" });
   }
 
   res.json({ items: data || [] });
@@ -195,9 +214,7 @@ app.get("/api/public/deals", async (req, res) => {
 
   query = publicStatusFilter(query);
 
-  if (category) {
-    query = query.eq("channel", category);
-  }
+  if (category) query = query.eq("channel", category);
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: "Failed to load deals" });
@@ -252,9 +269,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
     .select("slug, created_at")
     .gte("created_at", since);
 
-  if (clickError) {
-    return res.status(500).json({ error: "Failed to load top clicked" });
-  }
+  if (clickError) return res.status(500).json({ error: "Failed to load top clicked" });
 
   const counts = new Map();
   for (const row of clicks || []) {
@@ -266,9 +281,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
     .slice(0, limit)
     .map(([slug]) => slug);
 
-  if (!topSlugs.length) {
-    return res.json({ items: [] });
-  }
+  if (!topSlugs.length) return res.json({ items: [] });
 
   let query = supabase
     .from("deals")
@@ -282,9 +295,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
   query = publicStatusFilter(query);
 
   const { data: deals, error: dealsError } = await query;
-  if (dealsError) {
-    return res.status(500).json({ error: "Failed to load top clicked deals" });
-  }
+  if (dealsError) return res.status(500).json({ error: "Failed to load top clicked deals" });
 
   const merged = (deals || [])
     .map((deal) => ({ ...deal, week_clicks: counts.get(deal.slug) || 0 }))
@@ -293,15 +304,49 @@ app.get("/api/public/top-clicked", async (req, res) => {
   res.json({ items: merged });
 });
 
+app.post("/api/deals/existing-summaries", async (req, res) => {
+  const slugs = req.body?.slugs || [];
+  if (!Array.isArray(slugs) || !slugs.length) return res.json({ items: [] });
+
+  const { data, error } = await supabase
+    .from("deals")
+    .select("slug, needs_regeneration, page_generated_at, content_generated_at, status")
+    .in("slug", slugs);
+
+  if (error) return res.status(500).json({ error });
+
+  res.json({ items: data || [] });
+});
+
+app.post("/api/deals/existing-details", async (req, res) => {
+  const slugs = req.body?.slugs || [];
+  if (!Array.isArray(slugs) || !slugs.length) return res.json({ items: [] });
+
+  const { data, error } = await supabase
+    .from("deals")
+    .select(`
+      slug,
+      needs_regeneration,
+      status,
+      current_price,
+      original_price,
+      discount_percent,
+      og_image
+    `)
+    .in("slug", slugs);
+
+  if (error) return res.status(500).json({ error });
+
+  res.json({ items: data || [] });
+});
+
 app.post("/api/deals/ingest", async (req, res) => {
   try {
     const deals = req.body?.deals || [];
     const maxToSend = Number(req.body?.maxToSend || 2);
     const settings = { ...(await getPublicSettings()), ...(req.body?.settings || {}) };
 
-    if (!Array.isArray(deals)) {
-      return res.status(400).json({ error: "Expected deals array" });
-    }
+    if (!Array.isArray(deals)) return res.status(400).json({ error: "Expected deals array" });
 
     const slugs = deals.map((d) => d.slug).filter(Boolean);
 
@@ -319,9 +364,7 @@ app.post("/api/deals/ingest", async (req, res) => {
       `)
       .in("slug", slugs);
 
-    if (existingError) {
-      return res.status(500).json({ error: existingError });
-    }
+    if (existingError) return res.status(500).json({ error: existingError });
 
     const existingMap = new Map((existingDeals || []).map((d) => [d.slug, d]));
 
@@ -340,9 +383,7 @@ app.post("/api/deals/ingest", async (req, res) => {
 
       let status = existing?.status || "ready_to_post";
 
-      if (!existing) {
-        status = "ready_to_post";
-      } else if (regen || pricingChanged) {
+      if (!existing || regen || pricingChanged) {
         status = "ready_to_post";
       } else if (existing.status === "posted") {
         status = "posted";
@@ -361,13 +402,18 @@ app.post("/api/deals/ingest", async (req, res) => {
         description: d.description || "",
         url: d.url || "",
         stacksocial_url: d.stacksocial_url || null,
-        vendor_url: d.vendor_url || null,
-        affiliate_link: d.affiliateLink || null,
+        vendor_url: d.vendor_url || d.source_deal_url || null,
+        affiliate_link: d.affiliateLink || d.affiliate_link || null,
         affiliate_url: d.affiliate_url || null,
         affiliate_detected: !!d.affiliate_detected,
         network_guess: d.network_guess || "",
         page_url: d.page_url || `${SITE_URL}/deals/${d.slug}.html`,
-        source: d.source || "stacksocial",
+        source: d.source || d.source_key || "unknown",
+        source_key: d.source_key || d.source || "unknown",
+        source_name: d.source_name || "",
+        source_logo_path: d.source_logo_path || "",
+        source_home_url: d.source_home_url || "",
+        source_deal_url: d.source_deal_url || d.vendor_url || d.url || "",
         channel: d.channel || "general",
         votes_count: d.votes_count || 0,
         score: d.score || 0,
@@ -382,6 +428,7 @@ app.post("/api/deals/ingest", async (req, res) => {
         meta_title: d.meta_title || "",
         meta_description: d.meta_description || "",
         og_image: d.og_image || "",
+        card_image: d.card_image || d.og_image || "",
         hook: d.hook || "",
         audience: d.audience || "",
         why_now: d.why_now || "",
@@ -400,11 +447,9 @@ app.post("/api/deals/ingest", async (req, res) => {
       .from("deals")
       .upsert(formattedDeals, { onConflict: "slug" });
 
-    if (upsertError) {
-      return res.status(500).json({ error: upsertError });
-    }
+    if (upsertError) return res.status(500).json({ error: upsertError });
 
-    const cooldownIso = new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(); // 14 days
+    const cooldownIso = new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString();
 
     const { data: queuedDeals, error: queueError } = await supabase
       .from("deals")
@@ -416,9 +461,7 @@ app.post("/api/deals/ingest", async (req, res) => {
       .order("created_at", { ascending: false })
       .limit(maxToSend);
 
-    if (queueError) {
-      return res.status(500).json({ error: queueError });
-    }
+    if (queueError) return res.status(500).json({ error: queueError });
 
     return res.json({
       success: true,
@@ -431,18 +474,13 @@ app.post("/api/deals/ingest", async (req, res) => {
 
 app.post("/api/deals/mark-posted", async (req, res) => {
   const slugs = req.body?.slugs || [];
-
   if (!Array.isArray(slugs) || !slugs.length) {
     return res.status(400).json({ error: "Expected slugs array" });
   }
 
-  const { data, error } = await supabase.rpc("mark_deals_posted", {
-    slugs
-  });
+  const { data, error } = await supabase.rpc("mark_deals_posted", { slugs });
 
-  if (error) {
-    return res.status(500).json({ error });
-  }
+  if (error) return res.status(500).json({ error });
 
   console.log("✅ Marked posted slugs:", slugs);
   res.json({
@@ -460,11 +498,16 @@ app.get("/go/:slug", async (req, res) => {
     .eq("slug", slug)
     .single();
 
-  if (dealError || !deal) {
-    return res.redirect(SITE_URL);
-  }
+  if (dealError || !deal) return res.redirect(SITE_URL);
 
-  const targetUrl = deal.affiliate_link || deal.stacksocial_url || deal.url || SITE_URL;
+  const targetUrl =
+    deal.affiliate_link ||
+    deal.affiliate_url ||
+    deal.vendor_url ||
+    deal.source_deal_url ||
+    deal.stacksocial_url ||
+    deal.url ||
+    SITE_URL;
 
   await supabase.from("click_events").insert({
     slug: deal.slug,
@@ -476,25 +519,21 @@ app.get("/go/:slug", async (req, res) => {
 
   await supabase
     .from("deals")
-    .upsert(
-      {
-        slug: deal.slug,
-        click_count: (deal.click_count || 0) + 1,
-        last_clicked_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "slug" }
-    );
+    .update({
+      click_count: (deal.click_count || 0) + 1,
+      last_clicked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("slug", deal.slug);
 
   return res.redirect(targetUrl);
 });
 
-/* login/logout/admin kept simple here */
 app.get("/login", (req, res) => {
   const next = req.query.next || "/admin";
   res.send(`
     <form method="POST" action="/login" style="max-width:420px;margin:40px auto;font-family:Arial">
-      <input type="hidden" name="next" value="${next}" />
+      <input type="hidden" name="next" value="${escapeHtml(next)}" />
       <h1>Pochify Admin Login</h1>
       <input name="username" placeholder="Username" style="width:100%;padding:12px;margin:8px 0" required />
       <input type="password" name="password" placeholder="Password" style="width:100%;padding:12px;margin:8px 0" required />
@@ -523,17 +562,18 @@ app.post("/login", (req, res) => {
   return res.redirect(next);
 });
 
-app.get("/logout", (req, res) => {
+app.get("/logout", (_req, res) => {
   res.clearCookie("pochify_admin_session", {
     httpOnly: true,
     sameSite: "lax",
     secure: true,
     path: "/"
   });
+
   res.redirect("/login");
 });
 
-app.get("/admin", requireAdmin, async (req, res) => {
+app.get("/admin", requireAdmin, async (_req, res) => {
   const settings = await getPublicSettings();
   const { count: dealsCount = 0 } = await supabase.from("deals").select("*", { count: "exact", head: true });
   const { count: clickCount = 0 } = await supabase.from("click_events").select("*", { count: "exact", head: true });
@@ -543,124 +583,89 @@ app.get("/admin", requireAdmin, async (req, res) => {
       <h1>Pochify Admin</h1>
       <p>Deals: ${dealsCount}</p>
       <p>Clicks: ${clickCount}</p>
-      <pre style="background:#111827;padding:16px;border-radius:12px;overflow:auto">${JSON.stringify(settings, null, 2)}</pre>
+      <p><a href="/admin/manual-deals" style="color:#93c5fd">Create manual affiliate deal</a></p>
+      <pre style="background:#111827;padding:16px;border-radius:12px;overflow:auto">${escapeHtml(JSON.stringify(settings, null, 2))}</pre>
       <p><a href="/logout" style="color:#93c5fd">Logout</a></p>
     </div>
   `);
 });
 
-app.post("/api/deals/existing-details", async (req, res) => {
-  const slugs = req.body?.slugs || [];
+app.get("/admin/manual-deals", requireAdmin, (_req, res) => {
+  res.type("html").send(`
+<!doctype html>
+<html>
+<head>
+  <title>Create Manual Deal</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0b1220; color:#e5e7eb; padding:30px; }
+    form { max-width:760px; margin:auto; background:#111827; padding:24px; border-radius:16px; border:1px solid #1f2937; }
+    label { display:block; margin-top:14px; font-weight:bold; }
+    input, textarea, select { width:100%; margin-top:6px; padding:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; }
+    button { margin-top:20px; padding:14px 22px; border:0; border-radius:12px; background:#22c55e; color:#04130a; font-weight:bold; cursor:pointer; }
+    a { color:#93c5fd; }
+    .hint { color:#94a3b8; font-size:14px; line-height:1.5; }
+  </style>
+</head>
+<body>
+  <form method="post" action="/api/admin/manual-deals">
+    <h1>Create Manual Deal</h1>
+    <p class="hint">Paste a direct SaaS affiliate offer here. After saving, Pochify will automatically trigger the GitHub regeneration workflow.</p>
 
-  if (!Array.isArray(slugs) || !slugs.length) {
-    return res.json({ items: [] });
-  }
+    <label>Name</label>
+    <input name="name" placeholder="Example: Jasper AI" />
 
-  const { data, error } = await supabase
-    .from("deals")
-    .select(`
-      slug,
-      needs_regeneration,
-      status,
-      current_price,
-      original_price,
-      discount_percent,
-      og_image
-    `)
-    .in("slug", slugs);
+    <label>Affiliate URL</label>
+    <input name="affiliate_url" required placeholder="https://..." />
 
-  if (error) {
-    return res.status(500).json({ error });
-  }
+    <label>Current price</label>
+    <input name="current_price" placeholder="49" />
 
-  res.json({ items: data || [] });
+    <label>Original price</label>
+    <input name="original_price" placeholder="99" />
+
+    <label>Description</label>
+    <textarea name="description" rows="4" placeholder="Brief product description"></textarea>
+
+    <label>Image URL optional</label>
+    <input name="image_url" placeholder="https://..." />
+
+    <label>Category</label>
+    <select name="category">
+      <option value="ai">AI</option>
+      <option value="saas">SaaS</option>
+      <option value="general">General</option>
+    </select>
+
+    <label>Offer type</label>
+    <select name="offer_type">
+      <option value="discount">Discount</option>
+      <option value="lifetime">Lifetime</option>
+    </select>
+
+    <label>Affiliate Network</label>
+    <select name="affiliate_network">
+      <option value="direct">Direct</option>
+      <option value="partnerstack">PartnerStack</option>
+      <option value="rewardful">Rewardful</option>
+      <option value="impact">Impact</option>
+      <option value="stacksocial">StackSocial</option>
+    </select>
+
+    <label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" name="use_ai" value="true" checked style="width:auto;margin:0;" />
+      Generate improved content with OpenAI
+    </label>
+
+    <button type="submit">Create Deal</button>
+
+    <p class="hint"><a href="/admin">Back to admin</a></p>
+  </form>
+</body>
+</html>
+`);
 });
 
-app.get("/api/health", async (_req, res) => {
-  res.json({
-    ok: true,
-    service: "pochify-go",
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get("/api/source-pages", async (_req, res) => {
-  const { data, error } = await supabase
-    .from("source_pages")
-    .select("source_key, page_type, page_name, url, is_enabled, sort_order")
-    .eq("is_enabled", true)
-    .order("source_key", { ascending: true })
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    return res.status(500).json({ error: "Failed to load source pages" });
-  }
-
-  res.json({ items: data || [] });
-});
-
-app.post(
-  "/api/admin/manual-deals",
-  requireAdmin,
-  express.urlencoded({ extended: true }),
-  async (req, res) => {
-    try {
-      const deal = await createManualDeal({
-        name: req.body.name,
-        affiliate_url: req.body.affiliate_url,
-        current_price: req.body.current_price,
-        original_price: req.body.original_price,
-        description: req.body.description,
-        image_url: req.body.image_url,
-        category: req.body.category,
-        offer_type: req.body.offer_type,
-        affiliate_network: req.body.affiliate_network,
-        use_ai: req.body.use_ai === "true"
-      });
-
-      let workflowResult = null;
-
-      try {
-        workflowResult = await triggerRegenerateWorkflow({ mode: "all" });
-      } catch (workflowError) {
-        console.error("❌ Failed to trigger regeneration workflow:", workflowError);
-        workflowResult = {
-          triggered: false,
-          reason: workflowError.message
-        };
-      }
-
-      res.type("html").send(`
-        <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
-          <h1>✅ Deal created</h1>
-          <p><strong>${deal.name}</strong></p>
-          <p>Slug: <code>${deal.slug}</code></p>
-
-          ${
-            workflowResult?.triggered
-              ? `<p>🚀 Regeneration workflow triggered. The page should publish after GitHub Actions finishes.</p>`
-              : `<p>⚠️ Deal saved, but regeneration was not triggered: ${workflowResult?.reason || "unknown reason"}</p>`
-          }
-
-          <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${deal.slug}.html" target="_blank">View deal page</a></p>
-          <p><a style="color:#93c5fd;" href="/admin/manual-deals">Create another</a></p>
-          <p><a style="color:#93c5fd;" href="/admin">Back to admin</a></p>
-        </body>
-      `);
-    } catch (error) {
-      console.error("❌ Manual deal create failed:", error);
-      res.status(500).type("html").send(`
-        <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
-          <h1>❌ Failed</h1>
-          <pre>${String(error.message || error)}</pre>
-          <p><a style="color:#93c5fd;" href="/admin/manual-deals">Back</a></p>
-        </body>
-      `);
-    }
-  }
-);
-
-app.post("/api/admin/manual-deals", requireAdmin, express.urlencoded({ extended: true }), async (req, res) => {
+app.post("/api/admin/manual-deals", requireAdmin, async (req, res) => {
   try {
     const deal = await createManualDeal({
       name: req.body.name,
@@ -675,20 +680,42 @@ app.post("/api/admin/manual-deals", requireAdmin, express.urlencoded({ extended:
       use_ai: req.body.use_ai === "true"
     });
 
+    let workflowResult;
+
+    try {
+      workflowResult = await triggerRegenerateWorkflow({ mode: "all" });
+    } catch (workflowError) {
+      console.error("❌ Failed to trigger regeneration workflow:", workflowError);
+      workflowResult = {
+        triggered: false,
+        reason: workflowError.message
+      };
+    }
+
     res.type("html").send(`
       <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
         <h1>✅ Deal created</h1>
-        <p><strong>${deal.name}</strong></p>
-        <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${deal.slug}.html" target="_blank">View deal page</a></p>
+        <p><strong>${escapeHtml(deal.name)}</strong></p>
+        <p>Slug: <code>${escapeHtml(deal.slug)}</code></p>
+
+        ${
+          workflowResult?.triggered
+            ? `<p>🚀 Regeneration workflow triggered. The page should publish after GitHub Actions finishes.</p>`
+            : `<p>⚠️ Deal saved, but regeneration was not triggered: ${escapeHtml(workflowResult?.reason || "unknown reason")}</p>`
+        }
+
+        <p><a style="color:#93c5fd;" href="https://pochify.com/deals/${escapeHtml(deal.slug)}.html" target="_blank">View deal page</a></p>
         <p><a style="color:#93c5fd;" href="/admin/manual-deals">Create another</a></p>
+        <p><a style="color:#93c5fd;" href="/admin">Back to admin</a></p>
       </body>
     `);
   } catch (error) {
     console.error("❌ Manual deal create failed:", error);
+
     res.status(500).type("html").send(`
       <body style="font-family:Arial;background:#0b1220;color:#e5e7eb;padding:30px;">
         <h1>❌ Failed</h1>
-        <pre>${String(error.message || error)}</pre>
+        <pre>${escapeHtml(error.message || String(error))}</pre>
         <p><a style="color:#93c5fd;" href="/admin/manual-deals">Back</a></p>
       </body>
     `);
