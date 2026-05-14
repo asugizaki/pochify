@@ -32,6 +32,7 @@ jobs:
           TELEGRAM_AI: ${{ secrets.TELEGRAM_AI }}
           TELEGRAM_SAAS: ${{ secrets.TELEGRAM_SAAS }}
           TELEGRAM_GENERAL: ${{ secrets.TELEGRAM_GENERAL }}
+          PIPELINE_API_KEY: ${{ secrets.PIPELINE_API_KEY }}
 
       - name: Commit generated docs
         run: |
