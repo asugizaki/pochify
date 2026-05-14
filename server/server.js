@@ -74,6 +74,16 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requirePipelineKey(req, res, next) {
+  const key = req.get("x-pochify-api-key");
+
+  if (!process.env.PIPELINE_API_KEY || key !== process.env.PIPELINE_API_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  next();
+}
+
 async function getPublicSettings() {
   const { data } = await supabase
     .from("app_settings")
@@ -198,7 +208,7 @@ app.get("/api/settings/public", async (_req, res) => {
   res.json({ settings: await getPublicSettings() });
 });
 
-app.get("/api/source-pages", async (_req, res) => {
+app.get("/api/source-pages", requirePipelineKey, async (_req, res) => {
   const { data, error } = await supabase
     .from("source_pages")
     .select("source_key, page_type, page_name, url, is_enabled, sort_order")
@@ -340,7 +350,7 @@ app.get("/api/public/top-clicked", async (req, res) => {
   res.json({ items: merged });
 });
 
-app.post("/api/deals/existing-summaries", async (req, res) => {
+app.post("/api/deals/existing-summaries", requirePipelineKey, async (req, res) => {
   const slugs = req.body?.slugs || [];
   if (!Array.isArray(slugs) || !slugs.length) return res.json({ items: [] });
 
@@ -354,7 +364,7 @@ app.post("/api/deals/existing-summaries", async (req, res) => {
   res.json({ items: data || [] });
 });
 
-app.post("/api/deals/existing-details", async (req, res) => {
+app.post("/api/deals/existing-details", requirePipelineKey, async (req, res) => {
   const slugs = req.body?.slugs || [];
   if (!Array.isArray(slugs) || !slugs.length) return res.json({ items: [] });
 
@@ -376,7 +386,7 @@ app.post("/api/deals/existing-details", async (req, res) => {
   res.json({ items: data || [] });
 });
 
-app.post("/api/deals/ingest", async (req, res) => {
+app.post("/api/deals/ingest", requirePipelineKey, async (req, res) => {
   try {
     const deals = req.body?.deals || [];
     const maxToSend = Number(req.body?.maxToSend || 2);
@@ -508,7 +518,7 @@ app.post("/api/deals/ingest", async (req, res) => {
   }
 });
 
-app.post("/api/deals/mark-posted", async (req, res) => {
+app.post("/api/deals/mark-posted", requirePipelineKey, async (req, res) => {
   const slugs = req.body?.slugs || [];
   if (!Array.isArray(slugs) || !slugs.length) {
     return res.status(400).json({ error: "Expected slugs array" });
