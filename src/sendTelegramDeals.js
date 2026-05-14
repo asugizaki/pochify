@@ -9,6 +9,13 @@ const TELEGRAM_GENERAL = process.env.TELEGRAM_GENERAL;
 const BASE_URL = "https://go.pochify.com";
 const PENDING_PATH = path.join("data", "pending-telegram.json");
 
+function pipelineHeaders(extra = {}) {
+  return {
+    ...extra,
+    "x-pochify-api-key": process.env.PIPELINE_API_KEY || ""
+  };
+}
+
 function loadPendingDeals() {
   if (!fs.existsSync(PENDING_PATH)) return [];
   try {
@@ -37,6 +44,14 @@ function formatPrice(value) {
   return `$${num.toFixed(2)}`;
 }
 
+function escapeHtml(text = "") {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 function buildMessage(deal) {
   const lines = [];
 
@@ -61,14 +76,6 @@ function buildMessage(deal) {
   lines.push(`👉 <a href="${escapeHtml(deal.page_url)}">Read full breakdown</a>`);
 
   return lines.join("\n");
-}
-
-function escapeHtml(text = "") {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 async function sendTelegramMessage(chatId, text) {
@@ -110,9 +117,9 @@ async function markPosted(slugs) {
 
   const res = await fetch(`${BASE_URL}/api/deals/mark-posted`, {
     method: "POST",
-    headers: {
+    headers: pipelineHeaders({
       "Content-Type": "application/json"
-    },
+    }),
     body: JSON.stringify({ slugs })
   });
 
